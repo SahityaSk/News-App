@@ -1,16 +1,17 @@
-// Multi-language translation dictionary for PULSE NEWS LIVE (EN, BN, HI)
+// Multi-language translation dictionary for YUGANTAR NEWS LIVE (EN, BN, HI)
 
 export const translations = {
   EN: {
+    brandName: "YUGANTAR NEWS",
     brandTagline: "GLOBAL NEWS NETWORK",
     brandSubtitle: "Truth • Speed • Unbiased Coverage",
     searchPlaceholder: "Search news, topics, or keywords...",
-    liveTvBtn: "LIVE TV 24/7",
+    liveTvBtn: "YUGANTAR LIVE 24/7",
     breakingBadge: "BREAKING NEWS",
     liveCoverageBadge: "LIVE COVERAGE",
     keyDevelopments: "KEY DEVELOPMENTS",
     wantNotifications: "🔔 Want Instant News Notifications?",
-    joinLiveChannel: "Join Live Coverage Channel",
+    joinLiveChannel: "Join Yugantar Live Coverage",
     topHeadlines: "TOP HEADLINES",
     searchResultsFor: "Search Results for",
     showingStories: "Showing Stories",
@@ -38,25 +39,26 @@ export const translations = {
       opinion: "Opinion"
     },
     footer: {
-      subscribeTitle: "Subscribe to PULSE Daily Morning Bulletin",
+      subscribeTitle: "Subscribe to Yugantar News Daily Bulletin",
       subscribeDesc: "Get curations of top stories, market movements, and live updates delivered to your inbox every day.",
       enterEmail: "Enter your email address...",
       subscribeBtn: "Subscribe",
       aboutText: "Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial intelligence globally.",
-      copyright: "© 2026 PULSE News Live Network. All rights reserved."
+      copyright: "© 2026 Yugantar News Network. All rights reserved."
     }
   },
 
   BN: {
+    brandName: "যুগান্তর নিউজ",
     brandTagline: "গ্লোবাল নিউজ নেটওয়ার্ক",
     brandSubtitle: "সত্য • দ্রুত • নিরপেক্ষ সংবাদ কভারেজ",
     searchPlaceholder: "সংবাদ, বিষয় বা কীওয়ার্ড খুঁজুন...",
-    liveTvBtn: "লাইভ টিভি ২৪x৭",
+    liveTvBtn: "যুগান্তর লাইভ ২৪x৭",
     breakingBadge: "ব্রেকিং নিউজ",
     liveCoverageBadge: "লাইভ কভারেজ",
     keyDevelopments: "গুরুত্বপূর্ণ আপডেট",
     wantNotifications: "🔔 ইনস্ট্যান্ট খবর নোটিফিকেশন চান?",
-    joinLiveChannel: "লাইভ কভারেজ চ্যানেলে যুক্ত হন",
+    joinLiveChannel: "যুগান্তর লাইভ কভারেজে যুক্ত হন",
     topHeadlines: "প্রধান সংবাদ",
     searchResultsFor: "অনুসন্ধানের ফলাফল",
     showingStories: "খবর দেখাচ্ছে",
@@ -84,25 +86,26 @@ export const translations = {
       opinion: "সম্পাদীয়"
     },
     footer: {
-      subscribeTitle: "পালস দৈনিক মর্নিং বুলেটিন সাবস্ক্রাইব করুন",
+      subscribeTitle: "যুগান্তর নিউজ দৈনিক বুলেটিন সাবস্ক্রাইব করুন",
       subscribeDesc: "প্রতিদিন সকালে সেরা খবর, বাজারের আপডেট এবং লাইভ রিপোর্ট সরাসরি আপনার ইমেইলে পান।",
       enterEmail: "আপনার ইমেইল ঠিকানা দিন...",
       subscribeBtn: "সাবস্ক্রাইব",
       aboutText: "২৪ ঘণ্টা নিরপেক্ষ ব্রেকিং নিউজ, লাইভ ভিডিও স্ট্রিমিং এবং গভীর বিশ্লেষণ প্রদানকারী গ্লোবাল নিউজ পোর্টাল।",
-      copyright: "© ২০২৬ পালস নিউজ লাইভ নেটওয়ার্ক। সর্বস্বত্ব সংরক্ষিত।"
+      copyright: "© ২০২৬ যুগান্তর নিউজ নেটওয়ার্ক। সর্বস্বত্ব সংরক্ষিত।"
     }
   },
 
   HI: {
+    brandName: "युगांतर न्यूज़",
     brandTagline: "ग्लोबल न्यूज़ नेटवर्क",
     brandSubtitle: "सत्य • तेज़ • निष्पक्ष समाचार कवरेज",
     searchPlaceholder: "समाचार, विषय या कीवर्ड खोजें...",
-    liveTvBtn: "लाइव टीवी 24x7",
+    liveTvBtn: "युगांतर लाइव 24x7",
     breakingBadge: "ब्रेकिंग न्यूज़",
     liveCoverageBadge: "लाइव कवरेज",
     keyDevelopments: "मुख्य बिंदु व अपडेट",
     wantNotifications: "🔔 क्या आपको तुरंत समाचार अलर्ट चाहिए?",
-    joinLiveChannel: "लाइव कवरेज चैनल से जुड़ें",
+    joinLiveChannel: "युगांतर लाइव कवरेज से जुड़ें",
     topHeadlines: "मुख्य समाचार",
     searchResultsFor: "खोज के परिणाम",
     showingStories: "कुल समाचार",
@@ -130,12 +133,12 @@ export const translations = {
       opinion: "संपादकीय"
     },
     footer: {
-      subscribeTitle: "पल्स दैनिक मॉर्निंग बुलेटिन की सदस्यता लें",
+      subscribeTitle: "युगांतर न्यूज़ दैनिक बुलेटिन की सदस्यता लें",
       subscribeDesc: "हर सुबह मुख्य समाचार, बाजार के रुझान और लाइव अपडेट सीधे अपने इनबॉक्स में पाएं।",
       enterEmail: "अपना ईमेल पता दर्ज करें...",
       subscribeBtn: "सब्सक्राइब",
       aboutText: "24x7 निष्पक्ष ब्रेकिंग न्यूज, लाइव वीडियो स्ट्रीमिंग और वित्तीय विश्लेषण प्रदान करने वाला प्रमुख समाचार नेटवर्क।",
-      copyright: "© 2026 पल्स न्यूज़ लाइव नेटवर्क। सर्वाधिकार सुरक्षित।"
+      copyright: "© 2026 युगांतर न्यूज़ नेटवर्क। सर्वाधिकार सुरक्षित।"
     }
   }
 };

@@ -117,34 +117,58 @@ export default function Header({ theme, toggleTheme, searchQuery, setSearchQuery
         </div>
       </div>
 
-      {/* Main Brand & Search Bar Header */}
+      {/* Main Brand Header with Official YUGANTAR Logo */}
       <div className="container" style={{ padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
         
-        {/* Brand Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Yugantar Official Logo Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => window.location.reload()}>
+          
+          {/* Official Yugantar Red Square Logo Image */}
           <div style={{
-            background: 'var(--accent-red)',
-            color: 'white',
-            fontWeight: '900',
-            fontFamily: 'var(--font-heading)',
-            fontSize: '1.7rem',
-            padding: '5px 12px',
-            borderRadius: 'var(--radius-sm)',
-            letterSpacing: '1.5px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '10px',
+            overflow: 'hidden',
             boxShadow: 'var(--shadow-red)',
+            flexShrink: 0,
+            background: '#dc2626',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            justify: 'center'
           }}>
-            <span>PULSE</span>
-            <span style={{ fontSize: '0.75rem', background: '#ffffff', color: 'var(--accent-red)', padding: '2px 5px', borderRadius: '4px', fontWeight: '900' }}>LIVE</span>
+            <img 
+              src="/yugantar-logo.jpg" 
+              alt="YUGANTAR NEWS" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: '800', fontSize: '1.05rem', letterSpacing: '0.5px', lineHeight: '1.1' }}>
-              {t.brandTagline}
-            </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ 
+                fontFamily: 'var(--font-heading)', 
+                fontWeight: '900', 
+                fontSize: '1.65rem', 
+                letterSpacing: '1px', 
+                lineHeight: '1',
+                color: 'var(--text-primary)' 
+              }}>
+                {t.brandName || "YUGANTAR NEWS"}
+              </span>
+              <span style={{ 
+                fontSize: '0.72rem', 
+                background: 'var(--accent-red)', 
+                color: '#ffffff', 
+                padding: '2px 7px', 
+                borderRadius: '4px', 
+                fontWeight: '900',
+                letterSpacing: '0.5px' 
+              }}>
+                LIVE
+              </span>
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '3px' }}>
               {t.brandSubtitle}
             </span>
           </div>
