@@ -12,7 +12,8 @@ export default function Header({
   onLanguageChange,
   savedCount = 0,
   onOpenAiDigest,
-  onOpenSavedDrawer
+  onOpenSavedDrawer,
+  onOpenAdminCMS
 }) {
   const [currentDateTime, setCurrentDateTime] = useState('');
   const t = translations[language] || translations.EN;

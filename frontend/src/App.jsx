@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+
 import Header from './components/Header';
 import Navbar from './components/Navbar';
 import BreakingTicker from './components/BreakingTicker';
@@ -13,6 +15,7 @@ import AiDigestModal from './components/AiDigestModal';
 import SavedArticlesDrawer from './components/SavedArticlesDrawer';
 import FloatingAudioPlayer from './components/FloatingAudioPlayer';
 import FactCheckModal from './components/FactCheckModal';
+import AdminCMS from './components/AdminCMS';
 import Footer from './components/Footer';
 
 import {
@@ -53,6 +56,31 @@ export default function App() {
   const [isAiDigestOpen, setIsAiDigestOpen] = useState(false);
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
   const [factCheckArticle, setFactCheckArticle] = useState(null);
+  const [isAdminCmsOpen, setIsAdminCmsOpen] = useState(false);
+
+  // Check for secure Admin route (/admin or #admin) or keyboard shortcut (Ctrl+Shift+A)
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
+        setIsAdminCmsOpen(true);
+      }
+    };
+    checkAdminRoute();
+    window.addEventListener('hashchange', checkAdminRoute);
+
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setIsAdminCmsOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('hashchange', checkAdminRoute);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Apply dark/light theme to document root
   useEffect(() => {
@@ -60,33 +88,64 @@ export default function App() {
   }, [theme]);
 
   // Load Data whenever language changes
+  const loadAllData = async () => {
+    const [breakingRes, heroRes, wsRes, reelsRes] = await Promise.all([
+      fetchBreakingNews(language),
+      fetchHeroNews(language),
+      fetchWeatherStocks(),
+      fetchVideoReels(language)
+    ]);
+
+    setBreakingNews(breakingRes);
+    setHeroNews(heroRes);
+    setWeatherStocks(wsRes);
+    setReels(reelsRes);
+  };
+
   useEffect(() => {
-    const loadAllData = async () => {
-      const [breakingRes, heroRes, wsRes, reelsRes] = await Promise.all([
-        fetchBreakingNews(language),
-        fetchHeroNews(language),
-        fetchWeatherStocks(),
-        fetchVideoReels(language)
-      ]);
-
-      setBreakingNews(breakingRes);
-      setHeroNews(heroRes);
-      setWeatherStocks(wsRes);
-      setReels(reelsRes);
-    };
-
     loadAllData();
   }, [language]);
 
   // Fetch articles whenever activeCategory, searchQuery, or language changes
-  useEffect(() => {
-    const loadArticles = async () => {
-      const newsRes = await fetchNewsArticles(activeCategory, searchQuery, language);
-      setArticles(newsRes);
-    };
+  const loadArticles = async () => {
+    const newsRes = await fetchNewsArticles(activeCategory, searchQuery, language);
+    setArticles(newsRes);
+  };
 
+  useEffect(() => {
     loadArticles();
   }, [activeCategory, searchQuery, language]);
+
+  // 🔌 Setup Socket.io WebSockets Client for Real-Time Push Alerts
+  useEffect(() => {
+    const socket = io('http://localhost:5000', {
+      reconnectionAttempts: 5,
+      timeout: 5000
+    });
+
+    socket.on('connect', () => {
+      console.log('⚡ [Socket.io Client] Connected to YUGANTAR Real-Time Server');
+    });
+
+    socket.on('breaking_ticker_push', (newTicker) => {
+      console.log('⚡ [Socket.io Client] Breaking news push alert received:', newTicker);
+      loadAllData();
+    });
+
+    socket.on('article_published', (newArticle) => {
+      console.log('⚡ [Socket.io Client] New article broadcast received:', newArticle);
+      loadArticles();
+    });
+
+    socket.on('live_stream_updated', (streamData) => {
+      console.log('⚡ [Socket.io Client] Live TV stream update received:', streamData);
+      loadAllData();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -123,7 +182,7 @@ export default function App() {
   return (
     <div className="app-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* 1. Header with Clock, Weather/Stocks, Language Switcher, AI Digest Trigger & Bookmarks Drawer Counter */}
+      {/* 1. Header with Clock, Weather/Stocks, Language Switcher, AI Digest, Bookmarks & Admin CMS Launcher */}
       <Header 
         theme={theme} 
         toggleTheme={toggleTheme}
@@ -267,6 +326,16 @@ export default function App() {
         onClose={() => setFactCheckArticle(null)}
         article={factCheckArticle}
         language={language}
+      />
+
+      {/* 16. 🛡️ Admin CMS & Editorial Desk Modal */}
+      <AdminCMS 
+        isOpen={isAdminCmsOpen}
+        onClose={() => setIsAdminCmsOpen(false)}
+        onRefreshData={() => {
+          loadAllData();
+          loadArticles();
+        }}
       />
 
     </div>

@@ -105,7 +105,7 @@ export default function BreakingTicker({ items = [], onSelectNews, language }) {
               </span>
 
               <span style={{ fontFamily: 'var(--font-body)', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {currentItem.text}
+                {currentItem.text || currentItem.title}
               </span>
 
               <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', flexShrink: 0 }}>
@@ -151,7 +151,7 @@ export default function BreakingTicker({ items = [], onSelectNews, language }) {
                   </span>
 
                   <span style={{ fontFamily: 'var(--font-body)', fontWeight: '600' }}>
-                    {item.text}
+                    {item.text || item.title}
                   </span>
 
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
