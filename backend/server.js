@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const apiRoutes = require('./routes/api');
@@ -16,7 +17,7 @@ app.use('/api', apiRoutes);
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    service: 'PULSE News Live REST API',
+    service: 'YUGANTAR News Live REST API',
     endpoints: [
       '/api/breaking',
       '/api/hero',
@@ -28,5 +29,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`📡 PULSE News Backend Server running on http://localhost:${PORT}`);
+  console.log(`📡 YUGANTAR News Backend Server running on http://localhost:${PORT}`);
 });

@@ -91,7 +91,7 @@ export default function Footer({ onOpenLiveStream, language }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
               <div style={{ background: 'var(--accent-red)', color: '#fff', fontWeight: '900', padding: '4px 10px', borderRadius: '4px' }}>
-                PULSE
+                YUGANTAR
               </div>
               <span style={{ fontWeight: '800', fontFamily: 'var(--font-heading)', fontSize: '1.1rem' }}>
                 LIVE NEWS
@@ -140,11 +140,11 @@ export default function Footer({ onOpenLiveStream, language }) {
               OUR NETWORK
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              <li>ABP Ananda & NDTV Inspired UI</li>
-              <li>PULSE Bangla & Hindi Edition</li>
+              <li>Global Wire & International Desks</li>
+              <li>Independent News Syndicates</li>
+              <li>Yugantar Multilingual Edition (EN/BN/HI)</li>
               <li>Editorial Code of Ethics</li>
-              <li>Fact-Checking Policy</li>
-              <li>Contact Editorial Board</li>
+              <li>Fact-Checking & Integrity Policy</li>
             </ul>
           </div>
 

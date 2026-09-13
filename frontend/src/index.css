@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PULSE NEWS LIVE - Modern Responsive & Animated CSS Design System
+   YUGANTAR NEWS LIVE - Modern Responsive & Animated CSS Design System
    ========================================================================== */
 
 :root {
@@ -128,6 +128,18 @@ button svg {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
   }
+}
+
+.animate-marquee {
+  display: flex;
+  white-space: nowrap;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
 }
 
 .live-dot {

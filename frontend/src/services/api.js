@@ -72,6 +72,6 @@ export const subscribeNewsletter = async (email) => {
     });
     return await res.json();
   } catch (err) {
-    return { success: true, message: `Subscribed ${email} to PULSE Alerts!` };
+    return { success: true, message: `Subscribed ${email} to YUGANTAR Alerts!` };
   }
 };

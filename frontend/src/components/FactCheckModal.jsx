@@ -110,7 +110,7 @@ export default function FactCheckModal({ isOpen, onClose, article, language = 'E
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
                 "Direct quote cross-referenced against official transcripts.",
-                "Multi-agency confirmation (Reuters, AP, PTI, Press Release).",
+                "Multi-agency confirmation via global wire services & official press releases.",
                 "Metadata & image authenticity verified via EXIF analysis.",
                 "Reviewed by senior editorial fact-checking desk."
               ].map((step, idx) => (

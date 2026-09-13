@@ -1,6 +1,6 @@
-# 📰 PULSE News Live Portal
+# 📰 YUGANTAR News Live Portal
 
-> **PULSE News** is a modern, high-performance, multi-lingual live news portal featuring real-time breaking news tickers, video reels, interactive article reading, live stream broadcasting, weather & financial market widgets, and instant topic filtering.
+> **YUGANTAR News** is a modern, high-performance, multi-lingual live news portal featuring real-time breaking news tickers, video reels, interactive article reading, live stream broadcasting, weather & financial market widgets, and instant topic filtering.
 
 ---
 

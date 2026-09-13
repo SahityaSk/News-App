@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Users, MessageSquare, Radio, Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { X, Users, MessageSquare, Radio, Volume2, VolumeX, Play, Pause, Tv, Send, Check } from 'lucide-react';
 
 const mockChatMessages = [
   { user: "Arjun M.", text: "Significant breakthrough for clean energy transition!", time: "Just now" },
   { user: "Sarah Jenkins", text: "Watching live from London, great coverage as always.", time: "Just now" },
   { user: "TechEnthusiast", text: "The quantum computing news is mind blowing 🚀", time: "1s ago" },
-  { user: "Rajesh K.", text: "Kudos to PULSE LIVE team for 24x7 updates!", time: "2s ago" },
+  { user: "Rajesh K.", text: "Kudos to YUGANTAR LIVE team for 24x7 updates!", time: "2s ago" },
   { user: "Elena V.", text: "When will the official whitepaper be released?", time: "4s ago" }
+];
+
+const liveChannels = [
+  { id: 'ch1', name: 'Channel 1: Global News 24/7', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', badge: 'WORLD NEWS' },
+  { id: 'ch2', name: 'Channel 2: Tech & AI Summit', videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', badge: 'TECH LIVE' },
+  { id: 'ch3', name: 'Channel 3: World Financial Markets', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', badge: 'MARKETS 24/7' },
+  { id: 'ch4', name: 'Channel 4: Climate & Science', videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', badge: 'SCIENCE' },
+  { id: 'ch5', name: 'Channel 5: International Sports Arena', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', badge: 'SPORTS ARENA' }
 ];
 
 export default function LiveStreamModal({ isOpen, onClose, streamData }) {
@@ -14,6 +22,8 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [viewerCount, setViewerCount] = useState(142850);
+  const [selectedChannel, setSelectedChannel] = useState(liveChannels[0]);
+  const [chatInput, setChatInput] = useState('');
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -72,17 +82,30 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
     }
   };
 
+  const handleSendChat = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    setMessages(prev => [
+      { user: "You", text: chatInput.trim(), time: "Just now" },
+      ...prev
+    ]);
+    setChatInput('');
+  };
+
+  const activeVideoUrl = streamData?.videoUrl || selectedChannel.videoUrl;
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '1100px',
+          maxWidth: '1150px',
           background: '#0a0e17',
           color: '#ffffff',
           borderRadius: 'var(--radius-lg)',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.8)'
         }}
       >
         {/* Modal Header Bar */}
@@ -99,8 +122,8 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
               <span className="live-dot" style={{ width: '8px', height: '8px', background: '#fff' }}></span>
               <span>LIVE TV BROADCAST</span>
             </div>
-            <span style={{ fontSize: '0.85rem', color: '#9ca3af', fontWeight: '500' }}>
-              {streamData?.title || 'Global News Network 24x7 Stream'}
+            <span style={{ fontSize: '0.85rem', color: '#9ca3af', fontWeight: '600' }}>
+              {streamData?.title || selectedChannel.name}
             </span>
           </div>
 
@@ -140,6 +163,44 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
           </div>
         </div>
 
+        {/* Live Channel Quick Switcher Bar */}
+        <div style={{
+          background: '#161e2e',
+          borderBottom: '1px solid #1f2937',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none'
+        }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9ca3af', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Tv size={14} style={{ color: '#dc2626' }} />
+            CHANNELS:
+          </span>
+
+          {liveChannels.map((ch) => (
+            <button
+              key={ch.id}
+              onClick={() => setSelectedChannel(ch)}
+              style={{
+                background: selectedChannel.id === ch.id ? '#dc2626' : 'rgba(255,255,255,0.08)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s'
+              }}
+            >
+              {ch.badge}
+            </button>
+          ))}
+        </div>
+
         {/* Modal Main Video & Chat Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', background: '#000000' }}>
           
@@ -147,7 +208,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
           <div style={{ gridColumn: 'span 8', position: 'relative', background: '#000' }} className="video-player-col">
             <video
               ref={videoRef}
-              src={streamData?.videoUrl || "https://www.w3schools.com/html/mov_bbb.mp4"}
+              src={activeVideoUrl}
               autoPlay
               loop
               muted={isMuted}
@@ -227,13 +288,13 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
                 </button>
 
                 <span style={{ fontSize: '0.8rem', color: '#e5e7eb', fontWeight: '600' }}>
-                  🔴 PULSE LIVE HD BROADCAST • CHANNEL 1
+                  🔴 YUGANTAR LIVE HD • {selectedChannel.badge}
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', background: 'rgba(220,38,38,0.85)', padding: '3px 10px', borderRadius: '4px', fontWeight: '700' }}>
                 <Radio size={12} />
-                <span>REAL-TIME STREAM</span>
+                <span>1080p HD LIVE</span>
               </div>
             </div>
           </div>
@@ -267,7 +328,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
               {messages.map((msg, i) => (
                 <div key={i} style={{ background: '#1f2937', padding: '8px 10px', borderRadius: '6px', fontSize: '0.8rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                    <span style={{ fontWeight: '700', color: '#60a5fa' }}>{msg.user}</span>
+                    <span style={{ fontWeight: '700', color: msg.user === 'You' ? '#34d399' : '#60a5fa' }}>{msg.user}</span>
                     <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{msg.time}</span>
                   </div>
                   <div style={{ color: '#e5e7eb', lineHeight: '1.3' }}>{msg.text}</div>
@@ -275,23 +336,41 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
               ))}
             </div>
 
-            {/* Chat Input */}
-            <div style={{ padding: '0.75rem', borderTop: '1px solid #1f2937' }}>
+            {/* Chat Input Form */}
+            <form onSubmit={handleSendChat} style={{ padding: '0.75rem', borderTop: '1px solid #1f2937', display: 'flex', gap: '6px' }}>
               <input
                 type="text"
-                placeholder="Join the live discussion..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Join live discussion..."
                 style={{
-                  width: '100%',
+                  flexGrow: 1,
                   background: '#1f2937',
                   border: '1px solid #374151',
                   color: '#fff',
                   borderRadius: '4px',
-                  padding: '6px 10px',
+                  padding: '8px 10px',
                   fontSize: '0.8rem',
                   outline: 'none'
                 }}
               />
-            </div>
+              <button
+                type="submit"
+                style={{
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Send size={14} />
+              </button>
+            </form>
 
           </div>
 
