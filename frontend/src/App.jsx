@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Navbar from './components/Navbar';
 import BreakingTicker from './components/BreakingTicker';
 import HeroLiveNews from './components/HeroLiveNews';
+import PopularRecentRotator from './components/PopularRecentRotator';
 import PollAndTopicRadar from './components/PollAndTopicRadar';
 import NewsGrid from './components/NewsGrid';
 import VideoReels from './components/VideoReels';
@@ -170,14 +171,23 @@ export default function App() {
           />
         )}
 
-        {/* 5. Interactive Opinion Poll & Trending Topic Radar */}
+        {/* 5. 🔥 Auto-Rotating Small Article Cards Banner (Most Popular & Recent News) */}
+        {!searchQuery && (
+          <PopularRecentRotator 
+            articles={articles}
+            onSelectArticle={(art) => setSelectedArticle(art)}
+            language={language}
+          />
+        )}
+
+        {/* 6. Interactive Opinion Poll & Trending Topic Radar */}
         <PollAndTopicRadar 
           language={language}
           onSelectTag={(tag) => setSearchQuery(tag)}
           activeSearchQuery={searchQuery}
         />
 
-        {/* 6. Categorized News Grid & Trending Top 5 Sidebar */}
+        {/* 7. Categorized News Grid & Trending Top 5 Sidebar */}
         <NewsGrid 
           articles={articles}
           activeCategory={activeCategory}
@@ -189,7 +199,7 @@ export default function App() {
           onOpenFactCheck={(art) => setFactCheckArticle(art)}
         />
 
-        {/* 7. Video Shorts & Reels Carousel */}
+        {/* 8. Video Shorts & Reels Carousel */}
         {!searchQuery && (
           <VideoReels 
             reels={reels}
@@ -200,7 +210,7 @@ export default function App() {
 
       </main>
 
-      {/* 8. Footer */}
+      {/* 9. Footer */}
       <Footer 
         language={language}
         onOpenLiveStream={() => {
@@ -209,7 +219,7 @@ export default function App() {
         }}
       />
 
-      {/* 9. Interactive Article Reader Modal */}
+      {/* 10. Interactive Article Reader Modal */}
       <ArticleModal 
         article={selectedArticle}
         isOpen={!!selectedArticle}
@@ -217,7 +227,7 @@ export default function App() {
         language={language}
       />
 
-      {/* 10. Interactive Live Stream TV Modal */}
+      {/* 11. Interactive Live Stream TV Modal */}
       <LiveStreamModal 
         isOpen={isLiveModalOpen}
         onClose={() => {
@@ -227,7 +237,7 @@ export default function App() {
         streamData={activeReelStream || heroNews}
       />
 
-      {/* 11. ⚡ AI Quick Digest Executive Briefing Modal */}
+      {/* 12. ⚡ AI Quick Digest Executive Briefing Modal */}
       <AiDigestModal 
         isOpen={isAiDigestOpen}
         onClose={() => setIsAiDigestOpen(false)}
@@ -235,7 +245,7 @@ export default function App() {
         articles={articles}
       />
 
-      {/* 12. 🔖 Saved Reading Queue Drawer */}
+      {/* 13. 🔖 Saved Reading Queue Drawer */}
       <SavedArticlesDrawer 
         isOpen={isSavedDrawerOpen}
         onClose={() => setIsSavedDrawerOpen(false)}
@@ -245,13 +255,13 @@ export default function App() {
         language={language}
       />
 
-      {/* 13. 📻 Persistent Bottom Floating Audio Radio Player */}
+      {/* 14. 📻 Persistent Bottom Floating Audio Radio Player */}
       <FloatingAudioPlayer 
         language={language}
         onOpenLiveStream={() => setIsLiveModalOpen(true)}
       />
 
-      {/* 14. 🛡️ Fact-Check & Source Verification Modal */}
+      {/* 15. 🛡️ Fact-Check & Source Verification Modal */}
       <FactCheckModal 
         isOpen={!!factCheckArticle}
         onClose={() => setFactCheckArticle(null)}

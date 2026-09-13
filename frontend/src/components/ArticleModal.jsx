@@ -241,10 +241,10 @@ export default function ArticleModal({ article, isOpen, onClose, language }) {
         }}>
           <div>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--accent-red)', letterSpacing: '0.5px' }}>
-              PULSE VERIFIED NEWS
+              YUGANTAR VERIFIED NEWS
             </span>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: '600' }}>
-              Reported & Fact-checked by PULSE Editorial Board
+              Reported & Fact-checked by YUGANTAR Editorial Board
             </div>
           </div>
           <button onClick={onClose} className="btn-primary" style={{ fontSize: '0.85rem' }}>

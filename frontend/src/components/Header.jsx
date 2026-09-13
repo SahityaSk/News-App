@@ -182,22 +182,22 @@ export default function Header({
           
           {/* Official Yugantar Red Square Logo Image */}
           <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '10px',
+            width: '58px',
+            height: '58px',
+            borderRadius: '12px',
             overflow: 'hidden',
-            boxShadow: 'var(--shadow-red)',
+            boxShadow: '0 0 20px rgba(220, 38, 38, 0.45)',
             flexShrink: 0,
             background: '#dc2626',
-            border: '2px solid rgba(255, 255, 255, 0.2)',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
             display: 'flex',
             alignItems: 'center',
-            justify: 'center'
+            justifyContent: 'center'
           }}>
             <img 
               src="/yugantar-logo.jpg" 
               alt="YUGANTAR NEWS" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block' }}
             />
           </div>
 

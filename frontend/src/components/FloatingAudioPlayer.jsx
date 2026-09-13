@@ -46,7 +46,7 @@ export default function FloatingAudioPlayer({ language = 'EN', onOpenLiveStream 
           }}
         >
           <RadioTower size={16} style={{ color: 'var(--accent-red)', animation: isPlaying ? 'pulseGlow 1.5s infinite' : 'none' }} />
-          <span>{isPlaying ? '🔴 LIVE Radio' : '📻 PULSE Audio'}</span>
+          <span>{isPlaying ? '🔴 LIVE Radio' : '📻 YUGANTAR Audio'}</span>
         </button>
       ) : (
         // Expanded Player Box
@@ -70,7 +70,7 @@ export default function FloatingAudioPlayer({ language = 'EN', onOpenLiveStream 
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: '900' }}>
               <Radio size={14} />
-              PULSE LIVE RADIO 24/7
+              YUGANTAR LIVE RADIO 24/7
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -111,7 +111,7 @@ export default function FloatingAudioPlayer({ language = 'EN', onOpenLiveStream 
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1.2' }}>
-                  {language === 'BN' ? 'যুগান্তর আন্তর্জাতিক নিউজ রেডিও' : (language === 'HI' ? 'युगांतर इंटरनेशनल रेडियो' : 'PULSE Global News Radio')}
+                  {language === 'BN' ? 'যুগান্তর আন্তর্জাতিক নিউজ রেডিও' : (language === 'HI' ? 'युगांतर इंटरनेशनल रेडियो' : 'YUGANTAR Global News Radio')}
                 </span>
                 <span style={{ fontSize: '0.72rem', color: isPlaying ? '#16a34a' : 'var(--text-muted)', fontWeight: '700', marginTop: '2px' }}>
                   {isPlaying ? '🔴 Broadcasting Live Audio' : 'Paused • Tap play to listen'}
