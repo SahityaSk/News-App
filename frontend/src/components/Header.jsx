@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Search, Globe, TrendingUp, TrendingDown, CloudSun, Clock } from 'lucide-react';
+import { Sun, Moon, Search, Globe, TrendingUp, TrendingDown, CloudSun, Clock, Sparkles, Bookmark } from 'lucide-react';
 import { translations } from '../utils/translations';
 
-export default function Header({ theme, toggleTheme, searchQuery, setSearchQuery, weatherStocks, language, onLanguageChange }) {
+export default function Header({ 
+  theme, 
+  toggleTheme, 
+  searchQuery, 
+  setSearchQuery, 
+  weatherStocks, 
+  language, 
+  onLanguageChange,
+  savedCount = 0,
+  onOpenAiDigest,
+  onOpenSavedDrawer
+}) {
   const [currentDateTime, setCurrentDateTime] = useState('');
   const t = translations[language] || translations.EN;
 
@@ -58,10 +69,55 @@ export default function Header({ theme, toggleTheme, searchQuery, setSearchQuery
             </div>
           )}
 
-          {/* Language Selector & Theme Toggle */}
+          {/* Language Selector & Theme Toggle & AI Digest & Saved Reading List */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
             
-            {/* High Contrast Language Select Box */}
+            {/* ⚡ AI Digest Button */}
+            <button
+              onClick={onOpenAiDigest}
+              style={{
+                background: 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(79,70,229,0.2))',
+                border: '1px solid rgba(220,38,38,0.5)',
+                color: 'var(--text-primary)',
+                padding: '3px 9px',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                boxShadow: '0 0 10px rgba(220,38,38,0.15)'
+              }}
+              title="60-Second AI News Briefing"
+            >
+              <Sparkles size={13} style={{ color: 'var(--accent-red)' }} />
+              <span>⚡ AI Briefing</span>
+            </button>
+
+            {/* 🔖 Saved Reading Queue Counter */}
+            <button
+              onClick={onOpenSavedDrawer}
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                padding: '3px 8px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.75rem',
+                fontWeight: '700'
+              }}
+              title="View saved articles"
+            >
+              <Bookmark size={13} style={{ color: 'var(--accent-red)' }} />
+              <span>{savedCount > 0 ? `Saved (${savedCount})` : 'Saved'}</span>
+            </button>
+
+            {/* Language Selector */}
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -93,6 +149,7 @@ export default function Header({ theme, toggleTheme, searchQuery, setSearchQuery
               </select>
             </div>
 
+            {/* Theme Toggle */}
             <button 
               onClick={toggleTheme} 
               aria-label="Toggle Theme"

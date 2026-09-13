@@ -3,10 +3,15 @@ import Header from './components/Header';
 import Navbar from './components/Navbar';
 import BreakingTicker from './components/BreakingTicker';
 import HeroLiveNews from './components/HeroLiveNews';
+import PollAndTopicRadar from './components/PollAndTopicRadar';
 import NewsGrid from './components/NewsGrid';
 import VideoReels from './components/VideoReels';
 import ArticleModal from './components/ArticleModal';
 import LiveStreamModal from './components/LiveStreamModal';
+import AiDigestModal from './components/AiDigestModal';
+import SavedArticlesDrawer from './components/SavedArticlesDrawer';
+import FloatingAudioPlayer from './components/FloatingAudioPlayer';
+import FactCheckModal from './components/FactCheckModal';
 import Footer from './components/Footer';
 
 import {
@@ -30,10 +35,23 @@ export default function App() {
   const [weatherStocks, setWeatherStocks] = useState(null);
   const [reels, setReels] = useState([]);
 
-  // Modal States
+  // Bookmarking State (Persisted in localStorage)
+  const [savedArticles, setSavedArticles] = useState(() => {
+    try {
+      const stored = localStorage.getItem('saved_news_articles');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Modal & Drawer States
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
   const [activeReelStream, setActiveReelStream] = useState(null);
+  const [isAiDigestOpen, setIsAiDigestOpen] = useState(false);
+  const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
+  const [factCheckArticle, setFactCheckArticle] = useState(null);
 
   // Apply dark/light theme to document root
   useEffect(() => {
@@ -73,6 +91,22 @@ export default function App() {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
+  const handleToggleSave = (article) => {
+    setSavedArticles(prev => {
+      const exists = prev.some(a => a.id === article.id);
+      let updated;
+      if (exists) {
+        updated = prev.filter(a => a.id !== article.id);
+      } else {
+        updated = [...prev, article];
+      }
+      try {
+        localStorage.setItem('saved_news_articles', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   const handleSelectBreakingNews = (item) => {
     setIsLiveModalOpen(true);
   };
@@ -88,7 +122,7 @@ export default function App() {
   return (
     <div className="app-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* 1. Header with Clock, Weather/Stocks, Language Switcher (Single Line), Theme Toggle & Search */}
+      {/* 1. Header with Clock, Weather/Stocks, Language Switcher, AI Digest Trigger & Bookmarks Drawer Counter */}
       <Header 
         theme={theme} 
         toggleTheme={toggleTheme}
@@ -97,9 +131,12 @@ export default function App() {
         weatherStocks={weatherStocks}
         language={language}
         onLanguageChange={setLanguage}
+        savedCount={savedArticles.length}
+        onOpenAiDigest={() => setIsAiDigestOpen(true)}
+        onOpenSavedDrawer={() => setIsSavedDrawerOpen(true)}
       />
 
-      {/* 2. Glassmorphic Category Navbar with Live TV Action (Single Line) */}
+      {/* 2. Glassmorphic Category Navbar with Live TV Action */}
       <Navbar 
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
@@ -133,16 +170,26 @@ export default function App() {
           />
         )}
 
-        {/* 5. Categorized News Grid & Trending Top 5 Sidebar */}
+        {/* 5. Interactive Opinion Poll & Trending Topic Radar */}
+        <PollAndTopicRadar 
+          language={language}
+          onSelectTag={(tag) => setSearchQuery(tag)}
+          activeSearchQuery={searchQuery}
+        />
+
+        {/* 6. Categorized News Grid & Trending Top 5 Sidebar */}
         <NewsGrid 
           articles={articles}
           activeCategory={activeCategory}
           searchQuery={searchQuery}
           language={language}
           onSelectArticle={(art) => setSelectedArticle(art)}
+          savedArticles={savedArticles}
+          onToggleSave={handleToggleSave}
+          onOpenFactCheck={(art) => setFactCheckArticle(art)}
         />
 
-        {/* 6. Video Shorts & Reels Carousel */}
+        {/* 7. Video Shorts & Reels Carousel */}
         {!searchQuery && (
           <VideoReels 
             reels={reels}
@@ -153,7 +200,7 @@ export default function App() {
 
       </main>
 
-      {/* 7. Footer */}
+      {/* 8. Footer */}
       <Footer 
         language={language}
         onOpenLiveStream={() => {
@@ -162,7 +209,7 @@ export default function App() {
         }}
       />
 
-      {/* Interactive Article Reader Modal */}
+      {/* 9. Interactive Article Reader Modal */}
       <ArticleModal 
         article={selectedArticle}
         isOpen={!!selectedArticle}
@@ -170,7 +217,7 @@ export default function App() {
         language={language}
       />
 
-      {/* Interactive Live Stream TV Modal */}
+      {/* 10. Interactive Live Stream TV Modal */}
       <LiveStreamModal 
         isOpen={isLiveModalOpen}
         onClose={() => {
@@ -178,6 +225,38 @@ export default function App() {
           setActiveReelStream(null);
         }}
         streamData={activeReelStream || heroNews}
+      />
+
+      {/* 11. ⚡ AI Quick Digest Executive Briefing Modal */}
+      <AiDigestModal 
+        isOpen={isAiDigestOpen}
+        onClose={() => setIsAiDigestOpen(false)}
+        language={language}
+        articles={articles}
+      />
+
+      {/* 12. 🔖 Saved Reading Queue Drawer */}
+      <SavedArticlesDrawer 
+        isOpen={isSavedDrawerOpen}
+        onClose={() => setIsSavedDrawerOpen(false)}
+        savedArticles={savedArticles}
+        onRemoveArticle={(id) => handleToggleSave({ id })}
+        onSelectArticle={(art) => setSelectedArticle(art)}
+        language={language}
+      />
+
+      {/* 13. 📻 Persistent Bottom Floating Audio Radio Player */}
+      <FloatingAudioPlayer 
+        language={language}
+        onOpenLiveStream={() => setIsLiveModalOpen(true)}
+      />
+
+      {/* 14. 🛡️ Fact-Check & Source Verification Modal */}
+      <FactCheckModal 
+        isOpen={!!factCheckArticle}
+        onClose={() => setFactCheckArticle(null)}
+        article={factCheckArticle}
+        language={language}
       />
 
     </div>

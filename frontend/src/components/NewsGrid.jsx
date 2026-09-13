@@ -1,8 +1,17 @@
 import React from 'react';
-import { Eye, Clock, TrendingUp } from 'lucide-react';
+import { Eye, Clock, TrendingUp, Bookmark, ShieldCheck } from 'lucide-react';
 import { translations } from '../utils/translations';
 
-export default function NewsGrid({ articles = [], activeCategory, searchQuery, onSelectArticle, language }) {
+export default function NewsGrid({ 
+  articles = [], 
+  activeCategory, 
+  searchQuery, 
+  onSelectArticle, 
+  language,
+  savedArticles = [],
+  onToggleSave,
+  onOpenFactCheck
+}) {
   const t = translations[language] || translations.EN;
   const trendingArticles = articles.filter(a => a.trending).slice(0, 5);
 
@@ -15,6 +24,8 @@ export default function NewsGrid({ articles = [], activeCategory, searchQuery, o
     }
     return (t.categories[activeCategory] || activeCategory).toUpperCase();
   };
+
+  const isArticleSaved = (id) => savedArticles.some(art => art.id === id);
 
   return (
     <section style={{ padding: '2rem 0', background: 'var(--bg-main)' }}>
@@ -45,59 +56,114 @@ export default function NewsGrid({ articles = [], activeCategory, searchQuery, o
                 <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{t.tryDifferent}</span>
               </div>
             ) : (
-              articles.map((item) => (
-                <div 
-                  key={item.id}
-                  className="news-card"
-                  onClick={() => onSelectArticle(item)}
-                >
-                  <div className="news-card-img-wrap">
-                    <img src={item.image} alt={item.title} />
-                    <span style={{
-                      position: 'absolute',
-                      top: '10px',
-                      left: '10px',
-                      background: 'rgba(0,0,0,0.75)',
-                      color: '#ffffff',
-                      backdropFilter: 'blur(4px)',
-                      padding: '2px 8px',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '0.7rem',
-                      fontWeight: '800',
-                      letterSpacing: '0.5px'
-                    }}>
-                      {item.categoryLabel || item.category?.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <div className="news-card-body">
-                    <div className="news-card-meta">
-                      <span>{item.author}</span>
-                      <span>{item.time}</span>
-                    </div>
-
-                    <h3 className="news-card-title">
-                      {item.title}
-                    </h3>
-
-                    <p className="news-card-summary">
-                      {item.summary}
-                    </p>
-
-                    <div className="news-card-footer">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={13} />
-                        {item.readTime || '4 min read'}
+              articles.map((item) => {
+                const saved = isArticleSaved(item.id);
+                return (
+                  <div 
+                    key={item.id}
+                    className="news-card"
+                    onClick={() => onSelectArticle(item)}
+                    style={{ position: 'relative' }}
+                  >
+                    <div className="news-card-img-wrap">
+                      <img src={item.image} alt={item.title} />
+                      
+                      {/* Top-Left Category Badge */}
+                      <span style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        background: 'rgba(0,0,0,0.75)',
+                        color: '#ffffff',
+                        backdropFilter: 'blur(4px)',
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.7rem',
+                        fontWeight: '800',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {item.categoryLabel || item.category?.toUpperCase()}
                       </span>
 
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-red)', fontWeight: '700' }}>
-                        <Eye size={13} />
-                        {item.views || '45K'} views
-                      </span>
+                      {/* Top-Right Save Bookmark Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleSave(item);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '10px',
+                          right: '10px',
+                          background: saved ? 'var(--accent-red)' : 'rgba(0,0,0,0.65)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(4px)',
+                          transition: 'all 0.2s',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                        }}
+                        title={saved ? 'Remove from saved' : 'Save for later'}
+                      >
+                        <Bookmark size={15} fill={saved ? '#ffffff' : 'none'} />
+                      </button>
+                    </div>
+
+                    <div className="news-card-body">
+                      <div className="news-card-meta">
+                        <span>{item.author}</span>
+                        <span>{item.time}</span>
+                      </div>
+
+                      <h3 className="news-card-title">
+                        {item.title}
+                      </h3>
+
+                      <p className="news-card-summary">
+                        {item.summary}
+                      </p>
+
+                      <div className="news-card-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={13} />
+                          {item.readTime || '4 min read'}
+                        </span>
+
+                        {/* Interactive Verification Badge */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenFactCheck(item);
+                          }}
+                          style={{
+                            background: 'rgba(22, 163, 74, 0.1)',
+                            border: '1px solid rgba(22, 163, 74, 0.3)',
+                            color: '#16a34a',
+                            borderRadius: '4px',
+                            padding: '2px 6px',
+                            fontSize: '0.7rem',
+                            fontWeight: '800',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer'
+                          }}
+                          title="Click to view fact-check verification"
+                        >
+                          <ShieldCheck size={12} />
+                          Verified
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
