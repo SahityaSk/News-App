@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Users, MessageSquare, Radio, Volume2, VolumeX, Play, Pause, Tv, Send } from 'lucide-react';
+import { io } from 'socket.io-client';
 
-const mockChatMessages = [];
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 const liveChannels = [
   { id: 'abp-ananda', name: 'ABP Ananda Official Live', videoUrl: 'https://cdn.abplive.com/LiveStreams/260118/abpananda/streaming_bengali_vidgyor-new-nov2022.html', badge: 'BENGALI NEWS' }
@@ -25,13 +26,14 @@ const toYouTubeEmbedUrl = (url = '') => {
 };
 
 export default function LiveStreamModal({ isOpen, onClose, streamData }) {
-  const [messages, setMessages] = useState(mockChatMessages);
+  const [messages, setMessages] = useState([]);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [viewerCount, setViewerCount] = useState(142850);
   const [selectedChannel, setSelectedChannel] = useState(liveChannels[0]);
   const [chatInput, setChatInput] = useState('');
   const videoRef = useRef(null);
+  const socketRef = useRef(null);
   const [mediaError, setMediaError] = useState(false);
 
   const activeVideoUrl = streamData?.videoUrl || selectedChannel.videoUrl;
@@ -47,30 +49,24 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
       videoRef.current.play().catch(() => setIsPlaying(false));
     }
 
+    // Connect to Socket.io for live chat
+    socketRef.current = io(SOCKET_URL, {
+      transports: ['websocket', 'polling']
+    });
+
+    socketRef.current.on('receive_chat_message', (msg) => {
+      setMessages(prev => [msg, ...prev.slice(0, 24)]);
+    });
+
     const viewerInterval = setInterval(() => {
       setViewerCount(prev => prev + Math.floor(Math.random() * 15) - 7);
-    }, 2000);
-
-    const chatInterval = setInterval(() => {
-      const users = ["David B.", "Neha Sharma", "GlobalWatch", "CryptoPioneer", "Pooja V."];
-      const comments = [
-        "Incredible live broadcast quality!",
-        "Important updates happening right now.",
-        "Check out the key developments tab as well.",
-        "Great analysis from the ground reporting team!"
-      ];
-      const randomUser = users[Math.floor(Math.random() * users.length)];
-      const randomComment = comments[Math.floor(Math.random() * comments.length)];
-
-      setMessages(prev => [
-        { user: randomUser, text: randomComment, time: "Just now" },
-        ...prev.slice(0, 15)
-      ]);
-    }, 3500);
+    }, 2500);
 
     return () => {
       clearInterval(viewerInterval);
-      clearInterval(chatInterval);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, [isOpen]);
 
@@ -99,11 +95,20 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
 
   const handleSendChat = (e) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-    setMessages(prev => [
-      { user: "You", text: chatInput.trim(), time: "Just now" },
-      ...prev
-    ]);
+    const text = chatInput.trim();
+    if (!text) return;
+
+    const newMessage = {
+      user: 'You',
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setMessages(prev => [newMessage, ...prev]);
+
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('send_chat_message', { user: 'Viewer', text });
+    }
     setChatInput('');
   };
 
@@ -128,7 +133,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
           borderBottom: '1px solid #1f2937',
           display: 'flex',
           alignItems: 'center',
-          justify: 'space-between'
+          justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="live-badge" style={{ background: '#dc2626' }}>
@@ -361,15 +366,21 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
 
             {/* Chat List */}
             <div style={{ flexGrow: 1, overflowY: 'auto', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {messages.map((msg, i) => (
-                <div key={i} style={{ background: '#1f2937', padding: '8px 10px', borderRadius: '6px', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                    <span style={{ fontWeight: '700', color: msg.user === 'You' ? '#34d399' : '#60a5fa' }}>{msg.user}</span>
-                    <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{msg.time}</span>
+              {messages.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: '#9ca3af', textAlign: 'center', margin: 'auto' }}>
+                  No messages yet. Be the first to join the conversation!
+                </p>
+              ) : (
+                messages.map((msg, i) => (
+                  <div key={i} style={{ background: '#1f2937', padding: '8px 10px', borderRadius: '6px', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <span style={{ fontWeight: '700', color: msg.user === 'You' ? '#34d399' : '#60a5fa' }}>{msg.user}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{msg.time}</span>
+                    </div>
+                    <div style={{ color: '#e5e7eb', lineHeight: '1.3' }}>{msg.text}</div>
                   </div>
-                  <div style={{ color: '#e5e7eb', lineHeight: '1.3' }}>{msg.text}</div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Chat Input Form */}

@@ -117,11 +117,11 @@ export default function Navbar({ activeCategory, setActiveCategory, onOpenLiveSt
 
             {/* Facebook */}
             <a 
-              href="https://facebook.com/yugantarnews" 
+              href="https://www.facebook.com/YugantarNewsLive" 
               target="_blank" 
               rel="noopener noreferrer"
               aria-label="Yugantar News Facebook"
-              title="Facebook: yugantar news"
+              title="Facebook: YugantarNewsLive"
               style={{
                 width: '30px',
                 height: '30px',
@@ -185,7 +185,9 @@ export default function Navbar({ activeCategory, setActiveCategory, onOpenLiveSt
 
             {/* Email */}
             <a 
-              href="mailto:office.yugantarnews@gmail.com" 
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=office.yugantarnews@gmail.com" 
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Email Yugantar News"
               title="Email: office.yugantarnews@gmail.com"
               style={{
@@ -325,9 +327,9 @@ export default function Navbar({ activeCategory, setActiveCategory, onOpenLiveSt
           {/* Mobile Social Media Icons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
             <a href="https://instagram.com/yugantar.news" target="_blank" rel="noopener noreferrer" style={{ color: '#e1306c' }}><InstagramIcon size={20} /></a>
-            <a href="https://facebook.com/yugantarnews" target="_blank" rel="noopener noreferrer" style={{ color: '#1877f2' }}><FacebookIcon size={20} /></a>
+            <a href="https://www.facebook.com/YugantarNewsLive" target="_blank" rel="noopener noreferrer" style={{ color: '#1877f2' }}><FacebookIcon size={20} /></a>
             <a href="https://x.com/yugantarnews" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)' }}><XIcon size={18} /></a>
-            <a href="mailto:office.yugantarnews@gmail.com" style={{ color: '#ea4335' }}><Mail size={20} /></a>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=office.yugantarnews@gmail.com" target="_blank" rel="noopener noreferrer" style={{ color: '#ea4335' }}><Mail size={20} /></a>
             <a href="https://wa.me/918479084770" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}><MessageCircle size={20} /></a>
           </div>
         </div>

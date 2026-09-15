@@ -148,7 +148,15 @@ export default function Footer({ onOpenLiveStream, language }) {
               </li>
 
               <li>
-                <a href="mailto:office.yugantarnews@gmail.com" style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', wordBreak: 'break-all' }}>
+                <a 
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=office.yugantarnews@gmail.com" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open Gmail compose for office.yugantarnews@gmail.com"
+                  style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', wordBreak: 'break-all', transition: 'color 0.2s' }}
+                  onMouseOver={(e) => e.currentTarget.style.color = '#ea4335'}
+                  onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                >
                   <Mail size={15} style={{ color: '#ea4335', flexShrink: 0 }} />
                   <span style={{ fontSize: '0.82rem' }}>office.yugantarnews@gmail.com</span>
                 </a>
@@ -236,10 +244,10 @@ export default function Footer({ onOpenLiveStream, language }) {
 
               {/* Facebook Button */}
               <a 
-                href="https://facebook.com/yugantarnews" 
+                href="https://www.facebook.com/YugantarNewsLive" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                title="Facebook: yugantar news"
+                title="Facebook: @YugantarNewsLive"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -261,7 +269,7 @@ export default function Footer({ onOpenLiveStream, language }) {
                 onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
               >
                 <FacebookIcon size={15} style={{ color: '#1877f2', flexShrink: 0 }} />
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Facebook: yugantar news</span>
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Facebook: @YugantarNewsLive</span>
               </a>
 
               {/* X (Twitter) Button */}
@@ -296,7 +304,9 @@ export default function Footer({ onOpenLiveStream, language }) {
 
               {/* Email Button */}
               <a 
-                href="mailto:office.yugantarnews@gmail.com" 
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=office.yugantarnews@gmail.com" 
+                target="_blank"
+                rel="noopener noreferrer"
                 title="Email: office.yugantarnews@gmail.com"
                 style={{
                   display: 'flex',

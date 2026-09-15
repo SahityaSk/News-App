@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const Admin = require('../models/Admin');
+const { logAuditAction } = require('../utils/auditLogger');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -48,11 +49,25 @@ router.post('/login', loginLimiter, async (req, res) => {
   try {
     const admin = await Admin.findOne({ email: email.toLowerCase() });
     if (!admin) {
+      await logAuditAction({
+        action: 'LOGIN_FAILED',
+        actor: { email },
+        targetType: 'Admin',
+        details: { reason: 'User not found' },
+        req
+      });
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     const isMatch = await admin.comparePassword(password);
     if (!isMatch) {
+      await logAuditAction({
+        action: 'LOGIN_FAILED',
+        actor: { email },
+        targetType: 'Admin',
+        details: { reason: 'Password mismatch' },
+        req
+      });
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
@@ -61,6 +76,14 @@ router.post('/login', loginLimiter, async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    await logAuditAction({
+      action: 'LOGIN_SUCCESS',
+      actor: { email: admin.email, role: admin.role, id: admin._id },
+      targetType: 'Admin',
+      details: { role: admin.role },
+      req
+    });
 
     res.json({
       success: true,

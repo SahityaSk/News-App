@@ -1,49 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Vote, CheckCircle2, TrendingUp, Sparkles, Hash, BarChart2 } from 'lucide-react';
-import { translations } from '../utils/translations';
 
-export default function PollAndTopicRadar({ language = 'EN', onSelectTag, activeSearchQuery }) {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+export default function PollAndTopicRadar({ language = 'EN', onSelectTag, activeSearchQuery = '' }) {
+  const [poll, setPoll] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const pollData = {
-    EN: {
-      question: "Poll of the Day: Will AI Agents completely reshape global investigative journalism by 2030?",
-      totalVotes: 14280,
-      options: [
-        { id: 'opt1', text: 'Yes, heavily automated research', percent: 64 },
-        { id: 'opt2', text: 'No, human editorial is essential', percent: 28 },
-        { id: 'opt3', text: 'Uncertain / Hybrid Model', percent: 8 }
-      ],
-      trendingTags: ["#AIRevolution", "#GlobalEconomy", "#Nifty50", "#QuantumLeap", "#Cricket2026", "#SpaceXMars", "#GreenTech"]
-    },
-    BN: {
-      question: "দিনের ওপিনিয়ন পোল: ২০৩০ সালের মধ্যে এআই কি আন্তর্জাতিক অনুসন্ধানী সাংবাদিকতা সম্পূর্ণ বদলে দেবে?",
-      totalVotes: "১৪,২৮০",
-      options: [
-        { id: 'opt1', text: 'হ্যাঁ, গবেষণায় এআই প্রাধান্য পাবে', percent: 64 },
-        { id: 'opt2', text: 'না, মানুষের দৃষ্টিভঙ্গি অপরিহার্য', percent: 28 },
-        { id: 'opt3', text: 'অনিশ্চিত / যৌথ মডেল', percent: 8 }
-      ],
-      trendingTags: ["#কৃত্রিমবুদ্ধিমত্তা", "#গ্লোবালঅর্থনীতি", "#শেয়ারবাজার", "#কোয়ান্টামটেক", "#টি২০ক্রিকেট", "#সবুজশক্তি"]
-    },
-    HI: {
-      question: "आज का पोल: क्या 2030 तक आर्टिफिशियल इंटेलिजेंस खोजी पत्रकारिता का स्वरूप पूरी तरह बदल देगा?",
-      totalVotes: 14280,
-      options: [
-        { id: 'opt1', text: 'हाँ, शोध में एआई का दबदबा होगा', percent: 64 },
-        { id: 'opt2', text: 'नहीं, मानवीय संपादन जरूरी है', percent: 28 },
-        { id: 'opt3', text: 'अनिश्चित / हाइब्रिड मॉडल', percent: 8 }
-      ],
-      trendingTags: ["#आर्टिफिशियलइंटेलिजेंस", "#ग्लोबलइकोनॉमी", "#शेयरबाज़ार", "#क्वांटमटेक", "#क्रिकेट2026", "#ग्रीनएनर्जी"]
-    }
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPoll = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/polls/active?lang=${language}`);
+        const data = await res.json();
+        if (isMounted && data.success && data.data) {
+          setPoll(data.data);
+        }
+      } catch (err) {
+        console.warn('⚠️ Could not fetch active poll:', err.message);
+      }
+    };
+    fetchPoll();
+    return () => { isMounted = false; };
+  }, [language]);
+
+  const defaultPollData = {
+    question: language === 'BN' ? 'দিনের ওপিনিয়ন পোল: ২০৩০ সালের মধ্যে এআই কি আন্তর্জাতিক অনুসন্ধানী সাংবাদিকতা সম্পূর্ণ বদলে দেবে?' : (language === 'HI' ? 'आज का पोल: क्या 2030 तक आर्टिफिशियल इंटेलिजेंस खोजी पत्रकारिता का स्वरूप पूरी तरह बदल देगा?' : 'Poll of the Day: Will AI Agents completely reshape global investigative journalism by 2030?'),
+    totalVotes: 2290,
+    options: [
+      { optionId: 'opt-1', text: language === 'BN' ? 'হ্যাঁ, গবেষণায় এআই প্রাধান্য পাবে' : (language === 'HI' ? 'हाँ, शोध में एआई का दबदबा होगा' : 'Yes, mandatory global framework'), votes: 1420 },
+      { optionId: 'opt-2', text: language === 'BN' ? 'না, মানুষের দৃষ্টিভঙ্গি অপরিহার্য' : (language === 'HI' ? 'नहीं, मानवीय संपादन जरूरी है' : 'No, national sovereignty first'), votes: 680 },
+      { optionId: 'opt-3', text: language === 'BN' ? 'অনিশ্চিত / যৌথ মডেল' : (language === 'HI' ? 'अनिश्चित / हाइब्रिड मॉडल' : 'Undecided / Needs further research'), votes: 190 }
+    ]
   };
 
-  const data = pollData[language] || pollData.EN;
+  const trendingTags = language === 'BN' 
+    ? ["#কৃত্রিমবুদ্ধিমত্তা", "#গ্লোবালঅর্থনীতি", "#শেয়ারবাজার", "#কোয়ান্টামটেক", "#টি২০ক্রিকেট", "#সবুজশক্তি"]
+    : (language === 'HI' 
+      ? ["#आर्टिफिशियलइंटेलिजेंस", "#ग्लोबलइकोनॉमी", "#शेयरबाज़ार", "#क्वांटमटेक", "#क्रिकेट2026", "#ग्रीनएनर्जी"]
+      : ["#AIRevolution", "#GlobalEconomy", "#Nifty50", "#QuantumLeap", "#Cricket2026", "#SpaceXMars", "#GreenTech"]);
 
-  const handleVote = (optId) => {
+  const activePoll = poll || defaultPollData;
+  const totalVotesCount = activePoll.totalVotes || 1;
+
+  const handleVote = async (optId) => {
+    if (hasVoted || submitting) return;
     setSelectedOption(optId);
     setHasVoted(true);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/polls/vote?lang=${language}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pollId: activePoll.pollId || 'daily-poll-1', optionId: optId })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setPoll(data.data);
+      }
+    } catch (err) {
+      console.warn('⚠️ Poll vote submission failed:', err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -79,7 +101,7 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
                 LIVE OPINION POLL
               </span>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                🗳️ {data.totalVotes} {language === 'BN' ? 'জন ভোট দিয়েছেন' : (language === 'HI' ? 'वोट दर्ज' : 'Votes Recorded')}
+                🗳️ {totalVotesCount.toLocaleString()} {language === 'BN' ? 'জন ভোট দিয়েছেন' : (language === 'HI' ? 'वोट दर्ज' : 'Votes Recorded')}
               </span>
             </div>
 
@@ -90,17 +112,19 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
               margin: '0 0 1rem 0',
               lineHeight: '1.4'
             }}>
-              {data.question}
+              {activePoll.question}
             </h3>
 
             {/* Poll Options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {data.options.map((opt) => {
-                const isSelected = selectedOption === opt.id;
+              {activePoll.options.map((opt) => {
+                const optId = opt.optionId || opt.id;
+                const isSelected = selectedOption === optId;
+                const percent = Math.round((opt.votes / totalVotesCount) * 100) || 0;
                 return (
                   <button
-                    key={opt.id}
-                    onClick={() => handleVote(opt.id)}
+                    key={optId}
+                    onClick={() => handleVote(optId)}
                     style={{
                       position: 'relative',
                       overflow: 'hidden',
@@ -126,7 +150,7 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
                         left: 0,
                         top: 0,
                         bottom: 0,
-                        width: `${opt.percent}%`,
+                        width: `${percent}%`,
                         background: isSelected ? 'rgba(220, 38, 38, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                         transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                         zIndex: 1
@@ -140,7 +164,7 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
 
                     {hasVoted && (
                       <span style={{ position: 'relative', zIndex: 2, fontWeight: '900', color: isSelected ? 'var(--accent-red)' : 'var(--text-muted)' }}>
-                        {opt.percent}%
+                        {percent}%
                       </span>
                     )}
                   </button>
@@ -177,10 +201,10 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
             </p>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {data.trendingTags.map((tag, idx) => (
+              {trendingTags.map((tag, idx) => (
                 <button
                   key={idx}
-                  onClick={() => onSelectTag(tag.replace('#', ''))}
+                  onClick={() => onSelectTag && onSelectTag(tag.replace('#', ''))}
                   style={{
                     background: activeSearchQuery.toLowerCase() === tag.replace('#', '').toLowerCase() ? 'var(--accent-red)' : 'var(--bg-card)',
                     color: activeSearchQuery.toLowerCase() === tag.replace('#', '').toLowerCase() ? '#fff' : 'var(--text-primary)',

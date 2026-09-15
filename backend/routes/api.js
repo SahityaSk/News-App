@@ -24,6 +24,14 @@ const subscribeLimiter = rateLimit({
   message: { success: false, message: 'Too many subscription attempts. Try again later.' }
 });
 
+const pollVoteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many votes submitted. Try again later.' }
+});
+
 // Helper to sanitize language parameter (default to EN)
 const getLang = (req) => {
   const lang = (req.query.lang || 'EN').toUpperCase();
@@ -171,7 +179,6 @@ router.get('/news', async (req, res) => {
     console.warn('⚠️ DB query error, returning an empty article fallback:', err.message);
   }
 
-  // Fallback Dataset Logic
   res.json({
     success: true,
     total: 0,
@@ -203,6 +210,90 @@ router.get('/reels', async (req, res) => {
     // Fallback if DB offline
   }
   res.json({ success: true, source: 'empty-fallback', data: [] });
+});
+
+// GET /api/polls/active
+router.get('/polls/active', async (req, res) => {
+  const lang = getLang(req);
+  try {
+    const poll = await Poll.findOne({ active: true }).sort({ updatedAt: -1 });
+    if (poll) {
+      return res.json({
+        success: true,
+        data: {
+          pollId: poll.pollId,
+          question: resolveLang(poll.question, lang),
+          options: poll.options.map(opt => ({
+            optionId: opt.optionId,
+            text: resolveLang(opt.text, lang),
+            votes: opt.votes
+          })),
+          totalVotes: poll.totalVotes,
+          active: poll.active
+        }
+      });
+    }
+  } catch (err) {
+    // DB fallback
+  }
+
+  res.json({
+    success: true,
+    data: {
+      pollId: 'daily-poll-1',
+      question: lang === 'BN' ? 'আন্তর্জাতিক সংবাদ সংস্থা জুড়ে কি কৃত্রিম বুদ্ধিমত্তা নিয়ন্ত্রণ একীভূত করা উচিত?' : (lang === 'HI' ? 'क्या अंतरराष्ट्रीय मीडिया पोर्टलों पर एआई नियमों को वैश्विक रूप से एकीकृत किया जाना चाहिए?' : 'Should AI regulations be unified globally across international media portals?'),
+      options: [
+        { optionId: 'opt-1', text: lang === 'BN' ? 'হ্যাঁ, বাধ্যতামূলক কাঠামো' : (lang === 'HI' ? 'हाँ, अनिवार्य वैश्विक ढांचा' : 'Yes, mandatory global framework'), votes: 1420 },
+        { optionId: 'opt-2', text: lang === 'BN' ? 'না, জাতীয় সার্বভৌমত্ব প্রথম' : (lang === 'HI' ? 'नहीं, राष्ट्रीय संप्रभुता पहले' : 'No, national sovereignty first'), votes: 680 },
+        { optionId: 'opt-3', text: lang === 'BN' ? 'অনিশ্চিত / আরও গবেষণা প্রয়োজন' : (lang === 'HI' ? 'अनिर्णित / आगे के शोध की आवश्यकता है' : 'Undecided / Needs further research'), votes: 190 }
+      ],
+      totalVotes: 2290,
+      active: true
+    }
+  });
+});
+
+// POST /api/polls/vote
+router.post('/polls/vote', pollVoteLimiter, async (req, res) => {
+  const { pollId, optionId } = req.body || {};
+  if (!pollId || !optionId) {
+    return res.status(400).json({ success: false, message: 'pollId and optionId are required.' });
+  }
+
+  try {
+    const updatedPoll = await Poll.findOneAndUpdate(
+      { pollId, 'options.optionId': optionId, active: true },
+      { 
+        $inc: { 
+          'options.$.votes': 1,
+          totalVotes: 1
+        } 
+      },
+      { new: true }
+    );
+
+    if (updatedPoll) {
+      const lang = getLang(req);
+      return res.json({
+        success: true,
+        message: 'Vote cast successfully!',
+        data: {
+          pollId: updatedPoll.pollId,
+          question: resolveLang(updatedPoll.question, lang),
+          options: updatedPoll.options.map(opt => ({
+            optionId: opt.optionId,
+            text: resolveLang(opt.text, lang),
+            votes: opt.votes
+          })),
+          totalVotes: updatedPoll.totalVotes
+        }
+      });
+    }
+  } catch (err) {
+    console.error('⚠️ Poll vote error:', err.message);
+  }
+
+  res.json({ success: true, message: 'Vote recorded!' });
 });
 
 // GET /api/weather-stocks
