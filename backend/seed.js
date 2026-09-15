@@ -1,5 +1,5 @@
 require('dotenv').config();
-const connectDB = require('./config/db');
+const mongoose = require('mongoose');
 const Article = require('./models/Article');
 const BreakingTicker = require('./models/BreakingTicker');
 const LiveStream = require('./models/LiveStream');
@@ -10,13 +10,7 @@ const bcrypt = require('bcryptjs');
 
 const { breakingNews, heroCoverage, articles, videoReels } = require('./data/newsData');
 
-const seedDatabase = async () => {
-  const isConnected = await connectDB();
-  if (!isConnected) {
-    console.error('❌ Cannot seed database because MongoDB connection failed.');
-    process.exit(1);
-  }
-
+const seedData = async () => {
   console.log('🧹 Clearing existing collections...');
   await Promise.all([
     Article.deleteMany({}),
@@ -68,7 +62,7 @@ const seedDatabase = async () => {
     },
     channelName: 'YUGANTAR Live Broadcast 24/7',
     streamType: 'youtube_live',
-    videoUrl: 'https://www.youtube.com/embed/live_stream?channel=UCq-Fj5jknLsUf-MWSy4_brA', // Live stream embed
+    videoUrl: 'https://www.youtube.com/embed/live_stream?channel=UCq-Fj5jknLsUf-MWSy4_brA',
     viewers: heroCoverage.EN.viewers || '14.2K',
     isLive: true
   });
@@ -141,7 +135,22 @@ const seedDatabase = async () => {
 
   console.log('✅ Database Seeding Successfully Completed!');
   console.log('🔑 Default Superadmin Login: admin@yugantar.com / admin123');
+};
+
+const runStandaloneSeed = async () => {
+  const connectDB = require('./config/db');
+  const isConnected = await connectDB();
+  if (!isConnected) {
+    console.error('❌ Cannot seed database because MongoDB connection failed.');
+    process.exit(1);
+  }
+  await seedData();
   process.exit(0);
 };
 
-seedDatabase();
+if (require.main === module) {
+  runStandaloneSeed();
+}
+
+module.exports = { seedData };
+
