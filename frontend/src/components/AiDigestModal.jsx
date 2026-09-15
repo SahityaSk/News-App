@@ -33,7 +33,7 @@ export default function AiDigestModal({ isOpen, onClose, language = 'EN', articl
 
   const digestContent = {
     EN: {
-      title: "PULSE AI Executive Briefing",
+      title: "YUGANTAR AI Executive Briefing",
       subtitle: "AI-Curated 60-Second News Snapshot",
       sentiment: "Bullish Tech & Market Stability (78%)",
       takeaway1: "Global AI Infrastructure & Quantum Computing surge leading international stock markets.",

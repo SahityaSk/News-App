@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+
 import Header from './components/Header';
 import Navbar from './components/Navbar';
 import BreakingTicker from './components/BreakingTicker';
 import HeroLiveNews from './components/HeroLiveNews';
+import PopularRecentRotator from './components/PopularRecentRotator';
 import PollAndTopicRadar from './components/PollAndTopicRadar';
 import NewsGrid from './components/NewsGrid';
 import VideoReels from './components/VideoReels';
@@ -59,33 +62,64 @@ export default function App() {
   }, [theme]);
 
   // Load Data whenever language changes
+  const loadAllData = async () => {
+    const [breakingRes, heroRes, wsRes, reelsRes] = await Promise.all([
+      fetchBreakingNews(language),
+      fetchHeroNews(language),
+      fetchWeatherStocks(),
+      fetchVideoReels(language)
+    ]);
+
+    setBreakingNews(breakingRes);
+    setHeroNews(heroRes);
+    setWeatherStocks(wsRes);
+    setReels(reelsRes);
+  };
+
   useEffect(() => {
-    const loadAllData = async () => {
-      const [breakingRes, heroRes, wsRes, reelsRes] = await Promise.all([
-        fetchBreakingNews(language),
-        fetchHeroNews(language),
-        fetchWeatherStocks(),
-        fetchVideoReels(language)
-      ]);
-
-      setBreakingNews(breakingRes);
-      setHeroNews(heroRes);
-      setWeatherStocks(wsRes);
-      setReels(reelsRes);
-    };
-
     loadAllData();
   }, [language]);
 
   // Fetch articles whenever activeCategory, searchQuery, or language changes
-  useEffect(() => {
-    const loadArticles = async () => {
-      const newsRes = await fetchNewsArticles(activeCategory, searchQuery, language);
-      setArticles(newsRes);
-    };
+  const loadArticles = async () => {
+    const newsRes = await fetchNewsArticles(activeCategory, searchQuery, language);
+    setArticles(newsRes);
+  };
 
+  useEffect(() => {
     loadArticles();
   }, [activeCategory, searchQuery, language]);
+
+  // 🔌 Setup Socket.io WebSockets Client for Real-Time Push Alerts
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+      reconnectionAttempts: 5,
+      timeout: 5000
+    });
+
+    socket.on('connect', () => {
+      console.log('⚡ [Socket.io Client] Connected to YUGANTAR Real-Time Server');
+    });
+
+    socket.on('breaking_ticker_push', (newTicker) => {
+      console.log('⚡ [Socket.io Client] Breaking news push alert received:', newTicker);
+      loadAllData();
+    });
+
+    socket.on('article_published', (newArticle) => {
+      console.log('⚡ [Socket.io Client] New article broadcast received:', newArticle);
+      loadArticles();
+    });
+
+    socket.on('live_stream_updated', (streamData) => {
+      console.log('⚡ [Socket.io Client] Live TV stream update received:', streamData);
+      loadAllData();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -122,7 +156,7 @@ export default function App() {
   return (
     <div className="app-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* 1. Header with Clock, Weather/Stocks, Language Switcher, AI Digest Trigger & Bookmarks Drawer Counter */}
+      {/* 1. Header with Clock, Weather/Stocks, Language Switcher, AI Digest, Bookmarks & Admin CMS Launcher */}
       <Header 
         theme={theme} 
         toggleTheme={toggleTheme}
@@ -170,14 +204,23 @@ export default function App() {
           />
         )}
 
-        {/* 5. Interactive Opinion Poll & Trending Topic Radar */}
+        {/* 5. 🔥 Auto-Rotating Small Article Cards Banner (Most Popular & Recent News) */}
+        {!searchQuery && (
+          <PopularRecentRotator 
+            articles={articles}
+            onSelectArticle={(art) => setSelectedArticle(art)}
+            language={language}
+          />
+        )}
+
+        {/* 6. Interactive Opinion Poll & Trending Topic Radar */}
         <PollAndTopicRadar 
           language={language}
           onSelectTag={(tag) => setSearchQuery(tag)}
           activeSearchQuery={searchQuery}
         />
 
-        {/* 6. Categorized News Grid & Trending Top 5 Sidebar */}
+        {/* 7. Categorized News Grid & Trending Top 5 Sidebar */}
         <NewsGrid 
           articles={articles}
           activeCategory={activeCategory}
@@ -189,7 +232,7 @@ export default function App() {
           onOpenFactCheck={(art) => setFactCheckArticle(art)}
         />
 
-        {/* 7. Video Shorts & Reels Carousel */}
+        {/* 8. Video Shorts & Reels Carousel */}
         {!searchQuery && (
           <VideoReels 
             reels={reels}
@@ -200,7 +243,7 @@ export default function App() {
 
       </main>
 
-      {/* 8. Footer */}
+      {/* 9. Footer */}
       <Footer 
         language={language}
         onOpenLiveStream={() => {
@@ -209,7 +252,7 @@ export default function App() {
         }}
       />
 
-      {/* 9. Interactive Article Reader Modal */}
+      {/* 10. Interactive Article Reader Modal */}
       <ArticleModal 
         article={selectedArticle}
         isOpen={!!selectedArticle}
@@ -217,7 +260,7 @@ export default function App() {
         language={language}
       />
 
-      {/* 10. Interactive Live Stream TV Modal */}
+      {/* 11. Interactive Live Stream TV Modal */}
       <LiveStreamModal 
         isOpen={isLiveModalOpen}
         onClose={() => {
@@ -227,7 +270,7 @@ export default function App() {
         streamData={activeReelStream || heroNews}
       />
 
-      {/* 11. ⚡ AI Quick Digest Executive Briefing Modal */}
+      {/* 12. ⚡ AI Quick Digest Executive Briefing Modal */}
       <AiDigestModal 
         isOpen={isAiDigestOpen}
         onClose={() => setIsAiDigestOpen(false)}
@@ -235,7 +278,7 @@ export default function App() {
         articles={articles}
       />
 
-      {/* 12. 🔖 Saved Reading Queue Drawer */}
+      {/* 13. 🔖 Saved Reading Queue Drawer */}
       <SavedArticlesDrawer 
         isOpen={isSavedDrawerOpen}
         onClose={() => setIsSavedDrawerOpen(false)}
@@ -245,13 +288,13 @@ export default function App() {
         language={language}
       />
 
-      {/* 13. 📻 Persistent Bottom Floating Audio Radio Player */}
+      {/* 14. 📻 Persistent Bottom Floating Audio Radio Player */}
       <FloatingAudioPlayer 
         language={language}
         onOpenLiveStream={() => setIsLiveModalOpen(true)}
       />
 
-      {/* 14. 🛡️ Fact-Check & Source Verification Modal */}
+      {/* 15. 🛡️ Fact-Check & Source Verification Modal */}
       <FactCheckModal 
         isOpen={!!factCheckArticle}
         onClose={() => setFactCheckArticle(null)}

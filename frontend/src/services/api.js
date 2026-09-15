@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export const fetchBreakingNews = async (lang = 'EN') => {
   try {
@@ -72,6 +72,6 @@ export const subscribeNewsletter = async (email) => {
     });
     return await res.json();
   } catch (err) {
-    return { success: true, message: `Subscribed ${email} to PULSE Alerts!` };
+    return { success: true, message: `Subscribed ${email} to YUGANTAR Alerts!` };
   }
 };
