@@ -1,9 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const Admin = require('../models/Admin');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'yugantar_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured before starting the API');
+}
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts. Try again later.' }
+});
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -24,10 +37,11 @@ const authenticateToken = (req, res, next) => {
 };
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+router.post('/login', loginLimiter, async (req, res) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
-  if (!email || !password) {
+  if (!email || !password || email.length > 254 || password.length > 512) {
     return res.status(400).json({ success: false, message: 'Email and password required' });
   }
 
@@ -60,7 +74,8 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Login error: ' + err.message });
+    console.error('[Auth] Login error:', err.message);
+    res.status(500).json({ success: false, message: 'Unable to sign in right now' });
   }
 });
 
@@ -77,4 +92,11 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = { router, authenticateToken, JWT_SECRET };
+const requireRole = (...allowedRoles) => (req, res, next) => {
+  if (!req.user || !allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: 'Insufficient permissions' });
+  }
+  next();
+};
+
+module.exports = { router, authenticateToken, requireRole, JWT_SECRET };

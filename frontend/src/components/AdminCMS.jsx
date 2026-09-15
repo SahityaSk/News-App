@@ -4,15 +4,15 @@ import {
   Trash2, Eye, ShieldAlert, Sparkles, CheckCircle2, RefreshCw, Users 
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
+export default function AdminCMS({ isOpen, onClose, onRefreshData, standalone = false }) {
   const [token, setToken] = useState(() => localStorage.getItem('yugantar_admin_token') || '');
   const [user, setUser] = useState(null);
 
   // Login Form State
-  const [loginEmail, setLoginEmail] = useState('admin@yugantar.com');
-  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -37,11 +37,20 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
   const [tickerCategory, setTickerCategory] = useState('BREAKING');
 
   // Live TV State
-  const [liveStreamUrl, setLiveStreamUrl] = useState('https://www.youtube.com/embed/live_stream?channel=UCq-Fj5jknLsUf-MWSy4_brA');
-  const [liveStreamTitle, setLiveStreamTitle] = useState({ EN: 'YUGANTAR 24/7 Live Broadcast', BN: 'যুগান্তর ২৪/৭ সরাসরি সম্প্রচার', HI: 'युगांतर 24/7 लाइव प्रसारण' });
+  const [liveStreamUrl, setLiveStreamUrl] = useState('https://cdn.abplive.com/LiveStreams/260118/abpananda/streaming_bengali_vidgyor-new-nov2022.html');
+  const [liveStreamTitle, setLiveStreamTitle] = useState({ EN: 'Live Bengali News Stream', BN: 'বাংলা লাইভ সংবাদ সম্প্রচার', HI: 'लाइव बंगाली समाचार प्रसारण' });
 
   // Subscribers State
   const [subscribers, setSubscribers] = useState([]);
+
+  // Reels State
+  const [reelsList, setReelsList] = useState([]);
+  const [reelTitle, setReelTitle] = useState({ EN: '', BN: '', HI: '' });
+  const [reelUrl, setReelUrl] = useState('');
+  const [reelThumbnail, setReelThumbnail] = useState('');
+  const [reelCategory, setReelCategory] = useState('NEWS');
+  const [reelDuration, setReelDuration] = useState('');
+  const [reelAgency, setReelAgency] = useState('');
 
   // Check auth on mount
   useEffect(() => {
@@ -56,6 +65,7 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
       loadAdminArticles();
       loadAdminTickers();
       loadSubscribers();
+      loadAdminReels();
     }
   }, [user, token]);
 
@@ -136,6 +146,16 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
       });
       const data = await res.json();
       if (data.success) setSubscribers(data.data);
+    } catch (e) {}
+  };
+
+  const loadAdminReels = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/reels`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) setReelsList(data.data);
     } catch (e) {}
   };
 
@@ -240,6 +260,63 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
     }
   };
 
+  const handlePublishReel = async (e) => {
+    e.preventDefault();
+    if (!reelTitle.EN && !reelTitle.BN && !reelTitle.HI) {
+      alert('Please enter a reel title in at least one language!');
+      return;
+    }
+    if (!reelUrl.trim()) {
+      alert('Please enter a real video URL!');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/reels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: reelTitle,
+          videoUrl: reelUrl.trim(),
+          thumbnail: reelThumbnail.trim(),
+          category: reelCategory,
+          duration: reelDuration || 'LIVE',
+          agency: reelAgency || 'Editorial Desk'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMsg('🎥 Reel published and available on the public site!');
+        setReelTitle({ EN: '', BN: '', HI: '' });
+        setReelUrl('');
+        setReelThumbnail('');
+        setReelDuration('');
+        setReelAgency('');
+        loadAdminReels();
+        if (onRefreshData) onRefreshData();
+      } else {
+        alert(data.message || 'Error publishing reel');
+      }
+    } catch (e) {
+      alert('Error publishing reel');
+    }
+  };
+
+  const handleDeleteReel = async (id) => {
+    if (!confirm('Are you sure you want to delete this reel?')) return;
+    try {
+      await fetch(`${API_BASE}/admin/reels/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      loadAdminReels();
+      if (onRefreshData) onRefreshData();
+    } catch (e) {}
+  };
+
   // Delete Article
   const handleDeleteArticle = async (id) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
@@ -253,28 +330,36 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
     } catch (e) {}
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !standalone) return null;
 
   return (
     <div style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 9999,
-      backgroundColor: 'rgba(5, 7, 15, 0.85)',
-      backdropFilter: 'blur(16px)',
+      ...(standalone ? {
+        minHeight: '100vh',
+        backgroundColor: '#05070f',
+        padding: '1.5rem'
+      } : {
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        backgroundColor: 'rgba(5, 7, 15, 0.85)',
+        backdropFilter: 'blur(16px)',
+        padding: '1.5rem'
+      }),
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '1.5rem'
+      boxSizing: 'border-box'
     }}>
       <div style={{
         width: '100%',
-        maxWidth: '1100px',
-        maxHeight: '90vh',
+        maxWidth: standalone ? '1440px' : '1100px',
+        maxHeight: standalone ? 'none' : '90vh',
+        minHeight: standalone ? 'calc(100vh - 3rem)' : undefined,
         backgroundColor: '#0b0f19',
         border: '1px solid rgba(255, 255, 255, 0.12)',
-        borderRadius: '20px',
-        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8)',
+        borderRadius: standalone ? '16px' : '20px',
+        boxShadow: standalone ? '0 20px 50px rgba(0, 0, 0, 0.35)' : '0 25px 60px rgba(0, 0, 0, 0.8)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -333,7 +418,7 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
                 </div>
                 <h3 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '0.5rem' }}>Editorial Sign In</h3>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1.5rem' }}>
-                  Default Admin: <code>admin@yugantar.com</code> / <code>admin123</code>
+                  Authorized newsroom staff only. Use the credentials issued by your administrator.
                 </p>
 
                 {loginError && (
@@ -466,6 +551,20 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
                     }}
                   >
                     📺 Live TV Broadcast
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reels')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: activeTab === 'reels' ? '#ef4444' : 'rgba(255, 255, 255, 0.05)',
+                      color: '#fff',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🎥 Reels ({reelsList.length})
                   </button>
                   <button
                     onClick={() => setActiveTab('subscribers')}
@@ -739,7 +838,59 @@ export default function AdminCMS({ isOpen, onClose, onRefreshData }) {
                 </div>
               )}
 
-              {/* Tab 5: Subscribers */}
+              {/* Tab 5: Reels */}
+              {activeTab === 'reels' && (
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Publish a Real Video Reel</h3>
+                  <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                    Use an owned/licensed MP4, HLS, or embeddable YouTube URL. Demo Bunny/flower clips are not accepted.
+                  </p>
+                  <form onSubmit={handlePublishReel} style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      {['EN', 'BN', 'HI'].map(lang => (
+                        <div key={lang}>
+                          <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Title ({lang})</label>
+                          <input
+                            type="text"
+                            value={reelTitle[lang]}
+                            onChange={e => setReelTitle({ ...reelTitle, [lang]: e.target.value })}
+                            placeholder={`Reel title (${lang})`}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Video URL</label>
+                        <input type="url" required value={reelUrl} onChange={e => setReelUrl(e.target.value)} placeholder="https://..." style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Thumbnail URL</label>
+                        <input type="url" value={reelThumbnail} onChange={e => setReelThumbnail(e.target.value)} placeholder="https://..." style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <input value={reelCategory} onChange={e => setReelCategory(e.target.value)} placeholder="Category" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#1e293b', color: '#fff' }} />
+                      <input value={reelDuration} onChange={e => setReelDuration(e.target.value)} placeholder="Duration (optional)" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
+                      <input value={reelAgency} onChange={e => setReelAgency(e.target.value)} placeholder="Source / agency" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
+                    </div>
+                    <button type="submit" style={{ padding: '10px 20px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', fontWeight: '700', border: 'none', cursor: 'pointer' }}>
+                      🎥 Publish Reel
+                    </button>
+                  </form>
+
+                  <h4 style={{ marginBottom: '0.75rem' }}>Published Reels ({reelsList.length})</h4>
+                  {reelsList.map(reel => (
+                    <div key={reel._id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ fontSize: '0.85rem' }}>{reel.title?.EN || reel.title?.BN || reel.title?.HI || 'Untitled reel'}</span>
+                      <button onClick={() => handleDeleteReel(reel._id)} style={{ padding: '5px 9px', borderRadius: '6px', background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', cursor: 'pointer' }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Tab 6: Subscribers */}
               {activeTab === 'subscribers' && (
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Subscribed Emails ({subscribers.length})</h3>

@@ -2,6 +2,12 @@ import React from 'react';
 import { Film, Play, Eye, Clock } from 'lucide-react';
 import { translations } from '../utils/translations';
 
+const getThumbnail = (reel) => {
+  if (reel.thumbnail) return reel.thumbnail;
+  const match = String(reel.videoUrl || '').match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([^?&/]+)/i);
+  return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : '';
+};
+
 export default function VideoReels({ reels = [], onPlayReel, language }) {
   const t = translations[language] || translations.EN;
 
@@ -49,7 +55,7 @@ export default function VideoReels({ reels = [], onPlayReel, language }) {
               onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <img 
-                src={reel.thumbnail} 
+                src={getThumbnail(reel)}
                 alt={reel.title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
               />

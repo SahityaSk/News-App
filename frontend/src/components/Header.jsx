@@ -2,6 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Search, Globe, TrendingUp, TrendingDown, CloudSun, Clock, Sparkles, Bookmark } from 'lucide-react';
 import { translations } from '../utils/translations';
 
+const compactButtonStyle = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-color)',
+  color: 'var(--text-primary)',
+  padding: '3px 7px',
+  borderRadius: 'var(--radius-sm)',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  fontSize: '0.72rem',
+  fontWeight: '700',
+  whiteSpace: 'nowrap'
+};
+
+const selectStyle = {
+  background: 'var(--bg-card)',
+  color: 'var(--text-primary)',
+  border: 'none',
+  fontSize: '0.72rem',
+  outline: 'none',
+  cursor: 'pointer',
+  fontWeight: '700'
+};
+
 export default function Header({ 
   theme, 
   toggleTheme, 
@@ -31,149 +56,59 @@ export default function Header({
 
   return (
     <header className="site-header" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-header)' }}>
-      {/* Top Utility Bar - STRICT SINGLE LINE ON FULLSCREEN */}
-      <div style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', padding: '0.4rem 0', fontSize: '0.78rem' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: '12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          
-          {/* Date & Time */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            <Clock size={13} style={{ color: 'var(--accent-red)' }} />
-            <span>{currentDateTime || 'Sat, Sep 12, 2026 | 03:45 PM IST'}</span>
-          </div>
-
-          {/* Market & Weather Ticker Bar */}
-          {weatherStocks && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'nowrap', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {weatherStocks.stocks?.slice(0, 3).map((stock, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>{stock.symbol}:</span>
-                  <span style={{ color: 'var(--text-primary)' }}>{stock.value}</span>
-                  <span style={{ 
-                    color: stock.positive ? '#16a34a' : '#dc2626', 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    fontSize: '0.72rem' 
-                  }}>
-                    {stock.positive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                    {stock.change}
-                  </span>
-                </div>
-              ))}
-              
-              {weatherStocks.weather && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--border-color)', paddingLeft: '10px', color: 'var(--text-secondary)' }}>
-                  <CloudSun size={14} style={{ color: 'var(--accent-gold)' }} />
-                  <span>{weatherStocks.weather.temp}</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>({weatherStocks.weather.city})</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Language Selector & Theme Toggle & AI Digest & Saved Reading List */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-            
-            {/* ⚡ AI Digest Button */}
-            <button
-              onClick={onOpenAiDigest}
-              style={{
-                background: 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(79,70,229,0.2))',
-                border: '1px solid rgba(220,38,38,0.5)',
-                color: 'var(--text-primary)',
-                padding: '3px 9px',
-                borderRadius: 'var(--radius-full)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontSize: '0.75rem',
-                fontWeight: '800',
-                boxShadow: '0 0 10px rgba(220,38,38,0.15)'
-              }}
-              title="60-Second AI News Briefing"
-            >
-              <Sparkles size={13} style={{ color: 'var(--accent-red)' }} />
-              <span>⚡ AI Briefing</span>
-            </button>
-
-            {/* 🔖 Saved Reading Queue Counter */}
-            <button
-              onClick={onOpenSavedDrawer}
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-primary)',
-                padding: '3px 8px',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '0.75rem',
-                fontWeight: '700'
-              }}
-              title="View saved articles"
-            >
-              <Bookmark size={13} style={{ color: 'var(--accent-red)' }} />
-              <span>{savedCount > 0 ? `Saved (${savedCount})` : 'Saved'}</span>
-            </button>
-
-            {/* Language Selector */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '4px', 
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '2px 6px'
-            }}>
-              <Globe size={13} style={{ color: 'var(--accent-red)' }} />
-              <select 
-                value={language}
-                onChange={(e) => onLanguageChange(e.target.value)}
-                aria-label="Select Language"
-                style={{ 
-                  background: 'var(--bg-card)', 
-                  color: 'var(--text-primary)', 
-                  border: 'none', 
-                  fontSize: '0.78rem', 
-                  outline: 'none', 
-                  cursor: 'pointer', 
-                  fontWeight: '700',
-                  padding: '2px 0'
-                }}
-              >
-                <option value="EN" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>English</option>
-                <option value="BN" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>বাংলা (Bengali)</option>
-                <option value="HI" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>हिंदी (Hindi)</option>
-              </select>
+      {/* Utility controls stay compact; only the market strip may scroll on small screens. */}
+      <div style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+        <div className="container" style={{ minWidth: 0, paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontWeight: '600', minWidth: 0 }}>
+              <Clock size={13} style={{ color: 'var(--accent-red)', flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentDateTime || 'Live clock'}</span>
             </div>
 
-            {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme} 
-              aria-label="Toggle Theme"
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-primary)',
-                padding: '3px 8px',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '0.75rem',
-                fontWeight: '700'
-              }}
-            >
-              {theme === 'dark' ? <Sun size={13} style={{ color: '#f59e0b' }} /> : <Moon size={13} style={{ color: '#4f46e5' }} />}
-              {theme === 'dark' ? 'Light' : 'Dark'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', flexWrap: 'wrap' }}>
+              <button onClick={onOpenAiDigest} aria-label="Open AI briefing" title="60-Second AI News Briefing" style={{ ...compactButtonStyle, borderColor: 'rgba(220,38,38,0.5)' }}>
+                <Sparkles size={13} style={{ color: 'var(--accent-red)' }} /> <span>AI Briefing</span>
+              </button>
+              <button onClick={onOpenSavedDrawer} aria-label="Open saved articles" title="View saved articles" style={compactButtonStyle}>
+                <Bookmark size={13} style={{ color: 'var(--accent-red)' }} /> <span>{savedCount > 0 ? `Saved (${savedCount})` : 'Saved'}</span>
+              </button>
+              <label style={compactButtonStyle}>
+                <Globe size={13} style={{ color: 'var(--accent-red)' }} />
+                <select value={language} onChange={(e) => onLanguageChange(e.target.value)} aria-label="Select Language" style={selectStyle}>
+                  <option value="EN">EN</option><option value="BN">BN</option><option value="HI">HI</option>
+                </select>
+              </label>
+              <button onClick={toggleTheme} aria-label="Toggle Theme" style={compactButtonStyle}>
+                {theme === 'dark' ? <Sun size={13} style={{ color: '#f59e0b' }} /> : <Moon size={13} style={{ color: '#4f46e5' }} />}
+                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {weatherStocks && (
+        <div style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+          <div className="container" style={{ minWidth: 0, paddingTop: '0.35rem', paddingBottom: '0.35rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0, flexWrap: 'wrap', overflow: 'hidden', whiteSpace: 'normal', rowGap: '5px' }}>
+              {weatherStocks.stocks?.map((stock, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600', flex: '0 0 auto' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>{stock.symbol}</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{stock.value}</span>
+                  <span style={{ color: stock.positive ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', fontSize: '0.72rem' }}>
+                    {stock.positive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}{stock.change}
+                  </span>
+                </div>
+              ))}
+              {weatherStocks.weather && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--border-color)', paddingLeft: '10px', color: 'var(--text-secondary)', flex: '0 0 auto' }}>
+                  <CloudSun size={14} style={{ color: 'var(--accent-gold)' }} /><span>{weatherStocks.weather.temp}</span><span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>({weatherStocks.weather.city})</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Brand Header with Official YUGANTAR Logo */}
       <div className="container" style={{ padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>

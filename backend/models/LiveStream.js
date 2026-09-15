@@ -11,7 +11,7 @@ const LiveStreamSchema = new mongoose.Schema({
   title: MultiLangStringSchema,
   summary: MultiLangStringSchema,
   channelName: { type: String, default: 'YUGANTAR Live 24/7' },
-  streamType: { type: String, enum: ['youtube_live', 'hls_m3u8', 'mp4'], default: 'youtube_live' },
+  streamType: { type: String, enum: ['youtube_live', 'web_embed', 'hls_m3u8', 'mp4'], default: 'youtube_live' },
   videoUrl: { type: String, required: true },
   viewers: { type: String, default: '14.2K' },
   isLive: { type: Boolean, default: true },

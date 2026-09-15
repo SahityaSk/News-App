@@ -15,7 +15,6 @@ import AiDigestModal from './components/AiDigestModal';
 import SavedArticlesDrawer from './components/SavedArticlesDrawer';
 import FloatingAudioPlayer from './components/FloatingAudioPlayer';
 import FactCheckModal from './components/FactCheckModal';
-import AdminCMS from './components/AdminCMS';
 import Footer from './components/Footer';
 
 import {
@@ -56,31 +55,6 @@ export default function App() {
   const [isAiDigestOpen, setIsAiDigestOpen] = useState(false);
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
   const [factCheckArticle, setFactCheckArticle] = useState(null);
-  const [isAdminCmsOpen, setIsAdminCmsOpen] = useState(false);
-
-  // Check for secure Admin route (/admin or #admin) or keyboard shortcut (Ctrl+Shift+A)
-  useEffect(() => {
-    const checkAdminRoute = () => {
-      if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
-        setIsAdminCmsOpen(true);
-      }
-    };
-    checkAdminRoute();
-    window.addEventListener('hashchange', checkAdminRoute);
-
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
-        e.preventDefault();
-        setIsAdminCmsOpen(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('hashchange', checkAdminRoute);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   // Apply dark/light theme to document root
   useEffect(() => {
@@ -118,7 +92,7 @@ export default function App() {
 
   // 🔌 Setup Socket.io WebSockets Client for Real-Time Push Alerts
   useEffect(() => {
-    const socket = io('http://localhost:5000', {
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
       reconnectionAttempts: 5,
       timeout: 5000
     });
@@ -326,16 +300,6 @@ export default function App() {
         onClose={() => setFactCheckArticle(null)}
         article={factCheckArticle}
         language={language}
-      />
-
-      {/* 16. 🛡️ Admin CMS & Editorial Desk Modal */}
-      <AdminCMS 
-        isOpen={isAdminCmsOpen}
-        onClose={() => setIsAdminCmsOpen(false)}
-        onRefreshData={() => {
-          loadAllData();
-          loadArticles();
-        }}
       />
 
     </div>

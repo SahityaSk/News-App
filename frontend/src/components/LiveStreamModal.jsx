@@ -1,21 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Users, MessageSquare, Radio, Volume2, VolumeX, Play, Pause, Tv, Send, Check } from 'lucide-react';
+import { X, Users, MessageSquare, Radio, Volume2, VolumeX, Play, Pause, Tv, Send } from 'lucide-react';
 
-const mockChatMessages = [
-  { user: "Arjun M.", text: "Significant breakthrough for clean energy transition!", time: "Just now" },
-  { user: "Sarah Jenkins", text: "Watching live from London, great coverage as always.", time: "Just now" },
-  { user: "TechEnthusiast", text: "The quantum computing news is mind blowing 🚀", time: "1s ago" },
-  { user: "Rajesh K.", text: "Kudos to YUGANTAR LIVE team for 24x7 updates!", time: "2s ago" },
-  { user: "Elena V.", text: "When will the official whitepaper be released?", time: "4s ago" }
-];
+const mockChatMessages = [];
 
 const liveChannels = [
-  { id: 'ch1', name: 'Channel 1: Global News 24/7', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', badge: 'WORLD NEWS' },
-  { id: 'ch2', name: 'Channel 2: Tech & AI Summit', videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', badge: 'TECH LIVE' },
-  { id: 'ch3', name: 'Channel 3: World Financial Markets', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', badge: 'MARKETS 24/7' },
-  { id: 'ch4', name: 'Channel 4: Climate & Science', videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', badge: 'SCIENCE' },
-  { id: 'ch5', name: 'Channel 5: International Sports Arena', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', badge: 'SPORTS ARENA' }
+  { id: 'abp-ananda', name: 'ABP Ananda Official Live', videoUrl: 'https://cdn.abplive.com/LiveStreams/260118/abpananda/streaming_bengali_vidgyor-new-nov2022.html', badge: 'BENGALI NEWS' }
 ];
+
+const isDemoMediaUrl = (url = '') => {
+  const value = String(url).toLowerCase();
+  return value.includes('w3schools.com/html/mov_bbb.mp4')
+    || value.includes('interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4')
+    || value.includes('youtube.com/embed/live_stream?channel=ucq-fj5jknlsuf-mwsy4_br')
+    || value.includes('youtube.com/embed/live_stream?channel=ucv3rfzn-ghgtqzxiaq3swng');
+};
+
+const isYouTubeUrl = (url = '') => /(?:youtube\.com|youtu\.be)/i.test(String(url));
+const isEmbeddedPageUrl = (url = '') => /cdn\.abplive\.com\/LiveStreams\//i.test(String(url));
+
+const toYouTubeEmbedUrl = (url = '') => {
+  if (/youtube\.com\/embed\//i.test(url) || /youtube\.com\/embed\?/i.test(url)) return url;
+  const videoMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([^?&/]+)/i);
+  return videoMatch ? `https://www.youtube.com/embed/${videoMatch[1]}` : url;
+};
 
 export default function LiveStreamModal({ isOpen, onClose, streamData }) {
   const [messages, setMessages] = useState(mockChatMessages);
@@ -25,11 +32,17 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
   const [selectedChannel, setSelectedChannel] = useState(liveChannels[0]);
   const [chatInput, setChatInput] = useState('');
   const videoRef = useRef(null);
+  const [mediaError, setMediaError] = useState(false);
+
+  const activeVideoUrl = streamData?.videoUrl || selectedChannel.videoUrl;
+  const safeVideoUrl = isDemoMediaUrl(activeVideoUrl) ? '' : activeVideoUrl;
+  const isIframeStream = isYouTubeUrl(safeVideoUrl) || isEmbeddedPageUrl(safeVideoUrl);
 
   useEffect(() => {
     if (!isOpen) return;
 
     setIsPlaying(true);
+    setMediaError(false);
     if (videoRef.current) {
       videoRef.current.play().catch(() => setIsPlaying(false));
     }
@@ -64,6 +77,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
   if (!isOpen) return null;
 
   const togglePlay = () => {
+    if (isIframeStream) return;
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -76,6 +90,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
   };
 
   const toggleMute = () => {
+    if (isIframeStream) return;
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
@@ -91,8 +106,6 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
     ]);
     setChatInput('');
   };
-
-  const activeVideoUrl = streamData?.videoUrl || selectedChannel.videoUrl;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -206,14 +219,35 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
           
           {/* Video Player Column (8 cols) */}
           <div style={{ gridColumn: 'span 8', position: 'relative', background: '#000' }} className="video-player-col">
-            <video
-              ref={videoRef}
-              src={activeVideoUrl}
-              autoPlay
-              loop
-              muted={isMuted}
-              style={{ width: '100%', height: '100%', maxHeight: '480px', objectFit: 'contain', display: 'block' }}
-            />
+            {safeVideoUrl && isIframeStream && !mediaError && (
+              <iframe
+                src={toYouTubeEmbedUrl(safeVideoUrl)}
+                title={streamData?.title || selectedChannel.name}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                style={{ width: '100%', height: '480px', border: 0, display: 'block' }}
+              />
+            )}
+            {safeVideoUrl && !isIframeStream && !mediaError && (
+              <video
+                ref={videoRef}
+                src={safeVideoUrl}
+                autoPlay
+                loop
+                muted={isMuted}
+                onError={() => setMediaError(true)}
+                style={{ width: '100%', height: '100%', maxHeight: '480px', objectFit: 'contain', display: 'block' }}
+              />
+            )}
+            {(!safeVideoUrl || mediaError) && !isIframeStream && (
+              <div style={{ minHeight: '320px', height: '480px', display: 'grid', placeItems: 'center', padding: '2rem', textAlign: 'center', color: '#cbd5e1' }}>
+                <div>
+                  <Radio size={34} style={{ color: '#ef4444', marginBottom: '0.75rem' }} />
+                  <p style={{ margin: 0, fontWeight: 700 }}>Live stream unavailable</p>
+                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Ask an administrator to add a valid YouTube, HLS, or MP4 stream URL.</p>
+                </div>
+              </div>
+            )}
 
             {/* Live Broadcast Overlay Controls Banner */}
             <div style={{
@@ -232,6 +266,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
                 {/* PURE GRID CENTERED PLAY/PAUSE BUTTON */}
                 <button
                   onClick={togglePlay}
+                  disabled={isIframeStream || !safeVideoUrl}
                   aria-label={isPlaying ? "Pause Stream" : "Play Stream"}
                   style={{
                     background: 'rgba(255, 255, 255, 0.22)',
@@ -251,7 +286,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
                     outline: 'none',
                     transition: 'background-color 0.2s'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--accent-red)'}
+                  onMouseOver={(e) => e.currentTarget.style.background = isIframeStream ? 'rgba(255,255,255,0.22)' : 'var(--accent-red)'}
                   onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)'}
                   title={isPlaying ? "Pause Video" : "Play Video"}
                 >
@@ -261,6 +296,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
                 {/* PURE GRID CENTERED MUTE/UNMUTE BUTTON */}
                 <button
                   onClick={toggleMute}
+                  disabled={isIframeStream || !safeVideoUrl}
                   aria-label={isMuted ? "Unmute Audio" : "Mute Audio"}
                   style={{
                     background: 'rgba(255, 255, 255, 0.22)',
@@ -280,7 +316,7 @@ export default function LiveStreamModal({ isOpen, onClose, streamData }) {
                     outline: 'none',
                     transition: 'background-color 0.2s'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.38)'}
+                  onMouseOver={(e) => e.currentTarget.style.background = isIframeStream ? 'rgba(255,255,255,0.22)' : 'rgba(255, 255, 255, 0.38)'}
                   onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)'}
                   title={isMuted ? "Unmute Audio" : "Mute Audio"}
                 >

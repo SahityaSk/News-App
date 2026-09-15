@@ -8,7 +8,11 @@ const Reel = require('../models/Reel');
 const Poll = require('../models/Poll');
 const Subscriber = require('../models/Subscriber');
 
-const { breakingNews, heroCoverage, articles, videoReels, weatherStocks } = require('../data/newsData');
+const {
+  TEMPORARY_LIVE_STREAM_URL,
+  isDemoMediaUrl,
+  inferStreamType
+} = require('../config/media');
 
 // Helper to sanitize language parameter (default to EN)
 const getLang = (req) => {
@@ -42,13 +46,33 @@ router.get('/breaking', async (req, res) => {
   } catch (err) {
     // Fallback if DB offline
   }
-  res.json({ success: true, source: 'fallback', data: breakingNews[lang] || breakingNews.EN });
+  res.json({ success: true, source: 'empty-fallback', data: [] });
 });
 
 // GET /api/hero
 router.get('/hero', async (req, res) => {
   const lang = getLang(req);
-  const baseFallback = heroCoverage[lang] || heroCoverage.EN;
+  const temporaryHero = {
+    EN: {
+      id: 'temporary-live-stream', badge: 'LIVE TV', title: 'Live Bengali News Stream',
+      headline: 'Live Bengali News Stream', summary: 'Temporary official ABP Ananda live feed. Replace this stream from the Editorial Desk when the client stream is available.',
+      subheadline: 'Temporary official ABP Ananda live feed. Replace this stream from the Editorial Desk when the client stream is available.',
+      author: 'ABP Ananda official live feed', image: '', videoUrl: TEMPORARY_LIVE_STREAM_URL, keyDevelopments: []
+    },
+    BN: {
+      id: 'temporary-live-stream', badge: 'লাইভ টিভি', title: 'বাংলা লাইভ সংবাদ সম্প্রচার',
+      headline: 'বাংলা লাইভ সংবাদ সম্প্রচার', summary: 'সাময়িকভাবে অফিসিয়াল ABP আনন্দ লাইভ ফিড দেখানো হচ্ছে। ক্লায়েন্টের স্ট্রিম পেলে Editorial Desk থেকে পরিবর্তন করুন।',
+      subheadline: 'সাময়িকভাবে অফিসিয়াল ABP আনন্দ লাইভ ফিড দেখানো হচ্ছে। ক্লায়েন্টের স্ট্রিম পেলে Editorial Desk থেকে পরিবর্তন করুন।',
+      author: 'ABP Ananda official live feed', image: '', videoUrl: TEMPORARY_LIVE_STREAM_URL, keyDevelopments: []
+    },
+    HI: {
+      id: 'temporary-live-stream', badge: 'लाइव टीवी', title: 'लाइव बंगाली समाचार प्रसारण',
+      headline: 'लाइव बंगाली समाचार प्रसारण', summary: 'फिलहाल आधिकारिक ABP आनंद लाइव फीड दिखाया जा रहा है। क्लाइंट का स्ट्रीम मिलने पर Editorial Desk से बदलें।',
+      subheadline: 'फिलहाल आधिकारिक ABP आनंद लाइव फीड दिखाया जा रहा है। क्लाइंट का स्ट्रीम मिलने पर Editorial Desk से बदलें।',
+      author: 'ABP Ananda official live feed', image: '', videoUrl: TEMPORARY_LIVE_STREAM_URL, keyDevelopments: []
+    }
+  };
+  const baseFallback = temporaryHero[lang] || temporaryHero.EN;
 
   try {
     const heroArt = await Article.findOne({ hero: true, status: 'published' });
@@ -68,7 +92,8 @@ router.get('/hero', async (req, res) => {
           subheadline: resolveLang(heroArt.summary, lang) || baseFallback.summary,
           author: heroArt.author || baseFallback.author,
           image: heroArt.image || baseFallback.image,
-          videoUrl: stream ? stream.videoUrl : baseFallback.videoUrl,
+          videoUrl: stream && !isDemoMediaUrl(stream.videoUrl) ? stream.videoUrl : baseFallback.videoUrl,
+          streamType: stream && !isDemoMediaUrl(stream.videoUrl) ? stream.streamType : inferStreamType(baseFallback.videoUrl),
           keyDevelopments: baseFallback.keyDevelopments
         }
       });
@@ -127,30 +152,15 @@ router.get('/news', async (req, res) => {
       });
     }
   } catch (err) {
-    console.warn('⚠️ DB query error, falling back to newsData:', err.message);
+    console.warn('⚠️ DB query error, returning an empty article fallback:', err.message);
   }
 
   // Fallback Dataset Logic
-  let dataset = articles[lang] || articles.EN;
-
-  if (category && category !== 'all') {
-    dataset = dataset.filter(item => item.category.toLowerCase() === category.toLowerCase());
-  }
-
-  if (search) {
-    const q = search.toLowerCase();
-    dataset = dataset.filter(item => 
-      item.title.toLowerCase().includes(q) || 
-      item.summary.toLowerCase().includes(q) ||
-      item.author.toLowerCase().includes(q)
-    );
-  }
-
   res.json({
     success: true,
-    total: dataset.length,
-    source: 'fallback',
-    data: dataset
+    total: 0,
+    source: 'empty-fallback',
+    data: []
   });
 });
 
@@ -158,7 +168,7 @@ router.get('/news', async (req, res) => {
 router.get('/reels', async (req, res) => {
   const lang = getLang(req);
   try {
-    const reelsList = await Reel.find().limit(10);
+    const reelsList = (await Reel.find().limit(10)).filter(r => !isDemoMediaUrl(r.videoUrl));
     if (reelsList && reelsList.length > 0) {
       const formatted = reelsList.map(r => ({
         id: r.reelId,
@@ -176,7 +186,7 @@ router.get('/reels', async (req, res) => {
   } catch (err) {
     // Fallback if DB offline
   }
-  res.json({ success: true, source: 'fallback', data: videoReels[lang] || videoReels.EN });
+  res.json({ success: true, source: 'empty-fallback', data: [] });
 });
 
 // GET /api/weather-stocks

@@ -7,8 +7,7 @@ const Reel = require('./models/Reel');
 const Poll = require('./models/Poll');
 const Admin = require('./models/Admin');
 const bcrypt = require('bcryptjs');
-
-const { breakingNews, heroCoverage, articles, videoReels } = require('./data/newsData');
+const { TEMPORARY_LIVE_STREAM_URL, inferStreamType } = require('./config/media');
 
 const seedDatabase = async () => {
   const isConnected = await connectDB();
@@ -17,113 +16,51 @@ const seedDatabase = async () => {
     process.exit(1);
   }
 
-  console.log('🧹 Clearing existing collections...');
+  console.log('🧹 Removing legacy demo articles, tickers, and reels only...');
   await Promise.all([
-    Article.deleteMany({}),
-    BreakingTicker.deleteMany({}),
-    LiveStream.deleteMany({}),
-    Reel.deleteMany({}),
-    Poll.deleteMany({}),
-    Admin.deleteMany({})
+    Article.deleteMany({ articleId: { $in: ['art-1', 'art-2', 'art-3', 'art-4', 'art-5', 'art-6', 'art-art-1', 'art-art-2', 'art-art-3', 'art-art-4', 'art-art-5', 'art-art-6'] } }),
+    BreakingTicker.deleteMany({ tickerId: { $in: ['ticker-b1', 'ticker-b2', 'ticker-b3', 'ticker-b4', 'ticker-b5'] } }),
+    Reel.deleteMany({ reelId: { $in: ['reel-v1', 'reel-v2'] } })
   ]);
 
-  console.log('🌱 Seeding Admin User...');
+  console.log('🌱 Ensuring Admin User exists...');
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL;
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!seedAdminEmail || !seedAdminPassword) {
+    console.error('❌ SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set before seeding an admin account.');
+    process.exit(1);
+  }
+
   const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash('admin123', salt);
-  await Admin.create({
-    name: 'Chief Editor',
-    email: 'admin@yugantar.com',
-    passwordHash,
-    role: 'superadmin'
-  });
+  const passwordHash = await bcrypt.hash(seedAdminPassword, salt);
+  await Admin.findOneAndUpdate(
+    { email: seedAdminEmail.toLowerCase() },
+    { name: 'Chief Editor', email: seedAdminEmail.toLowerCase(), passwordHash, role: 'superadmin' },
+    { upsert: true, returnDocument: 'after' }
+  );
 
-  console.log('🌱 Seeding Breaking Ticker items...');
-  const tickerItems = breakingNews.EN.map((enItem, idx) => ({
-    tickerId: `ticker-${enItem.id}`,
-    title: {
-      EN: enItem.title,
-      BN: breakingNews.BN[idx]?.title || enItem.title,
-      HI: breakingNews.HI[idx]?.title || enItem.title
-    },
-    category: enItem.category || 'BREAKING',
-    time: enItem.time || 'LIVE',
-    urgent: enItem.urgent !== false,
-    active: true,
-    priority: idx + 1
-  }));
-  await BreakingTicker.insertMany(tickerItems);
-
-  console.log('🌱 Seeding Live Stream Data...');
-  await LiveStream.create({
+  console.log('🌱 Configuring temporary official Bengali live stream...');
+  await LiveStream.findOneAndUpdate({ streamId: 'hero-live-stream' }, {
     streamId: 'hero-live-stream',
     title: {
-      EN: heroCoverage.EN.headline,
-      BN: heroCoverage.BN.headline,
-      HI: heroCoverage.HI.headline
+      EN: 'Live Bengali News Stream',
+      BN: 'বাংলা লাইভ সংবাদ সম্প্রচার',
+      HI: 'लाइव बंगाली समाचार प्रसारण'
     },
     summary: {
-      EN: heroCoverage.EN.subheadline,
-      BN: heroCoverage.BN.subheadline,
-      HI: heroCoverage.HI.subheadline
+      EN: 'Temporary official ABP Ananda live feed. Replace this from the Editorial Desk when the client stream is available.',
+      BN: 'সাময়িকভাবে অফিসিয়াল ABP আনন্দ লাইভ ফিড দেখানো হচ্ছে। ক্লায়েন্টের স্ট্রিম পেলে Editorial Desk থেকে পরিবর্তন করুন।',
+      HI: 'फिलहाल आधिकारिक ABP आनंद लाइव फीड दिखाया जा रहा है। क्लाइंट का स्ट्रीम मिलने पर Editorial Desk से बदलें।'
     },
-    channelName: 'YUGANTAR Live Broadcast 24/7',
-    streamType: 'youtube_live',
-    videoUrl: 'https://www.youtube.com/embed/live_stream?channel=UCq-Fj5jknLsUf-MWSy4_brA', // Live stream embed
-    viewers: heroCoverage.EN.viewers || '14.2K',
+    channelName: 'ABP Ananda Official Live',
+    streamType: inferStreamType(TEMPORARY_LIVE_STREAM_URL),
+    videoUrl: TEMPORARY_LIVE_STREAM_URL,
+    viewers: 'Live',
     isLive: true
-  });
+  }, { upsert: true, returnDocument: 'after' });
 
-  console.log('🌱 Seeding Multi-Lingual Articles...');
-  const articleDocs = articles.EN.map((enArt, idx) => ({
-    articleId: `art-${enArt.id}`,
-    title: {
-      EN: enArt.title,
-      BN: articles.BN[idx]?.title || enArt.title,
-      HI: articles.HI[idx]?.title || enArt.title
-    },
-    summary: {
-      EN: enArt.summary,
-      BN: articles.BN[idx]?.summary || enArt.summary,
-      HI: articles.HI[idx]?.summary || enArt.summary
-    },
-    content: {
-      EN: enArt.content || enArt.summary,
-      BN: articles.BN[idx]?.content || articles.BN[idx]?.summary || enArt.summary,
-      HI: articles.HI[idx]?.content || articles.HI[idx]?.summary || enArt.summary
-    },
-    category: enArt.category || 'world',
-    author: enArt.author || 'YUGANTAR Bureau',
-    sourceAgency: 'YUGANTAR',
-    readTime: enArt.readTime || '3 min read',
-    image: enArt.image,
-    views: Math.floor(Math.random() * 80 + 20),
-    viewsFormatted: enArt.views || '45K',
-    trending: enArt.trending || false,
-    hero: idx === 0,
-    status: 'published'
-  }));
-  await Article.insertMany(articleDocs);
-
-  console.log('🌱 Seeding Video Reels...');
-  const reelDocs = videoReels.EN.map((enReel, idx) => ({
-    reelId: `reel-${enReel.id}`,
-    title: {
-      EN: enReel.title,
-      BN: videoReels.BN[idx]?.title || enReel.title,
-      HI: videoReels.HI[idx]?.title || enReel.title
-    },
-    category: enReel.category || 'WORLD',
-    videoUrl: enReel.videoUrl,
-    thumbnail: enReel.thumbnail || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
-    duration: enReel.duration || '0:45',
-    agency: 'ANI Video Wire',
-    likes: enReel.likes || '4.8K',
-    shares: enReel.shares || '1.2K'
-  }));
-  await Reel.insertMany(reelDocs);
-
-  console.log('🌱 Seeding Interactive Poll...');
-  await Poll.create({
+  console.log('🌱 Ensuring Interactive Poll exists...');
+  await Poll.findOneAndUpdate({ pollId: 'daily-poll-1' }, {
     pollId: 'daily-poll-1',
     question: {
       EN: 'Should AI regulations be unified globally across international media portals?',
@@ -137,10 +74,10 @@ const seedDatabase = async () => {
     ],
     totalVotes: 2290,
     active: true
-  });
+  }, { upsert: true, returnDocument: 'after' });
 
   console.log('✅ Database Seeding Successfully Completed!');
-  console.log('🔑 Default Superadmin Login: admin@yugantar.com / admin123');
+  console.log(`🔑 Seeded superadmin account: ${seedAdminEmail.toLowerCase()}`);
   process.exit(0);
 };
 
