@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 
 const Article = require('../models/Article');
 const BreakingTicker = require('../models/BreakingTicker');
@@ -13,6 +14,15 @@ const {
   isDemoMediaUrl,
   inferStreamType
 } = require('../config/media');
+const { validateEmail } = require('../config/validation');
+
+const subscribeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many subscription attempts. Try again later.' }
+});
 
 // Helper to sanitize language parameter (default to EN)
 const getLang = (req) => {
@@ -75,7 +85,7 @@ router.get('/hero', async (req, res) => {
   const baseFallback = temporaryHero[lang] || temporaryHero.EN;
 
   try {
-    const heroArt = await Article.findOne({ hero: true, status: 'published' });
+    const heroArt = await Article.findOne({ hero: true, status: 'published' }).sort({ publishedAt: -1, createdAt: -1 });
     const stream = await LiveStream.findOne({ isLive: true });
 
     if (heroArt) {
@@ -114,18 +124,22 @@ router.get('/news', async (req, res) => {
     if (category && category !== 'all') {
       query.category = category.toLowerCase();
     }
+    if (typeof search === 'string' && search.trim()) {
+      const escapedSearch = search.trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
+      query.$or = [
+        { 'title.EN': searchRegex },
+        { 'title.BN': searchRegex },
+        { 'title.HI': searchRegex },
+        { 'summary.EN': searchRegex },
+        { 'summary.BN': searchRegex },
+        { 'summary.HI': searchRegex },
+        { author: searchRegex },
+        { sourceAgency: searchRegex }
+      ];
+    }
 
     let dbArticles = await Article.find(query).sort({ publishedAt: -1 }).limit(30);
-
-    if (search) {
-      const q = search.toLowerCase();
-      dbArticles = dbArticles.filter(art => {
-        const title = resolveLang(art.title, lang).toLowerCase();
-        const summary = resolveLang(art.summary, lang).toLowerCase();
-        const author = art.author ? art.author.toLowerCase() : '';
-        return title.includes(q) || summary.includes(q) || author.includes(q);
-      });
-    }
 
     if (dbArticles && dbArticles.length > 0) {
       const formatted = dbArticles.map(art => ({
@@ -136,6 +150,8 @@ router.get('/news', async (req, res) => {
         category: art.category,
         categoryLabel: art.category.toUpperCase(),
         author: art.author,
+        sourceAgency: art.sourceAgency,
+        sourceLanguage: art.sourceLanguage,
         readTime: art.readTime,
         image: art.image,
         trending: art.trending,
@@ -208,23 +224,23 @@ router.get('/weather-stocks', (req, res) => {
 });
 
 // POST /api/subscribe
-router.post('/subscribe', async (req, res) => {
-  const { email } = req.body;
-  if (!email || !email.includes('@')) {
+router.post('/subscribe', subscribeLimiter, async (req, res) => {
+  const email = validateEmail(req.body?.email);
+  if (!email) {
     return res.status(400).json({ success: false, message: 'Valid email address required' });
   }
 
   try {
     await Subscriber.findOneAndUpdate(
-      { email: email.toLowerCase() },
-      { email: email.toLowerCase(), active: true },
+      { email },
+      { email, active: true },
       { upsert: true, returnDocument: 'after' }
     );
   } catch (err) {
     // Silent catch if DB offline
   }
 
-  res.json({ success: true, message: `Thank you! ${email} has been subscribed to YUGANTAR Live Alerts.` });
+  res.json({ success: true, message: 'Thank you! You have been subscribed to YUGANTAR Live Alerts.' });
 });
 
 module.exports = router;

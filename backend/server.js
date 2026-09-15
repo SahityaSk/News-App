@@ -61,6 +61,13 @@ app.use(helmet({
 }));
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
+app.use('/api', (req, res, next) => {
+  req.setTimeout(15000);
+  res.setTimeout(15000, () => {
+    if (!res.headersSent) res.status(408).json({ success: false, message: 'Request timed out' });
+  });
+  next();
+});
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

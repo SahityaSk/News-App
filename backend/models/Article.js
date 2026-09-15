@@ -18,6 +18,7 @@ const ArticleSchema = new mongoose.Schema({
   },
   author: { type: String, default: 'YUGANTAR Bureau' },
   sourceAgency: { type: String, default: 'YUGANTAR' }, // 'PTI', 'ANI', 'NDTV', 'EDITORIAL'
+  sourceLanguage: { type: String, enum: ['EN', 'BN', 'HI', 'UNKNOWN'], default: 'UNKNOWN' },
   sourceUrl: { type: String, default: '' },
   readTime: { type: String, default: '3 min read' },
   image: { type: String, default: '' },

@@ -121,7 +121,8 @@ This backlog records the remaining work identified during the project handoff re
 - [ ] Add MFA for privileged accounts, password reset and recovery, email verification, password policy, login throttling/lockout, suspicious-login alerts, and optional SSO for the client newsroom.
 - [x] Remove the fallback JWT secret and default credential values from runtime/UI code paths; the API now fails to start without `JWT_SECRET`, and seed credentials come from environment variables.
 - [x] Add strict CORS origin allowlists, security headers/Helmet, a Content Security Policy, JSON body-size limits, and safe generic error responses.
-- [ ] Add CSRF protection for the future cookie-authenticated session design, request timeouts, and complete content-type/request validation.
+- [x] Add API request timeouts and baseline content-type/body-size handling.
+- [ ] Add CSRF protection for the future cookie-authenticated session design and complete content-type/request validation.
 - [x] Add baseline rate limits to the API, login endpoint, and Socket.io chat messages.
 - [ ] Extend abuse controls to newsletter signup, poll voting, search, media actions, and every admin mutation with endpoint-specific policies.
 - [ ] Create an immutable audit log for login, failed login, publish, edit, schedule, archive, delete, ticker push, stream changes, reel changes, user/role changes, and settings changes, including actor, timestamp, IP/device metadata, before/after summary, and correlation ID.
@@ -136,7 +137,8 @@ This backlog records the remaining work identified during the project handoff re
 - [ ] Enforce one deterministic active hero per edition/language and make featured, breaking, trending, and scheduled selections explicit rather than relying on an arbitrary `findOne` result.
 - [ ] Build a source registry for RSS/API feeds with license/terms, attribution text, language, category mapping, polling interval, health status, last successful fetch, failure count, and kill switch.
 - [ ] Fix ingestion provenance: do not label an NDTV feed as PTI, do not label an ABP feed as Jugantor, and do not copy source-language text into all language fields while implying translation.
-- [ ] Replace random fallback images and random view counts with verified media fallbacks and real analytics. Label unavailable metrics as unavailable.
+- [x] Remove random view counts from RSS ingestion and represent unavailable analytics as `—`.
+- [ ] Replace generic fallback images with verified source media or a clearly branded placeholder and add real analytics.
 - [ ] Add deterministic feed deduplication using canonical URL/guid/content fingerprint, stale-item expiry, retries with backoff, dead-letter/error reporting, and protection against repeated ticker creation.
 - [ ] Add moderation queues for imported stories, unsafe/malformed media, copyright complaints, takedown requests, and suspected duplicate/misleading content.
 - [ ] Define the editorial rights policy for article text, images, video, live embeds, thumbnails, fonts, logos, RSS feeds, and third-party APIs; store rights/attribution metadata with each asset.
@@ -166,9 +168,11 @@ This backlog records the remaining work identified during the project handoff re
 
 ### P1 — Data, API, and media engineering
 
-- [ ] Move search filtering into MongoDB or a dedicated search index, add pagination/cursors, stable sort order, faceting, typo tolerance, and indexed category/status/published/source fields.
-- [ ] Version the API (`/api/v1`), define OpenAPI/JSON schemas, standardize error envelopes, validate all request bodies/query/path values, and add request IDs.
-- [ ] Replace hardcoded localhost URLs with environment configuration and a single typed API client with timeouts, cancellation, retries only where safe, and response validation.
+- [x] Move basic article search filtering into MongoDB query conditions instead of filtering only after the first 30 results.
+- [ ] Add pagination/cursors, stable sort order, faceting, typo tolerance, and indexed category/status/published/source fields.
+- [ ] Version the API (`/api/v1`), define OpenAPI/JSON schemas, standardize error envelopes, validate all request paths/queries, and add request IDs.
+- [x] Replace frontend hardcoded service URLs with environment configuration.
+- [ ] Finish the typed API client with timeouts, cancellation, safe retries, and response validation.
 - [ ] Add real HLS playback with `hls.js` where required, media-type detection, provider allowlists, embed restrictions, stream health checks, reconnect/backoff, captions, poster images, and a clearly labelled unavailable state.
 - [ ] Add a managed media library backed by object storage/CDN with upload quotas, MIME/signature validation, virus scanning, image/video transformations, signed URLs where appropriate, replacement/deletion rules, and rights metadata.
 - [ ] Add data retention, export, deletion, and backup policies for subscribers, staff accounts, audit logs, analytics, chat, and imported content.
@@ -176,7 +180,8 @@ This backlog records the remaining work identified during the project handoff re
 
 ### P1 — Security, privacy, and compliance hardening
 
-- [ ] Add centralized input validation/sanitization for article text, source URLs, media URLs, embeds, search, email, ticker content, chat, and all admin payloads.
+- [x] Add centralized baseline validation for admin articles, tickers, live streams, reels, subscriber emails, and external media URLs.
+- [ ] Extend validation/sanitization to rich article text, embeds, search, chat, uploads, and every remaining public/admin payload.
 - [ ] Add XSS/HTML sanitization policy for rich article content, safe link handling, iframe allowlists, SSRF protections for server-side URL fetching, and upload/content scanning.
 - [ ] Add dependency audit/update policy, lockfile review, secret scanning, static analysis, container/image scanning if containerized, and a documented vulnerability response process.
 - [ ] Add privacy policy, cookie/consent policy, newsletter double opt-in, unsubscribe/preferences, data export/deletion, retention limits, and regional legal review before launch.
@@ -217,12 +222,13 @@ This backlog records the remaining work identified during the project handoff re
 
 ### P1 — Correct data and API behavior
 
-- [ ] Move search filtering into the MongoDB query instead of limiting to 30 records before filtering, so matching older articles are not hidden.
+- [x] Move basic search filtering into MongoDB query conditions instead of limiting to 30 records before filtering.
 - [ ] Add pagination or cursor-based loading for articles, tickers, and admin lists.
 - [ ] Add stable indexes for article status/category/published date, ticker active/priority, and subscriber email.
-- [ ] Normalize and validate RSS article IDs, URLs, dates, images, categories, and feed content before upserting.
-- [ ] Prevent RSS ingestion from creating duplicate or misleading breaking tickers on every feed cycle.
-- [ ] Review multilingual RSS behavior: currently the same source-language text is copied into EN, BN, and HI fields rather than translated.
+- [x] Normalize RSS article IDs with stable hashes, validate feed dates/media URLs, preserve configured categories, and skip empty feed items before upserting.
+- [x] Use stable RSS ticker IDs and correct feed source labels so repeated cycles update the same ticker records instead of creating duplicates or misleading provenance.
+- [x] Preserve imported content in its actual source-language field instead of copying it into EN/BN/HI as if translated.
+- [ ] Add editorial translation workflow and explicit source-language labels in the public UI.
 - [ ] Replace static weather/market values with a clearly configured provider or label them explicitly as demo data.
 - [ ] Add missing public endpoints for polls and, if required, live-stream metadata/chat history.
 - [ ] Return consistent API error shapes and log backend failures with enough context for debugging.
@@ -232,10 +238,11 @@ This backlog records the remaining work identified during the project handoff re
 - [ ] Move all secrets and default credentials out of source/UI documentation and rotate the current JWT/database credentials before deployment.
 - [ ] Require a production `JWT_SECRET`; do not use the fallback secret in deployed environments.
 - [ ] Add rate limiting and brute-force protection to admin login, newsletter subscription, poll voting, and chat.
-- [ ] Validate and sanitize admin article/ticker/live-stream payloads on the server; do not trust client-provided fields.
+- [x] Validate and sanitize current admin article/ticker/live-stream/reel payloads on the server; do not trust client-provided fields.
 - [ ] Restrict admin mutations by role and audit who published, edited, or deleted content.
 - [ ] Configure secure headers, request size limits, HTTPS deployment, and production logging.
-- [ ] Validate/allowlist external media URLs and RSS sources to reduce unsafe embeds and malformed content.
+- [x] Reject unsafe/local/private-network media URLs in current admin live-stream and reel payloads.
+- [ ] Add configurable provider allowlists, RSS source registry validation, SSRF protection for any future server-side fetches, and upload/content scanning.
 - [ ] Add a privacy/consent policy for newsletter subscribers and define unsubscribe functionality.
 
 ### P2 — UX, accessibility, and maintainability
@@ -375,3 +382,26 @@ The project should be presented to the client as a professional newsroom platfor
 
 - Secure cookie/refresh-session migration, CSRF, MFA, password reset, account lockout, full endpoint-specific abuse controls, audit logs, code splitting, and the full newsroom RBAC matrix remain pending.
 - The existing development database account must be rotated before staging/production; no credential rotation was performed automatically.
+
+---
+
+## 📅 2026-09-15 — Codex Content Integrity/Validation Tranche
+
+### Completed
+
+- Added centralized backend validation for current admin article, ticker, live-stream, reel, and newsletter payloads.
+- Added safe HTTP(S) URL validation that rejects private/local targets and production HTTP media URLs.
+- Added API request timeouts to avoid indefinitely hanging requests.
+- Added endpoint-specific newsletter rate limiting and stronger email validation.
+- Added MongoDB query-based article search instead of filtering only after an arbitrary first-page limit.
+- Made hero selection deterministic by selecting the newest published hero.
+- Made RSS article IDs stable hashes of source identity instead of using random IDs when a feed item is incomplete.
+- Corrected misleading RSS source labels for the NDTV and ABP feeds.
+- Preserved imported article text in its actual source-language field instead of copying it into all language fields as if translated.
+- Removed random RSS view counts and now represent unavailable analytics as `—`.
+- Added feed-item skipping for empty titles and safer feed dates/media URLs.
+- Verified backend syntax, frontend production build, health/readiness, invalid subscriber rejection, invalid article/category rejection, and unsafe stream URL rejection.
+
+### Still open
+
+- Full schema/API contract validation, request IDs, pagination, source registry, translation workflow, branded media placeholders, real analytics, CSRF/session hardening, and upload/content scanning remain pending.

@@ -1,9 +1,11 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const Parser = require('rss-parser');
 const cron = require('node-cron');
 const connectDB = require('../config/db');
 const Article = require('../models/Article');
 const BreakingTicker = require('../models/BreakingTicker');
+const { isSafeHttpUrl } = require('../config/validation');
 
 const parser = new Parser({
   customFields: {
@@ -13,8 +15,8 @@ const parser = new Parser({
 
 // Comprehensive Real-Time Wire Feed Sources
 const RSS_SOURCES = [
-  { name: 'PTI Wire (NDTV National)', url: 'https://feeds.feedburner.com/ndtvnews-top-stories', category: 'national', lang: 'EN' },
-  { name: 'Jugantor & Regional (ABP Bengali)', url: 'https://bengali.abplive.com/home/feed', category: 'world', lang: 'BN' },
+  { name: 'NDTV National Feed', url: 'https://feeds.feedburner.com/ndtvnews-top-stories', category: 'national', lang: 'EN' },
+  { name: 'ABP Ananda Bengali Feed', url: 'https://bengali.abplive.com/home/feed', category: 'world', lang: 'BN' },
   { name: 'BBC Hindi Wire', url: 'https://feeds.bbci.co.uk/hindi/rss.xml', category: 'world', lang: 'HI' },
   { name: 'Global News Wire (NYT World)', url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', category: 'world', lang: 'EN' },
   { name: 'Tech & Innovation Wire', url: 'https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml', category: 'tech', lang: 'EN' },
@@ -33,43 +35,39 @@ const fetchAndIngestFeeds = async () => {
       if (!feed || !feed.items) continue;
 
       for (const [index, item] of feed.items.slice(0, 6).entries()) {
-        const articleId = `rss-${item.guid || item.link || Math.random().toString(36).substring(7)}`;
-        const imageUrl = item['media:content']?.$.url || item['media:thumbnail']?.$.url || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80';
-
         const cleanTitle = (item.title || '').trim();
         const cleanSummary = (item.contentSnippet || item.title || '').trim();
+        const sourceKey = item.guid || item.id || item.link || `${cleanTitle}|${item.pubDate || ''}`;
+        if (!cleanTitle || !sourceKey) continue;
 
-        // Populate multi-lingual fallback text so all language views receive real live content
+        const articleId = `rss-${crypto.createHash('sha256').update(`${source.name}|${sourceKey}`).digest('hex').slice(0, 32)}`;
+        const candidateImage = item['media:content']?.$.url || item['media:thumbnail']?.$.url || '';
+        const imageUrl = isSafeHttpUrl(candidateImage) ? candidateImage : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80';
+        const titleByLanguage = { EN: '', BN: '', HI: '' };
+        const summaryByLanguage = { EN: '', BN: '', HI: '' };
+        titleByLanguage[source.lang] = cleanTitle;
+        summaryByLanguage[source.lang] = cleanSummary;
+
+        // Preserve the feed's actual source language. Translation is an editorial workflow concern.
         const articleData = {
           articleId,
-          title: {
-            EN: source.lang === 'EN' ? cleanTitle : cleanTitle,
-            BN: source.lang === 'BN' ? cleanTitle : cleanTitle,
-            HI: source.lang === 'HI' ? cleanTitle : cleanTitle
-          },
-          summary: {
-            EN: source.lang === 'EN' ? cleanSummary : cleanSummary,
-            BN: source.lang === 'BN' ? cleanSummary : cleanSummary,
-            HI: source.lang === 'HI' ? cleanSummary : cleanSummary
-          },
-          content: {
-            EN: cleanSummary,
-            BN: cleanSummary,
-            HI: cleanSummary
-          },
+          title: titleByLanguage,
+          summary: summaryByLanguage,
+          content: summaryByLanguage,
+          sourceLanguage: source.lang,
           category: source.category,
           author: source.name,
           sourceAgency: source.name,
           sourceUrl: item.link || '',
           readTime: '3 min read',
           image: imageUrl,
-          views: Math.floor(Math.random() * 80 + 20),
-          viewsFormatted: `${Math.floor(Math.random() * 80 + 20)}K`,
+          views: 0,
+          viewsFormatted: '—',
           trending: index < 3,
           hero: sourceIdx === 0 && index === 0, // Top National story becomes Hero Feature
           breaking: index === 0,
           status: 'published',
-          publishedAt: item.pubDate ? new Date(item.pubDate) : new Date()
+          publishedAt: item.pubDate && !Number.isNaN(new Date(item.pubDate).getTime()) ? new Date(item.pubDate) : new Date()
         };
 
         try {
