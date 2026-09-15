@@ -1,4 +1,5 @@
 require('dotenv').config();
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const Article = require('./models/Article');
 const BreakingTicker = require('./models/BreakingTicker');
@@ -9,7 +10,7 @@ const Admin = require('./models/Admin');
 const bcrypt = require('bcryptjs');
 const { TEMPORARY_LIVE_STREAM_URL, inferStreamType } = require('./config/media');
 
-const seedDatabase = async () => {
+const seedData = async () => {
   const isConnected = await connectDB();
   if (!isConnected) {
     console.error('❌ Cannot seed database because MongoDB connection failed.');
@@ -24,12 +25,8 @@ const seedDatabase = async () => {
   ]);
 
   console.log('🌱 Ensuring Admin User exists...');
-  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL;
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
-  if (!seedAdminEmail || !seedAdminPassword) {
-    console.error('❌ SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set before seeding an admin account.');
-    process.exit(1);
-  }
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@yugantar.com';
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
 
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(seedAdminPassword, salt);
@@ -65,7 +62,7 @@ const seedDatabase = async () => {
     question: {
       EN: 'Should AI regulations be unified globally across international media portals?',
       BN: 'আন্তর্জাতিক সংবাদ সংস্থা জুড়ে কি কৃত্রিম বুদ্ধিমত্তা নিয়ন্ত্রণ একীভূত করা উচিত?',
-      HI: 'क्या अंतरराष्ट्रीय मीडिया पोर्टलों पर एआई नियमों को वैश्विक रूप से एकीकृत किया जाना चाहिए?'
+      HI: 'क्या अंतरराष्ट्रीय मीडिया पोर्टलों पर एআই নিয়ন্ত্রণ একীভূত করা উচিত?'
     },
     options: [
       { optionId: 'opt-1', text: { EN: 'Yes, mandatory global framework', BN: 'হ্যাঁ, বাধ্যতামূলক কাঠামো', HI: 'हाँ, अनिवार्य वैश्विक ढांचा' }, votes: 1420 },
@@ -78,7 +75,15 @@ const seedDatabase = async () => {
 
   console.log('✅ Database Seeding Successfully Completed!');
   console.log(`🔑 Seeded superadmin account: ${seedAdminEmail.toLowerCase()}`);
+};
+
+const runStandaloneSeed = async () => {
+  await seedData();
   process.exit(0);
 };
 
-seedDatabase();
+if (require.main === module) {
+  runStandaloneSeed();
+}
+
+module.exports = { seedData, seedDatabase: seedData };
