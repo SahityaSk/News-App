@@ -23,6 +23,11 @@ frontend/dist/
 .env.development.local
 .env.production.local
 
+# Local Firebase/Hostinger worker secrets
+/local-secrets/
+**/worker-config.php
+**/firebase-service-account*.json
+
 # Editor & OS files
 .vscode/
 .idea/
