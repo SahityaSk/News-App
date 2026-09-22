@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <meta name="theme-color" content="#071b34">
+    <title>YUGANTAR Editorial Desk</title>
+    <link rel="icon" href="./yugantar-logo.jpg">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body class="admin-body">
+    <header class="site-header">
+      <div class="shell header-row">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
+          <span class="brand-copy"><strong>YUGANTAR <em>DESK</em></strong><small>EDITORIAL CONTROL ROOM</small></span>
+        </a>
+        <div class="admin-header-actions">
+          <button id="admin-theme-toggle" class="icon-button" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+          <a class="button button-muted" href="./index.html">Public site</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell admin-main">
+      <div id="admin-setup" class="notice hidden"></div>
+      <section id="login-panel" class="panel narrow-panel">
+        <div class="section-kicker">SECURE ACCESS</div><h1>Editorial login</h1>
+        <p class="muted">Only approved Firebase staff accounts can enter the publishing desk.</p>
+        <form id="login-form" class="stack-form"><input id="login-email" type="email" required placeholder="Staff email" autocomplete="username"><input id="login-password" type="password" required placeholder="Password" autocomplete="current-password"><button class="button" type="submit">Sign in</button></form>
+        <p id="login-status" class="status" aria-live="polite"></p>
+      </section>
+
+      <section id="desk-panel" class="hidden">
+        <div class="admin-toolbar"><div><div class="section-kicker">EDITORIAL DESK</div><h1>Publish and configure</h1><p id="admin-user" class="muted"></p></div><div class="toolbar-actions"><button id="refresh-admin" class="button button-muted" type="button">Refresh data</button><button id="logout" class="button button-muted" type="button">Sign out</button></div></div>
+        <section class="dashboard-grid" aria-label="Editorial overview">
+          <div class="dashboard-card"><span>Published articles</span><strong id="stat-articles">—</strong><small>Public newsroom</small></div><div class="dashboard-card"><span>Drafts</span><strong id="stat-drafts">—</strong><small>Needs review</small></div><div class="dashboard-card"><span>Channel videos</span><strong id="stat-videos">—</strong><small>Active items</small></div><div class="dashboard-card"><span>Breaking tickers</span><strong id="stat-tickers">—</strong><small>Active items</small></div>
+        </section>
+        <div class="admin-nav" role="tablist" aria-label="Desk sections"><button class="admin-tab active" type="button" data-admin-tab="overview">Overview</button><button class="admin-tab" type="button" data-admin-tab="publish">Publish</button><button class="admin-tab" type="button" data-admin-tab="live">Live & video</button><button class="admin-tab" type="button" data-admin-tab="sources">Sources</button></div>
+
+        <section class="admin-panel active" data-admin-panel="overview"><div class="section-heading"><div><div class="section-kicker">CONTENT HEALTH</div><h2>Recent newsroom items</h2></div><p id="last-refresh" class="muted">Not refreshed yet</p></div><div class="admin-list-grid"><div class="panel"><div class="list-heading"><h3>Articles</h3><span class="muted">Edit or remove items</span></div><div id="article-list" class="admin-list"><div class="empty-state">Loading…</div></div></div><div class="panel"><div class="list-heading"><h3>Videos</h3><span class="muted">Synced channel items</span></div><div id="video-list" class="admin-list"><div class="empty-state">Loading…</div></div></div><div class="panel"><div class="list-heading"><h3>Tickers</h3><span class="muted">Active breaking updates</span></div><div id="ticker-list" class="admin-list"><div class="empty-state">Loading…</div></div></div></div><p id="admin-data-status" class="status" aria-live="polite"></p></section>
+
+        <section class="admin-panel" data-admin-panel="publish"><div class="section-heading"><div><div class="section-kicker">NEWSROOM</div><h2>Publish an article</h2></div><p class="muted">Use public image and source URLs; files stay outside this static host.</p></div><form id="article-form" class="panel stack-form"><div class="form-row"><input id="article-title-en" required placeholder="Headline (English)"><select id="article-category"><option>national</option><option>world</option><option>business</option><option>sports</option><option>tech</option><option>entertainment</option><option>science</option></select></div><input id="article-title-bn" placeholder="Headline (Bengali)"><input id="article-title-hi" placeholder="Headline (Hindi)"><textarea id="article-summary-en" placeholder="Summary (English)"></textarea><textarea id="article-content-en" placeholder="Content (English)"></textarea><div class="form-row"><input id="article-author" value="YUGANTAR Editorial" placeholder="Author"><input id="article-source-agency" value="YUGANTAR" placeholder="Source agency"></div><div class="form-row"><input id="article-image" type="url" placeholder="Cover image URL"><input id="article-source-url" type="url" placeholder="Source URL"></div><div id="article-image-preview" class="image-preview" aria-live="polite">Cover preview appears here</div><div class="form-row form-options"><label><input id="article-hero" type="checkbox"> Feature on homepage</label><label>Status <select id="article-status-select"><option value="published">Published</option><option value="draft">Draft</option></select></label></div><div class="form-actions"><button id="article-submit" class="button" type="submit">Publish article</button><button id="article-reset" class="button button-muted hidden" type="button">Cancel edit</button></div><p id="article-status" class="status"></p></form></section>
+
+        <section class="admin-panel" data-admin-panel="live"><div class="section-heading"><div><div class="section-kicker">DISTRIBUTION</div><h2>Live and channel media</h2></div><p class="muted">Paste links supplied by the client; the private worker handles automatic sync.</p></div><div class="admin-grid"><form id="stream-form" class="panel stack-form"><h2>Live stream</h2><input id="stream-title" required placeholder="Channel title"><select id="stream-provider"><option value="youtube">YouTube</option><option value="facebook">Facebook</option><option value="other">Other licensed provider</option></select><input id="stream-url" type="url" required placeholder="Embed or licensed stream URL"><label class="check-row"><input id="stream-live" type="checkbox" checked> Currently live</label><button class="button" type="submit">Save live stream</button><p id="stream-status" class="status"></p></form><form id="video-form" class="panel stack-form"><h2>Add channel video</h2><input id="video-title" required placeholder="Video title"><select id="video-provider"><option value="youtube">YouTube</option><option value="facebook">Facebook</option></select><input id="video-url" type="url" required placeholder="Video URL"><input id="video-thumbnail" type="url" placeholder="Thumbnail URL (optional)"><button class="button" type="submit">Publish video</button><p id="video-status" class="status"></p></form><form id="ticker-form" class="panel stack-form"><h2>Breaking ticker</h2><input id="ticker-en" required placeholder="Ticker (English)"><input id="ticker-bn" placeholder="Ticker (Bengali)"><input id="ticker-hi" placeholder="Ticker (Hindi)"><input id="ticker-category" value="BREAKING" placeholder="Category"><input id="ticker-priority" type="number" value="1" min="0" max="1000"><button class="button" type="submit">Publish ticker</button><p id="ticker-status" class="status"></p></form></div></section>
+
+        <section class="admin-panel" data-admin-panel="sources"><div class="section-heading"><div><div class="section-kicker">AUTOMATION</div><h2>External sources</h2></div><p class="muted">Keep API keys and page tokens only in the private PHP worker configuration.</p></div><form id="source-form" class="panel stack-form"><h2>External source definition</h2><p class="muted">Store IDs only. The worker reads these records and writes normalized content to Firestore.</p><div class="form-row"><select id="source-provider"><option value="youtube">YouTube channel</option><option value="facebook">Facebook Page</option></select><input id="source-name" required placeholder="Source name"></div><div class="form-row"><input id="source-id" required placeholder="Channel ID or Page ID"><input id="source-live-url" type="url" placeholder="Optional manually verified live URL"></div><button class="button" type="submit">Save source</button><p id="source-status" class="status"></p></form></section>
+      </section>
+    </main>
+    <script type="module" src="./admin.js"></script>
+  </body>
+</html>

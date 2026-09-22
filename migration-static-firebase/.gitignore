@@ -1,0 +1,4 @@
+firebase-config.local.js
+hostinger-worker/worker-config.php
+hostinger-worker/*.json
+local-secrets/

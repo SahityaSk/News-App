@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return signedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : ''; }
+    function staff() { return role() in ['superadmin', 'editor', 'reporter']; }
+    function editor() { return role() in ['superadmin', 'editor']; }
+    function superadmin() { return role() == 'superadmin'; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || superadmin());
+      allow write: if superadmin();
+    }
+
+    match /articles/{id} {
+      allow read: if resource.data.status == 'published' || staff();
+      allow create: if editor() || (role() == 'reporter' && request.resource.data.status == 'draft');
+      allow update: if editor() || (role() == 'reporter'
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'draft');
+      allow delete: if editor();
+    }
+
+    match /tickers/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /liveStreams/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /videoItems/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /reels/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /externalSources/{id} {
+      allow read, write: if superadmin();
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create, update, delete: if editor();
+      match /votes/{uid} {
+        allow create: if signedIn() && request.auth.uid == uid
+          && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(uid))
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.optionId is string
+          && request.resource.data.optionId.size() <= 80;
+        allow read, update, delete: if false;
+      }
+    }
+
+    match /subscribers/{id} {
+      allow create: if request.resource.data.email is string
+        && request.resource.data.email.size() <= 254;
+      allow read, update, delete: if superadmin();
+    }
+  }
+}
