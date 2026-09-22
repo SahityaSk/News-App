@@ -60,9 +60,15 @@ export default function Header({
       <div style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
         <div className="container" style={{ minWidth: 0, paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontWeight: '600', minWidth: 0 }}>
-              <Clock size={13} style={{ color: 'var(--accent-red)', flexShrink: 0 }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentDateTime || 'Live clock'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', fontWeight: '600', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                <Clock size={13} style={{ color: 'var(--accent-red)', flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentDateTime || 'Live clock'}</span>
+              </div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.68rem', fontWeight: '800', color: 'var(--text-secondary)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#32d583', display: 'inline-block', boxShadow: '0 0 6px #32d583' }}></span>
+                LIVE DATA
+              </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', flexWrap: 'wrap' }}>

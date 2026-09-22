@@ -234,6 +234,6 @@ if (!firebaseConfigured) showSetupMessage();
 else {
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
-  $('sync-status').textContent = 'LIVE DATA • Firebase';
+  $('sync-status').textContent = 'LIVE DATA';
   startRealtimeListeners(); loadArticles(); loadVideosAndPoll();
 }
