@@ -1,119 +1,189 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="YUGANTAR multilingual news and live coverage">
-    <meta name="theme-color" content="#09111f">
-    <meta property="og:title" content="YUGANTAR News Live">
-    <meta property="og:description" content="Truth • Speed • Unbiased Coverage">
-    <meta property="og:type" content="website">
-    <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
-    <title>YUGANTAR News Live</title>
-    <link rel="stylesheet" href="./styles.css">
-  </head>
-  <body>
-    <noscript><div class="notice">YUGANTAR News requires JavaScript to load live articles and updates.</div></noscript>
-    <div id="setup-banner" class="notice hidden"></div>
-    <header class="site-header">
-      <div class="utility-bar"><div class="shell utility-inner"><span class="utility-live"><i></i> LIVE NEWS NETWORK</span><span id="current-date">Loading newsroom time…</span><span id="sync-status">Firebase newsroom</span></div></div>
-      <div class="shell header-row">
-        <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
-          <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
-          <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small>Truth • Speed • Unbiased Coverage</small></span>
-        </a>
-        <div class="header-actions">
-          <label class="sr-only" for="language">Language</label>
-          <select id="language">
-            <option value="EN">English</option>
-            <option value="BN">বাংলা</option>
-            <option value="HI">हिन्दी</option>
-          </select>
-          <button id="saved-toggle" class="icon-button" type="button" aria-label="Open saved articles" title="Saved articles">☆ <span id="saved-count">0</span></button>
-          <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch theme" title="Switch theme">☾</button>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="YUGANTAR multilingual news and live coverage">
+  <meta name="theme-color" content="#09111f">
+  <meta property="og:title" content="YUGANTAR News Live">
+  <meta property="og:description" content="Truth • Speed • Unbiased Coverage">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
+  <title>YUGANTAR News</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <noscript>
+    <div class="notice">YUGANTAR News requires JavaScript to load live articles and updates.</div>
+  </noscript>
+  <div id="setup-banner" class="notice hidden"></div>
+  <header class="site-header">
+    <div class="utility-bar">
+      <div class="shell utility-inner"><span class="utility-live"><i></i> LIVE NEWS NETWORK</span><span
+          id="current-date">Loading newsroom time…</span><span id="sync-status">LIVE DATA</span></div>
+    </div>
+    <div class="shell header-row">
+      <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
+        <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
+        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small>Truth • Speed • Unbiased
+            Coverage</small></span>
+      </a>
+      <div class="header-actions">
+        <label class="sr-only" for="language">Language</label>
+        <select id="language">
+          <option value="EN">English</option>
+          <option value="BN">বাংলা</option>
+          <option value="HI">हिन्दी</option>
+        </select>
+        <button id="saved-toggle" class="icon-button" type="button" aria-label="Open saved articles"
+          title="Saved articles">☆ <span id="saved-count">0</span></button>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch theme"
+          title="Switch theme">☾</button>
+      </div>
+    </div>
+    <nav class="category-nav shell" aria-label="News categories">
+      <button class="category active" data-category="all">Latest</button>
+      <button class="category" data-category="national">National</button>
+      <button class="category" data-category="world">World</button>
+      <button class="category" data-category="business">Business</button>
+      <button class="category" data-category="sports">Sports</button>
+      <button class="category" data-category="tech">Tech</button>
+      <button class="category" data-category="entertainment">Entertainment</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="ticker" aria-label="Breaking news">
+      <div class="shell ticker-row"><strong>BREAKING</strong>
+        <div id="ticker-items">Connecting to live updates…</div>
+      </div>
+    </section>
+
+    <section class="shell hero-section" aria-label="Featured coverage">
+      <div id="hero-card" class="hero-card empty-state">Loading the latest newsroom update…</div>
+      <aside class="live-card">
+        <div class="live-card-head">
+          <div class="section-kicker">LIVE TV</div><span class="live-pill"><i></i>24/7</span>
+        </div>
+        <h2 id="live-title">Live channel</h2>
+        <div id="live-player" class="media-placeholder">No live stream configured.</div>
+        <p id="live-meta" class="muted">The editorial desk can change the stream URL without redeploying the frontend.
+        </p>
+        <a id="live-action" class="button button-light hidden" href="#live-player" target="_blank"
+          rel="noopener noreferrer">Open live coverage</a>
+      </aside>
+    </section>
+
+    <section class="shell headline-strip-section" aria-label="Top developments">
+      <div class="strip-label"><span class="section-kicker">IN FOCUS</span><strong>Top developments</strong></div>
+      <div id="headline-strip" class="headline-strip"><span class="muted">Loading the latest developments…</span></div>
+    </section>
+
+    <section class="shell content-section">
+      <div class="section-heading">
+        <div>
+          <div class="section-kicker">NEWSROOM</div>
+          <h1>Latest stories</h1>
+          <p class="section-intro">Independent reporting, refreshed from the newsroom and trusted public feeds.</p>
+        </div><label class="search-box"><span class="sr-only">Search articles</span><span
+            class="search-icon">⌕</span><input id="search" type="search" placeholder="Search stories"></label>
+      </div>
+      <div id="articles" class="article-grid">
+        <div class="empty-state">Loading articles…</div>
+      </div>
+    </section>
+
+    <section class="shell content-section split-section">
+      <div>
+        <div class="section-heading compact">
+          <div>
+            <div class="section-kicker">VIDEO</div>
+            <h2>From our channels</h2>
+          </div>
+        </div>
+        <div id="videos" class="video-grid">
+          <div class="empty-state">Loading channel videos…</div>
         </div>
       </div>
-      <nav class="category-nav shell" aria-label="News categories">
-        <button class="category active" data-category="all">Latest</button>
-        <button class="category" data-category="national">National</button>
-        <button class="category" data-category="world">World</button>
-        <button class="category" data-category="business">Business</button>
-        <button class="category" data-category="sports">Sports</button>
-        <button class="category" data-category="tech">Tech</button>
-        <button class="category" data-category="entertainment">Entertainment</button>
-      </nav>
-    </header>
-
-    <main>
-      <section class="ticker" aria-label="Breaking news">
-        <div class="shell ticker-row"><strong>BREAKING</strong><div id="ticker-items">Connecting to live updates…</div></div>
-      </section>
-
-      <section class="shell hero-section" aria-label="Featured coverage">
-        <div id="hero-card" class="hero-card empty-state">Loading the latest newsroom update…</div>
-        <aside class="live-card">
-          <div class="live-card-head"><div class="section-kicker">LIVE TV</div><span class="live-pill"><i></i>24/7</span></div>
-          <h2 id="live-title">Live channel</h2>
-          <div id="live-player" class="media-placeholder">No live stream configured.</div>
-          <p id="live-meta" class="muted">The editorial desk can change the stream URL without redeploying the frontend.</p>
-          <a id="live-action" class="button button-light hidden" href="#live-player" target="_blank" rel="noopener noreferrer">Open live coverage</a>
-        </aside>
-      </section>
-
-      <section class="shell headline-strip-section" aria-label="Top developments">
-        <div class="strip-label"><span class="section-kicker">IN FOCUS</span><strong>Top developments</strong></div>
-        <div id="headline-strip" class="headline-strip"><span class="muted">Loading the latest developments…</span></div>
-      </section>
-
-      <section class="shell content-section">
-        <div class="section-heading"><div><div class="section-kicker">NEWSROOM</div><h1>Latest stories</h1><p class="section-intro">Independent reporting, refreshed from the newsroom and trusted public feeds.</p></div><label class="search-box"><span class="sr-only">Search articles</span><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Search stories"></label></div>
-        <div id="articles" class="article-grid"><div class="empty-state">Loading articles…</div></div>
-      </section>
-
-      <section class="shell content-section split-section">
-        <div><div class="section-heading compact"><div><div class="section-kicker">VIDEO</div><h2>From our channels</h2></div></div><div id="videos" class="video-grid"><div class="empty-state">Loading channel videos…</div></div></div>
-        <div class="panel"><div class="section-kicker">OPINION</div><h2 id="poll-question">Loading poll…</h2><div id="poll-options"></div><p id="poll-status" class="muted"></p></div>
-      </section>
-
-      <section class="shell content-section newsletter panel">
-        <div><div class="section-kicker">NEWSLETTER</div><h2>Get the daily bulletin</h2><p class="muted">Top stories, live updates, and newsroom briefs delivered to your inbox.</p></div>
-        <form id="newsletter-form" class="inline-form"><input id="newsletter-email" type="email" required placeholder="you@example.com" aria-label="Email address"><button class="button" type="submit">Subscribe</button></form>
-        <p id="newsletter-status" class="status" aria-live="polite"></p>
-      </section>
-    </main>
-
-    <dialog id="article-dialog" class="article-dialog"><button id="close-dialog" class="dialog-close" aria-label="Close article">×</button><article id="article-detail"></article></dialog>
-    <dialog id="saved-dialog" class="saved-dialog"><button id="close-saved" class="dialog-close" aria-label="Close saved articles">×</button><div class="section-kicker">YOUR READING LIST</div><h2>Saved articles</h2><div id="saved-list" class="saved-list"></div></dialog>
-    <footer class="site-footer">
-      <div class="shell footer-grid">
-        <section class="footer-about">
-          <div class="footer-brand"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"><div><strong>YUGANTAR</strong><small>GLOBAL NEWS NETWORK</small></div></div>
-          <p>Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial intelligence globally.</p>
-          <p class="footer-motto">“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”</p>
-          <a class="footer-live-link" href="#live-player">● YUGANTAR LIVE 24/7</a>
-        </section>
-        <section>
-          <h2 class="footer-title">Official desk</h2>
-          <ul class="footer-links">
-            <li><a href="tel:+918479084770"><span class="contact-icon">☎</span> +91 84790 84770</a></li>
-            <li><a href="mailto:office.yugantarnews@gmail.com"><span class="contact-icon">✉</span> office.yugantarnews@gmail.com</a></li>
-            <li><a href="https://yugantar.news" target="_blank" rel="noopener noreferrer"><span class="contact-icon">↗</span> yugantar.news</a></li>
-          </ul>
-        </section>
-        <section>
-          <h2 class="footer-title">News sections</h2>
-          <ul class="footer-links footer-section-links">
-            <li><a href="#articles">Top stories</a></li><li><a href="#articles" data-footer-category="national">National</a></li><li><a href="#articles" data-footer-category="world">World</a></li><li><a href="#articles" data-footer-category="business">Business &amp; finance</a></li><li><a href="#articles" data-footer-category="tech">Tech &amp; AI</a></li><li><a href="#articles" data-footer-category="sports">Sports</a></li>
-          </ul>
-        </section>
-        <section>
-          <h2 class="footer-title">Connect with us</h2>
-          <p>Follow official channels for verified breaking updates.</p>
-          <div class="social-links"><a href="https://instagram.com/yugantar.news" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/YugantarNewsLive" target="_blank" rel="noopener noreferrer">Facebook</a><a href="https://x.com/yugantarnews" target="_blank" rel="noopener noreferrer">X / Twitter</a><a href="https://wa.me/918479084770" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
-        </section>
+      <div class="panel">
+        <div class="section-kicker">OPINION</div>
+        <h2 id="poll-question">Loading poll…</h2>
+        <div id="poll-options"></div>
+        <p id="poll-status" class="muted"></p>
       </div>
-      <div class="shell footer-bottom"><span>© 2026 Yugantar News Network. All rights reserved.</span><span>Source attribution and rights must be verified before publication.</span><span>✦ Fact-checked newsroom</span></div>
-    </footer>
-    <script type="module" src="./app.js"></script>
-  </body>
+    </section>
+
+    <section class="shell content-section newsletter panel">
+      <div>
+        <div class="section-kicker">NEWSLETTER</div>
+        <h2>Get the daily bulletin</h2>
+        <p class="muted">Top stories, live updates, and newsroom briefs delivered to your inbox.</p>
+      </div>
+      <form id="newsletter-form" class="inline-form"><input id="newsletter-email" type="email" required
+          placeholder="you@example.com" aria-label="Email address"><button class="button"
+          type="submit">Subscribe</button></form>
+      <p id="newsletter-status" class="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <dialog id="article-dialog" class="article-dialog"><button id="close-dialog" class="dialog-close"
+      aria-label="Close article">×</button>
+    <article id="article-detail"></article>
+  </dialog>
+  <dialog id="saved-dialog" class="saved-dialog"><button id="close-saved" class="dialog-close"
+      aria-label="Close saved articles">×</button>
+    <div class="section-kicker">YOUR READING LIST</div>
+    <h2>Saved articles</h2>
+    <div id="saved-list" class="saved-list"></div>
+  </dialog>
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <section class="footer-about">
+        <div class="footer-brand"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo">
+          <div><strong>YUGANTAR</strong><small>GLOBAL NEWS NETWORK</small></div>
+        </div>
+        <p>Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial
+          intelligence globally.</p>
+        <p class="footer-motto">“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”</p>
+        <a class="footer-live-link" href="#live-player">● YUGANTAR LIVE 24/7</a>
+      </section>
+      <section>
+        <h2 class="footer-title">Official desk</h2>
+        <ul class="footer-links">
+          <li><a href="tel:+918479084770"><span class="contact-icon">☎</span> +91 84790 84770</a></li>
+          <li><a href="mailto:office.yugantarnews@gmail.com"><span class="contact-icon">✉</span>
+              office.yugantarnews@gmail.com</a></li>
+          <li><a href="https://yugantar.news" target="_blank" rel="noopener noreferrer"><span
+                class="contact-icon">↗</span> yugantar.news</a></li>
+        </ul>
+      </section>
+      <section>
+        <h2 class="footer-title">News sections</h2>
+        <ul class="footer-links footer-section-links">
+          <li><a href="#articles">Top stories</a></li>
+          <li><a href="#articles" data-footer-category="national">National</a></li>
+          <li><a href="#articles" data-footer-category="world">World</a></li>
+          <li><a href="#articles" data-footer-category="business">Business &amp; finance</a></li>
+          <li><a href="#articles" data-footer-category="tech">Tech &amp; AI</a></li>
+          <li><a href="#articles" data-footer-category="sports">Sports</a></li>
+        </ul>
+      </section>
+      <section>
+        <h2 class="footer-title">Connect with us</h2>
+        <p>Follow official channels for verified breaking updates.</p>
+        <div class="social-links"><a href="https://instagram.com/yugantar.news" target="_blank"
+            rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/YugantarNewsLive" target="_blank"
+            rel="noopener noreferrer">Facebook</a><a href="https://x.com/yugantarnews" target="_blank"
+            rel="noopener noreferrer">X / Twitter</a><a href="https://wa.me/918479084770" target="_blank"
+            rel="noopener noreferrer">WhatsApp</a></div>
+      </section>
+    </div>
+    <div class="shell footer-bottom"><span>© 2026 Yugantar News Network. All rights reserved.</span><span>Source
+        attribution and rights must be verified before publication.</span><span>✦ Fact-checked newsroom</span></div>
+  </footer>
+  <script type="module" src="./app.js"></script>
+</body>
+
 </html>
