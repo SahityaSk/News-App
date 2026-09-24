@@ -134,8 +134,9 @@ function rssArticles(array $source): array {
         $link = trim((string) ($item->link ?? ''));
         $guid = trim((string) ($item->guid ?? $item->id ?? $link));
         $summary = trim((string) ($item->description ?? $item->summary ?? $title));
+        $summary = mb_substr(preg_replace('/\s+/', ' ', strip_tags($summary)) ?: $title, 0, 320);
         if (!$title || !$guid) continue;
-        $image = rssImage($item);
+        $image = !empty($source['metadataOnly']) ? '' : rssImage($item);
         $published = trim((string) ($item->pubDate ?? $item->published ?? $item->updated ?? gmdate('c')));
         $date = strtotime($published) ? gmdate('c', strtotime($published)) : gmdate('c');
         $id = 'rss_' . substr(hash('sha256', ($source['id'] ?? $source['name']) . '|' . $guid), 0, 32);
@@ -181,9 +182,11 @@ function youtubeVideos(array $source): array {
         $videos[] = [
             'documentId' => 'yt_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $id),
             'provider' => 'youtube',
+            'mediaType' => 'video',
             'title' => (string) $entry->title,
             'description' => (string) ($media->group->description ?? ''),
             'videoUrl' => 'https://www.youtube.com/watch?v=' . $id,
+            'embedUrl' => 'https://www.youtube-nocookie.com/embed/' . rawurlencode($id),
             'thumbnail' => 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg',
             'sourceUrl' => 'https://www.youtube.com/watch?v=' . $id,
             'publishedAt' => (string) $entry->published,
@@ -201,36 +204,43 @@ function youtubeLive(array $source, string $apiKey): ?array {
     $item = $json['items'][0] ?? null;
     if (!$item) return null;
     $id = $item['id']['videoId'] ?? '';
-    return $id ? ['title' => $item['snippet']['title'] ?? $source['name'], 'videoUrl' => 'https://www.youtube.com/watch?v=' . $id, 'provider' => 'youtube', 'active' => true, 'isLive' => true] : null;
+    return $id ? ['title' => $item['snippet']['title'] ?? $source['name'], 'videoUrl' => 'https://www.youtube.com/watch?v=' . $id, 'embedUrl' => 'https://www.youtube-nocookie.com/embed/' . rawurlencode($id), 'provider' => 'youtube', 'mediaType' => 'live', 'active' => true, 'isLive' => true] : null;
 }
 
 function youtubeLink(string $url): ?array {
     [, $body] = httpRequest('https://www.youtube.com/oembed?url=' . rawurlencode($url) . '&format=json', ['Accept: application/json']);
     $json = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-    return !empty($json['title']) ? ['documentId' => 'yt_link_' . substr(hash('sha256', $url), 0, 24), 'provider' => 'youtube', 'title' => $json['title'], 'description' => $json['author_name'] ?? '', 'videoUrl' => $url, 'thumbnail' => $json['thumbnail_url'] ?? '', 'sourceUrl' => $url, 'publishedAt' => gmdate('c'), 'active' => true] : null;
+    $id = preg_match('/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&\/]+)/i', $url, $matches) ? $matches[1] : '';
+    return !empty($json['title']) ? ['documentId' => 'yt_link_' . substr(hash('sha256', $url), 0, 24), 'provider' => 'youtube', 'mediaType' => 'video', 'title' => $json['title'], 'description' => $json['author_name'] ?? '', 'videoUrl' => $url, 'embedUrl' => $id ? 'https://www.youtube-nocookie.com/embed/' . rawurlencode($id) : '', 'thumbnail' => $json['thumbnail_url'] ?? '', 'sourceUrl' => $url, 'publishedAt' => gmdate('c'), 'active' => true] : null;
 }
 
 function facebookPosts(array $source, string $token, string $version): array {
     if (!$token) return [];
-    $url = 'https://graph.facebook.com/' . rawurlencode($version) . '/' . rawurlencode($source['pageId']) . '/posts?fields=id,message,created_time,full_picture,permalink_url&limit=25&access_token=' . rawurlencode($token);
+    $url = 'https://graph.facebook.com/' . rawurlencode($version) . '/' . rawurlencode($source['pageId']) . '/posts?fields=id,message,created_time,full_picture,permalink_url,attachments{media_type,media,subattachments}&limit=25&access_token=' . rawurlencode($token);
     [, $body] = httpRequest($url, ['Accept: application/json']);
     $json = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
     $posts = [];
     foreach (($json['data'] ?? []) as $post) {
         $id = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) ($post['id'] ?? ''));
         if (!$id) continue;
-        $posts[] = ['documentId' => 'fb_' . $id, 'provider' => 'facebook', 'title' => mb_substr((string) ($post['message'] ?? $source['name']), 0, 180), 'description' => (string) ($post['message'] ?? ''), 'videoUrl' => (string) ($post['permalink_url'] ?? ''), 'thumbnail' => (string) ($post['full_picture'] ?? ''), 'sourceUrl' => (string) ($post['permalink_url'] ?? ''), 'publishedAt' => (string) ($post['created_time'] ?? ''), 'active' => true];
+        $attachment = $post['attachments']['data'][0] ?? [];
+        $attachmentType = strtolower((string) ($attachment['media_type'] ?? ''));
+        $mediaType = str_contains($attachmentType, 'video') ? 'video' : ((str_contains($attachmentType, 'photo') || !empty($post['full_picture'])) ? 'photo' : 'post');
+        $posts[] = ['documentId' => 'fb_' . $id, 'provider' => 'facebook', 'mediaType' => $mediaType, 'title' => mb_substr((string) ($post['message'] ?? $source['name']), 0, 180), 'description' => (string) ($post['message'] ?? ''), 'videoUrl' => (string) ($post['permalink_url'] ?? ''), 'embedUrl' => (string) ($post['permalink_url'] ?? ''), 'thumbnail' => (string) ($post['full_picture'] ?? ''), 'sourceUrl' => (string) ($post['permalink_url'] ?? ''), 'publishedAt' => (string) ($post['created_time'] ?? ''), 'active' => true];
     }
     return $posts;
 }
 
 function facebookPostLink(string $url, string $token, string $version): ?array {
     if (!$token) return null;
-    $graphUrl = 'https://graph.facebook.com/' . rawurlencode($version) . '/?id=' . rawurlencode($url) . '&fields=id,message,created_time,full_picture,permalink_url&access_token=' . rawurlencode($token);
+    $graphUrl = 'https://graph.facebook.com/' . rawurlencode($version) . '/?id=' . rawurlencode($url) . '&fields=id,message,created_time,full_picture,permalink_url,attachments{media_type,media,subattachments}&access_token=' . rawurlencode($token);
     [, $body] = httpRequest($graphUrl, ['Accept: application/json']);
     $post = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
     $id = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) ($post['id'] ?? ''));
-    return $id ? ['documentId' => 'fb_' . $id, 'provider' => 'facebook', 'title' => mb_substr((string) ($post['message'] ?? 'Facebook post'), 0, 180), 'description' => (string) ($post['message'] ?? ''), 'videoUrl' => (string) ($post['permalink_url'] ?? $url), 'thumbnail' => (string) ($post['full_picture'] ?? ''), 'sourceUrl' => (string) ($post['permalink_url'] ?? $url), 'publishedAt' => (string) ($post['created_time'] ?? gmdate('c')), 'active' => true] : null;
+    $attachment = $post['attachments']['data'][0] ?? [];
+    $attachmentType = strtolower((string) ($attachment['media_type'] ?? ''));
+    $mediaType = str_contains($attachmentType, 'video') ? 'video' : ((str_contains($attachmentType, 'photo') || !empty($post['full_picture'])) ? 'photo' : 'post');
+    return $id ? ['documentId' => 'fb_' . $id, 'provider' => 'facebook', 'mediaType' => $mediaType, 'title' => mb_substr((string) ($post['message'] ?? 'Facebook post'), 0, 180), 'description' => (string) ($post['message'] ?? ''), 'videoUrl' => (string) ($post['permalink_url'] ?? $url), 'embedUrl' => (string) ($post['permalink_url'] ?? $url), 'thumbnail' => (string) ($post['full_picture'] ?? ''), 'sourceUrl' => (string) ($post['permalink_url'] ?? $url), 'publishedAt' => (string) ($post['created_time'] ?? gmdate('c')), 'active' => true] : null;
 }
 
 try {
@@ -238,28 +248,27 @@ try {
     $token = accessToken($service);
     $projectId = (string) $config['projectId'];
     $count = 0;
-    $defaultRssSources = [
-        ['id' => 'ndtv-national', 'name' => 'NDTV National Feed', 'url' => 'https://feeds.feedburner.com/ndtvnews-top-stories', 'category' => 'national', 'lang' => 'EN', 'active' => true, 'hero' => true],
-        ['id' => 'abp-ananda-bengali', 'name' => 'ABP Ananda Bengali Feed', 'url' => 'https://bengali.abplive.com/home/feed', 'category' => 'world', 'lang' => 'BN', 'active' => true],
-        ['id' => 'bbc-hindi', 'name' => 'BBC Hindi Feed', 'url' => 'https://feeds.bbci.co.uk/hindi/rss.xml', 'category' => 'world', 'lang' => 'HI', 'active' => true],
-        ['id' => 'nytimes-world', 'name' => 'NYT World Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', 'category' => 'world', 'lang' => 'EN', 'active' => true],
-        ['id' => 'nytimes-technology', 'name' => 'NYT Technology Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml', 'category' => 'tech', 'lang' => 'EN', 'active' => true],
-        ['id' => 'nytimes-business', 'name' => 'NYT Business Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'category' => 'business', 'lang' => 'EN', 'active' => true],
-        ['id' => 'nytimes-sports', 'name' => 'NYT Sports Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/Sports.xml', 'category' => 'sports', 'lang' => 'EN', 'active' => true]
-    ];
-    $rssSources = !empty($config['rssSources']) ? $config['rssSources'] : $defaultRssSources;
-    fwrite(STDOUT, 'RSS sources configured: ' . count($rssSources) . "\n");
-    foreach ($rssSources as $source) {
-        if (empty($source['active'])) continue;
-        try {
-            $articles = rssArticles($source);
-            foreach ($articles as $article) { upsertFirestore($projectId, $token, 'articles', $article['documentId'], $article); $count++; }
-            fwrite(STDOUT, 'RSS ' . ($source['id'] ?? $source['name'] ?? 'unknown') . ': ' . count($articles) . " articles\n");
-        } catch (Throwable $sourceError) {
-            fwrite(STDERR, 'RSS failed ' . ($source['id'] ?? $source['name'] ?? 'unknown') . ': ' . $sourceError->getMessage() . "\n");
+    if (!empty($config['allowExternalNews'])) {
+        $rssSources = $config['rssSources'] ?? [];
+        fwrite(STDOUT, 'External RSS mode enabled; configured sources: ' . count($rssSources) . "\n");
+        foreach ($rssSources as $source) {
+            if (empty($source['active'])) continue;
+            try {
+                $articles = rssArticles($source);
+                foreach ($articles as $article) { $article['sourceType'] = 'external-news'; upsertFirestore($projectId, $token, 'articles', $article['documentId'], $article); $count++; }
+                fwrite(STDOUT, 'RSS ' . ($source['id'] ?? $source['name'] ?? 'unknown') . ': ' . count($articles) . " articles\n");
+            } catch (Throwable $sourceError) {
+                fwrite(STDERR, 'RSS failed ' . ($source['id'] ?? $source['name'] ?? 'unknown') . ': ' . $sourceError->getMessage() . "\n");
+            }
         }
+    } else {
+        fwrite(STDOUT, "External RSS mode disabled; no third-party news wires will be synchronized.\n");
     }
     $remoteSources = listFirestoreCollection($projectId, $token, 'externalSources');
+    $videoControls = [];
+    foreach (listFirestoreCollection($projectId, $token, 'videoControls') as $control) {
+        if (!empty($control['hidden'])) $videoControls[(string) ($control['id'] ?? '')] = true;
+    }
     $youtubeSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'youtube' && ($source['active'] ?? false)));
     $facebookSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'facebook' && ($source['active'] ?? false)));
     if (!$remoteSources) {
@@ -270,11 +279,26 @@ try {
         if (empty($source['active'])) continue;
         $source['channelId'] = $source['channelId'] ?? $source['channelOrPageId'] ?? '';
         $source['id'] = $source['id'] ?? 'youtube-' . $source['channelId'];
-        foreach (youtubeVideos($source) as $video) { upsertFirestore($projectId, $token, 'videoItems', $video['documentId'], $video); $count++; }
+        foreach (youtubeVideos($source) as $video) {
+            $isHidden = !empty($videoControls[$video['documentId']]);
+            $video['active'] = !$isHidden;
+            $video['hidden'] = $isHidden;
+            upsertFirestore($projectId, $token, 'videoItems', $video['documentId'], $video);
+            $count++;
+        }
         $live = youtubeLive($source, (string) ($config['youtubeApiKey'] ?? ''));
         if ($live) upsertFirestore($projectId, $token, 'liveStreams', 'youtube-' . preg_replace('/[^A-Za-z0-9_-]/', '_', $source['id']), $live + ['updatedAt' => gmdate('c')]);
     }
-    foreach (($config['youtubeLinks'] ?? []) as $link) { $video = youtubeLink((string) $link); if ($video) { upsertFirestore($projectId, $token, 'videoItems', $video['documentId'], $video); $count++; } }
+    foreach (($config['youtubeLinks'] ?? []) as $link) {
+        $video = youtubeLink((string) $link);
+        if ($video) {
+            $isHidden = !empty($videoControls[$video['documentId']]);
+            $video['active'] = !$isHidden;
+            $video['hidden'] = $isHidden;
+            upsertFirestore($projectId, $token, 'videoItems', $video['documentId'], $video);
+            $count++;
+        }
+    }
     foreach ($facebookSources as $source) {
         if (empty($source['active'])) continue;
         $source['pageId'] = $source['pageId'] ?? $source['channelOrPageId'] ?? '';

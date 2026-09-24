@@ -145,10 +145,23 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 .section-heading.compact { margin-bottom: 14px; }
 .video-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .video-card h3 { display: -webkit-box; overflow: hidden; margin: 7px 0; font-size: 1rem; line-height: 1.28; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.social-card { display: block; }
+.social-embed { overflow: hidden; min-height: 210px; background: #07101d; }
+.social-embed iframe { display: block; width: 100%; min-height: 250px; border: 0; }
+.facebook-embed { display: grid; place-items: center; padding: 8px; background: var(--surface-soft); }
+.social-description { display: -webkit-box; overflow: hidden; min-height: 42px; margin: 6px 0 11px; color: var(--muted); font-size: .86rem; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.social-actions { display: flex; margin-top: 12px; }
+.social-actions .button { padding: 7px 11px; font-size: .75rem; }
+.pagination-actions { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 24px; }
 .panel { padding: 23px; }
 .panel > h2 { margin-top: 5px; }
 .poll-option { display: block; width: 100%; margin: 10px 0; color: var(--ink); background: var(--surface-soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 13px; text-align: left; transition: background .2s, border-color .2s, transform .2s; }
 .poll-option:hover { transform: translateX(3px); border-color: var(--red); background: #fff; }
+.poll-option.selected { border-color: var(--red); background: rgba(217, 37, 53, .1); box-shadow: 0 0 0 2px rgba(217, 37, 53, .12); }
+.poll-option-row { display: flex; justify-content: space-between; gap: 12px; }
+.poll-option-row > span { color: var(--red-dark); font-weight: 800; }
+.poll-result-track { display: block; height: 6px; margin-top: 9px; overflow: hidden; background: var(--line); border-radius: 99px; }
+.poll-result-track > span { display: block; height: 100%; background: var(--red); border-radius: inherit; transition: width .35s ease; }
 .newsletter { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .85fr); align-items: center; gap: 24px; margin-bottom: 36px; background: linear-gradient(135deg, #fff, #fff5f5); border-color: #f2cbd0; }
 .newsletter h2 { margin: 5px 0 7px; }
 .inline-form { display: flex; gap: 9px; }

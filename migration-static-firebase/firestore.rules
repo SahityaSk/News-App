@@ -6,6 +6,16 @@ service cloud.firestore {
     function staff() { return role() in ['superadmin', 'editor', 'reporter']; }
     function editor() { return role() in ['superadmin', 'editor']; }
     function superadmin() { return role() == 'superadmin'; }
+    function validVoteUpdate(pollId) {
+      let vote = getAfter(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid));
+      return vote.data.uid == request.auth.uid
+        && vote.data.optionId is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCounts', 'updatedAt'])
+        && request.resource.data.voteCounts['option-1'] == resource.data.voteCounts['option-1'] + (vote.data.optionId == 'option-1' ? 1 : 0)
+        && request.resource.data.voteCounts['option-2'] == resource.data.voteCounts['option-2'] + (vote.data.optionId == 'option-2' ? 1 : 0)
+        && request.resource.data.voteCounts['option-3'] == resource.data.voteCounts['option-3'] + (vote.data.optionId == 'option-3' ? 1 : 0)
+        && request.resource.data.voteCounts['option-4'] == resource.data.voteCounts['option-4'] + (vote.data.optionId == 'option-4' ? 1 : 0);
+    }
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || superadmin());
@@ -36,6 +46,10 @@ service cloud.firestore {
       allow create, update, delete: if editor();
     }
 
+    match /videoControls/{videoId} {
+      allow read, write: if editor();
+    }
+
     match /reels/{id} {
       allow read: if resource.data.active == true || staff();
       allow create, update, delete: if editor();
@@ -47,14 +61,16 @@ service cloud.firestore {
 
     match /polls/{pollId} {
       allow read: if true;
-      allow create, update, delete: if editor();
+      allow create, delete: if editor();
+      allow update: if editor() || (signedIn() && validVoteUpdate(pollId));
       match /votes/{uid} {
         allow create: if signedIn() && request.auth.uid == uid
           && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(uid))
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.optionId is string
           && request.resource.data.optionId.size() <= 80;
-        allow read, update, delete: if false;
+        allow read: if editor();
+        allow update, delete: if editor();
       }
     }
 
