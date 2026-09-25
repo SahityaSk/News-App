@@ -2,7 +2,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import {
   collection, doc, getDocs, getFirestore, limit, onSnapshot, orderBy, query,
-  serverTimestamp, addDoc, setDoc, where
+  serverTimestamp, addDoc, setDoc, updateDoc, writeBatch, where
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 
@@ -11,6 +11,7 @@ const savedKey = 'yugantar_saved_articles';
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
 const state = { language: 'EN', category: 'all', search: '', articles: [], saved: readSaved(), poll: null };
 let db;
+const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const safeUrl = value => {
@@ -19,6 +20,10 @@ const safeUrl = value => {
     return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
   } catch { return ''; }
 };
+const youtubeId = value => String(value || '').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i)?.[1] || '';
+const facebookUrl = item => safeUrl(item.embedUrl || item.sourceUrl || item.videoUrl);
+const youtubeEmbed = id => id ? `<div class="social-embed"><iframe title="YouTube video" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : '';
+const facebookEmbed = url => url ? `<div class="social-embed facebook-embed"><div class="fb-post" data-href="${escapeHtml(url)}" data-width="500"></div></div>` : '';
 const imageMarkup = (value, alt, fallback = 'YUGANTAR') => {
   const url = safeUrl(value);
   return `<div class="media-frame${url ? '' : ' media-fallback'}">${url ? `<img data-image-fallback loading="lazy" src="${escapeHtml(url)}" alt="${escapeHtml(alt || fallback)}">` : ''}<span class="media-fallback-label">${escapeHtml(fallback)}</span></div>`;
@@ -88,7 +93,7 @@ function updateClock() {
 function renderArticles() {
   const target = $('articles');
   const term = state.search.trim().toLowerCase();
-  const articles = state.articles.filter(article => {
+  const articles = state.articles.filter(article => !legacyWireNames.has(article.sourceAgency) && article.sourceType !== 'wire').filter(article => {
     const categoryMatch = state.category === 'all' || article.category === state.category;
     const searchable = `${text(article.title)} ${text(article.summary)} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
     return categoryMatch && (!term || searchable.includes(term));
@@ -134,20 +139,24 @@ function renderHeadlineStrip() {
 
 function renderVideos(snapshot) {
   const videos = snapshot.map(item => {
-    const videoId = String(item.videoUrl || '').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i)?.[1];
-    const thumbnail = item.thumbnail || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
-    const videoUrl = safeUrl(item.videoUrl || item.sourceUrl) || '#';
-    return `<a class="video-card" href="${escapeHtml(videoUrl)}" target="_blank" rel="noreferrer">${imageMarkup(thumbnail, item.title, 'VIDEO')}<div><span class="tag">${escapeHtml(item.provider || 'VIDEO')}</span><h3>${escapeHtml(item.title || 'Untitled video')}</h3><small>${escapeHtml(dateText(item.publishedAt))}</small></div></a>`;
+    const id = youtubeId(item.videoUrl || item.embedUrl);
+    const thumbnail = item.thumbnail || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
+    const videoUrl = safeUrl(item.videoUrl || item.sourceUrl);
+    const embed = item.provider === 'youtube' ? youtubeEmbed(id) : item.provider === 'facebook' ? facebookEmbed(facebookUrl(item)) : '';
+    const media = embed || imageMarkup(thumbnail, item.title, item.mediaType === 'photo' ? 'PHOTO' : 'SOCIAL');
+    return `<article class="video-card social-card">${media}<div><span class="tag">${escapeHtml(item.provider || 'SOCIAL')} · ${escapeHtml(item.mediaType || 'POST')}</span><h3>${escapeHtml(item.title || 'Untitled post')}</h3><p class="social-description">${escapeHtml(item.description || 'Official post from the client channel.')}</p><small>${escapeHtml(dateText(item.publishedAt))}</small><div class="social-actions">${videoUrl ? `<a class="button button-outline" href="${escapeHtml(videoUrl)}" target="_blank" rel="noreferrer">View original</a>` : ''}</div></div></article>`;
   });
   $('videos').innerHTML = videos.length ? videos.join('') : '<div class="empty-state">No channel videos have been synchronized yet.</div>';
   bindImageFallbacks($('videos'));
+  if (window.FB) window.FB.XFBML.parse($('videos'));
 }
 
 function renderPoll(poll) {
   state.poll = poll;
   if (!poll) { $('poll-question').textContent = 'No active poll'; $('poll-options').innerHTML = ''; return; }
   $('poll-question').textContent = text(poll.question);
-  $('poll-options').innerHTML = (poll.options || []).map(option => `<button class="poll-option" data-option-id="${escapeHtml(option.optionId)}">${escapeHtml(text(option.text))}</button>`).join('');
+  const counts = { ...Object.fromEntries((poll.options || []).map(option => [option.optionId, 0])), ...(poll.voteCounts || {}) }; poll.voteCounts = counts; const total = Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0); const selected = poll.userOption || '';
+  $('poll-options').innerHTML = (poll.options || []).map(option => { const count = Number(counts[option.optionId] || 0); const percentage = total ? Math.round((count / total) * 100) : 0; return `<button class="poll-option${selected === option.optionId ? ' selected' : ''}" data-option-id="${escapeHtml(option.optionId)}" type="button"><span class="poll-option-row"><strong>${escapeHtml(text(option.text))}</strong><span>${percentage}%</span></span><span class="poll-result-track"><span style="width:${percentage}%"></span></span></button>`; }).join('');
   $('poll-options').querySelectorAll('[data-option-id]').forEach(button => button.addEventListener('click', () => votePoll(button.dataset.optionId)));
 }
 
@@ -156,10 +165,11 @@ async function votePoll(optionId) {
   setStatus($('poll-status'), 'Submitting vote…');
   try {
     const anonymous = await signInAnonymously(getAuth());
-    await setDoc(doc(db, 'polls', state.poll.id, 'votes', anonymous.user.uid), { uid: anonymous.user.uid, optionId, createdAt: serverTimestamp() });
-    setStatus($('poll-status'), 'Vote recorded. One vote is allowed per signed-in identity.');
+    const pollRef = doc(db, 'polls', state.poll.id); const counts = { ...(state.poll.voteCounts || {}) }; counts[optionId] = Number(counts[optionId] || 0) + 1;
+    const batch = writeBatch(db); batch.set(doc(db, 'polls', state.poll.id, 'votes', anonymous.user.uid), { uid: anonymous.user.uid, optionId, createdAt: serverTimestamp() }); batch.update(pollRef, { voteCounts: counts, updatedAt: serverTimestamp() }); await batch.commit();
+    state.poll.voteCounts = counts; state.poll.userOption = optionId; renderPoll(state.poll); setStatus($('poll-status'), 'Vote recorded. Your selection is highlighted.');
   } catch (error) {
-    if (error.code === 'already-exists') setStatus($('poll-status'), 'This identity has already voted.', true);
+    if (error.code === 'already-exists' || error.code === 'permission-denied') setStatus($('poll-status'), 'This identity has already voted, or the poll is no longer active.', true);
     else setStatus($('poll-status'), 'Voting is temporarily unavailable.', true);
   }
 }
@@ -184,16 +194,17 @@ function startRealtimeListeners() {
     const stream = snapshot.docs[0]?.data();
     $('live-title').textContent = stream?.title || 'Live channel';
     $('live-meta').textContent = stream?.provider ? `${stream.provider} · Updated ${dateText(stream.updatedAt)}` : 'No live stream configured.';
-    const youtubeId = String(stream?.videoUrl || '').match(/(?:v=|youtu\.be\/|embed\/)([^?&/]+)/i)?.[1];
+    const youtubeVideoId = youtubeId(stream?.videoUrl);
     const streamUrl = safeUrl(stream?.videoUrl);
-    $('live-player').innerHTML = youtubeId ? `<iframe title="${escapeHtml(stream.title || 'Live stream')}" src="https://www.youtube.com/embed/${escapeHtml(youtubeId)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>` : (streamUrl ? `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">Open live stream</a>` : 'No live stream configured.');
+    $('live-player').innerHTML = youtubeVideoId ? youtubeEmbed(youtubeVideoId) : (stream?.provider === 'facebook' && streamUrl ? facebookEmbed(streamUrl) : (streamUrl ? `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">Open live stream</a>` : 'No live stream configured.'));
+    if (window.FB) window.FB.XFBML.parse($('live-player'));
     const action = $('live-action');
     if (action && streamUrl) { action.href = streamUrl; action.classList.remove('hidden'); } else if (action) action.classList.add('hidden');
   });
 }
 
 async function loadVideosAndPoll() {
-  const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(12))).catch(() => ({ docs: [] }));
+  const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(8))).catch(() => ({ docs: [] }));
   renderVideos(videos.docs.map(item => item.data()));
   const polls = await getDocs(query(collection(db, 'polls'), where('active', '==', true), limit(1))).catch(() => ({ docs: [] }));
   renderPoll(polls.docs[0] ? { id: polls.docs[0].id, ...polls.docs[0].data() } : null);

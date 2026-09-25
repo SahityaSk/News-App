@@ -3,17 +3,14 @@ return [
     // Keep this file outside public_html and rename it to worker-config.php.
     'projectId' => 'YOUR_FIREBASE_PROJECT_ID',
     'serviceAccountPath' => '/home/USERNAME/private/firebase-service-account.json',
+    // Metadata/link-only feeds reviewed for conservative aggregation.
+    'allowExternalNews' => true,
     'youtubeApiKey' => '', // Optional; keep private. Needed for automatic live discovery.
     'graphApiVersion' => 'v23.0',
-    // These are the core automatic news sources. Keep only feeds whose terms allow republication.
+    // Store headlines, short descriptions, dates, and source links only.
     'rssSources' => [
-        ['id' => 'ndtv-national', 'name' => 'NDTV National Feed', 'url' => 'https://feeds.feedburner.com/ndtvnews-top-stories', 'category' => 'national', 'lang' => 'EN', 'active' => true],
-        ['id' => 'abp-ananda-bengali', 'name' => 'ABP Ananda Bengali Feed', 'url' => 'https://bengali.abplive.com/home/feed', 'category' => 'world', 'lang' => 'BN', 'active' => true],
-        ['id' => 'bbc-hindi', 'name' => 'BBC Hindi Feed', 'url' => 'https://feeds.bbci.co.uk/hindi/rss.xml', 'category' => 'world', 'lang' => 'HI', 'active' => true],
-        ['id' => 'nytimes-world', 'name' => 'NYT World Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', 'category' => 'world', 'lang' => 'EN', 'active' => true],
-        ['id' => 'nytimes-technology', 'name' => 'NYT Technology Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml', 'category' => 'tech', 'lang' => 'EN', 'active' => true],
-        ['id' => 'nytimes-business', 'name' => 'NYT Business Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'category' => 'business', 'lang' => 'EN', 'active' => true],
-        ['id' => 'nytimes-sports', 'name' => 'NYT Sports Feed', 'url' => 'https://rss.nytimes.com/services/xml/rss/nyt/Sports.xml', 'category' => 'sports', 'lang' => 'EN', 'active' => true]
+        ['id' => 'pib-press-releases', 'name' => 'Press Information Bureau', 'url' => 'https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=5', 'category' => 'national', 'lang' => 'EN', 'active' => true, 'metadataOnly' => true],
+        ['id' => 'gdelt-article-list', 'name' => 'GDELT Article List', 'url' => 'https://data.gdeltproject.org/gdeltv3/gal/feed.rss', 'category' => 'general', 'lang' => 'EN', 'active' => true, 'metadataOnly' => true]
     ],
     'youtubeChannels' => [
         [
