@@ -21,16 +21,25 @@ let pollCache = [];
 let pollVoteCounts = new Map();
 let activeAuth;
 
+const sunIconSvg = `<svg class="theme-icon-svg sun-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+const moonIconSvg = `<svg class="theme-icon-svg moon-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>`;
+
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   const button = $('admin-theme-toggle');
-  if (button) { button.textContent = theme === 'dark' ? '☀' : '☾'; button.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'); }
+  if (button) {
+    button.innerHTML = theme === 'dark' ? moonIconSvg : sunIconSvg;
+    button.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    button.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  }
   try { localStorage.setItem('yugantar_theme', theme); } catch {}
 }
 
 function bindTheme() {
   let saved = null; try { saved = localStorage.getItem('yugantar_theme'); } catch {}
-  setTheme(saved || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  const hour = new Date().getHours();
+  const defaultTheme = (hour >= 6 && hour < 18) ? 'light' : 'dark';
+  setTheme(saved || defaultTheme);
   $('admin-theme-toggle')?.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 }
 

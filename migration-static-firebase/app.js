@@ -8,10 +8,197 @@ import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
+const savedLanguageKey = 'yugantar_language';
+const getStoredLanguage = () => { try { return localStorage.getItem(savedLanguageKey) || 'EN'; } catch { return 'EN'; } };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
-const state = { language: 'EN', category: 'all', search: '', articles: [], saved: readSaved(), poll: null };
+const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], saved: readSaved(), poll: null };
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
+
+const translations = {
+  EN: {
+    utilityLive: 'LIVE NEWS NETWORK',
+    syncStatus: 'LIVE DATA',
+    brandSlogan: 'Truth • Speed • Unbiased Coverage',
+    catAll: 'Latest',
+    catNational: 'National',
+    catWorld: 'World',
+    catBusiness: 'Business',
+    catSports: 'Sports',
+    catTech: 'Tech',
+    catEntertainment: 'Entertainment',
+    tickerBreaking: 'BREAKING',
+    liveTvKicker: 'LIVE TV',
+    liveTvTitle: 'Live channel',
+    liveTvMeta: 'The editorial desk can change the stream URL without redeploying the frontend.',
+    liveTvAction: 'Open live coverage',
+    inFocusKicker: 'IN FOCUS',
+    inFocusTitle: 'Top developments',
+    newsroomKicker: 'NEWSROOM',
+    newsroomTitle: 'Latest stories',
+    newsroomIntro: 'Independent reporting, refreshed from the newsroom and trusted public feeds.',
+    searchPlaceholder: 'Search stories',
+    socialKicker: 'OFFICIAL SOCIAL',
+    socialTitle: 'From YUGANTAR channels',
+    watchAllVideos: 'Watch all videos',
+    opinionKicker: 'OPINION',
+    newsletterKicker: 'NEWSLETTER',
+    newsletterTitle: 'Get the daily bulletin',
+    newsletterMuted: 'Top stories, live updates, and newsroom briefs delivered to your inbox.',
+    subscribePlaceholder: 'you@example.com',
+    subscribeBtn: 'Subscribe',
+    readingListKicker: 'YOUR READING LIST',
+    savedTitle: 'Saved articles',
+    footerAbout: 'Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial intelligence globally.',
+    footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
+    footerLiveLink: '● YUGANTAR LIVE 24/7',
+    footerOfficialDesk: 'Official desk',
+    footerNewsSections: 'News sections',
+    footerConnectTitle: 'Connect with us',
+    footerConnectText: 'Follow official channels for verified breaking updates.',
+    footerSecTop: 'Top stories',
+    footerSecNational: 'National',
+    footerSecWorld: 'World',
+    footerSecBusiness: 'Business & finance',
+    footerSecTech: 'Tech & AI',
+    footerSecSports: 'Sports',
+    footerCopyright: '© 2026 Yugantar News Network. All rights reserved.',
+    footerFactCheck: '✦ Fact-checked newsroom',
+    emptyArticles: 'No published stories match this view.',
+    emptySaved: 'Your saved reading list is empty.',
+    saveArticle: '☆ Save article',
+    savedArticle: '★ Saved',
+    viewSource: 'View original source'
+  },
+  BN: {
+    utilityLive: 'লাইভ নিউজ নেটওয়ার্ক',
+    syncStatus: 'লাইভ ডাটা',
+    brandSlogan: 'সত্য • দ্রুততা • নিরপেক্ষ সংবাদ',
+    catAll: 'সর্বশেষ',
+    catNational: 'জাতীয়',
+    catWorld: 'আন্তর্জাতিক',
+    catBusiness: 'বাণিজ্য',
+    catSports: 'খেলাধুলা',
+    catTech: 'প্রযুক্তি',
+    catEntertainment: 'বিনোদন',
+    tickerBreaking: 'ব্রেকিং নিউজ',
+    liveTvKicker: 'লাইভ টিভি',
+    liveTvTitle: 'লাইভ চ্যানেল',
+    liveTvMeta: 'সম্পাদকীয় ডেস্ক সরাসরি লাইভ স্ট্রিম আপডেট করতে পারে।',
+    liveTvAction: 'লাইভ কভারেজ খুলুন',
+    inFocusKicker: 'বিশেষ সংবাদ',
+    inFocusTitle: 'প্রধান খবর',
+    newsroomKicker: 'নিউজ রুম',
+    newsroomTitle: 'সর্বশেষ খবর',
+    newsroomIntro: 'স্বাধীন সাংবাদিকতা, নিউজ রুম ও নির্ভরযোগ্য সূত্র থেকে নিয়মিত আপডেট।',
+    searchPlaceholder: 'খবর খুঁজুন...',
+    socialKicker: 'অফিসিয়াল সোশ্যাল',
+    socialTitle: 'যুগান্তর চ্যানেল থেকে',
+    watchAllVideos: 'সমস্ত ভিডিও দেখুন',
+    opinionKicker: 'জনমত',
+    newsletterKicker: 'নিউজলেটার',
+    newsletterTitle: 'দৈনিক বুলেটিন পান',
+    newsletterMuted: 'প্রধান খবর, লাইভ আপডেট এবং ইনবক্সে গুরুত্বপূর্ণ খবর পান।',
+    subscribePlaceholder: 'আপনার ইমেইল ঠিকানা...',
+    subscribeBtn: 'সাবস্ক্রাইব করুন',
+    readingListKicker: 'আপনার পঠন তালিকা',
+    savedTitle: 'সেভ করা খবর',
+    footerAbout: 'বিশ্বজুড়ে ২৪x৭ নিরপেক্ষ ব্রেকিং নিউজ, রিয়েল-টাইম ভিডিও স্ট্রিমিং এবং বিস্তারিত সম্পাদকীয় পরিবেশন।',
+    footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
+    footerLiveLink: '● যুগান্তর লাইভ ২৪/৭',
+    footerOfficialDesk: 'অফিসিয়াল ডেস্ক',
+    footerNewsSections: 'সংবাদ বিভাগ',
+    footerConnectTitle: 'আমাদের সাথে যুক্ত থাকুন',
+    footerConnectText: 'সঠিক ও যাচাইকৃত সংবাদের জন্য অফিশিয়াল চ্যানেল ফলো করুন।',
+    footerSecTop: 'প্রধান খবর',
+    footerSecNational: 'জাতীয়',
+    footerSecWorld: 'আন্তর্জাতিক',
+    footerSecBusiness: 'ব্যবসা ও অর্থ',
+    footerSecTech: 'প্রযুক্তি ও এআই',
+    footerSecSports: 'খেলাধুলা',
+    footerCopyright: '© ২০২৬ যুগান্তর নিউজ নেটওয়ার্ক। সর্বস্বত্ব সংরক্ষিত।',
+    footerFactCheck: '✦ সত্যতা যাচাইকৃত নিউজ রুম',
+    emptyArticles: 'এই বিভাগে কোনো খবর প্রকাশিত হয়নি।',
+    emptySaved: 'আপনার সেভ করা খবরের তালিকা খালি।',
+    saveArticle: '☆ সেভ করুন',
+    savedArticle: '★ সেভ করা হয়েছে',
+    viewSource: 'মূল উৎস দেখুন'
+  },
+  HI: {
+    utilityLive: 'लाइव न्यूज नेटवर्क',
+    syncStatus: 'लाइव डेटा',
+    brandSlogan: 'सत्य • गति • निष्पक्ष समाचार',
+    catAll: 'नवीनतम',
+    catNational: 'राष्ट्रीय',
+    catWorld: 'दुनिया',
+    catBusiness: 'व्यापार',
+    catSports: 'खेल',
+    catTech: 'टेक',
+    catEntertainment: 'मनोरंजन',
+    tickerBreaking: 'ब्रेकिंग न्यूज़',
+    liveTvKicker: 'लाइव टीवी',
+    liveTvTitle: 'लाइव चैनल',
+    liveTvMeta: 'संपादकीय डेस्क स्ट्रीम यूआरएल को सीधे अपडेट कर सकता है।',
+    liveTvAction: 'लाइव कवरेज खोलें',
+    inFocusKicker: 'इन फोकस',
+    inFocusTitle: 'मुख्य समाचार',
+    newsroomKicker: 'न्यूज़रूम',
+    newsroomTitle: 'ताज़ा ख़बरें',
+    newsroomIntro: 'स्वतंत्र रिपोर्टिंग, न्यूज़रूम और विश्वसनीय स्रोतों से अपडेट।',
+    searchPlaceholder: 'समाचार खोजें...',
+    socialKicker: 'आधिकारिक सोशल',
+    socialTitle: 'युगांतर चैनल से',
+    watchAllVideos: 'सभी वीडियो देखें',
+    opinionKicker: 'ओपिनियन',
+    newsletterKicker: 'न्यूज़लेटर',
+    newsletterTitle: 'दैनिक बुलेटिन प्राप्त करें',
+    newsletterMuted: 'मुख्य समाचार, लाइव अपडेट और न्यूज़रूम ब्रीफ सीधे इनबॉक्स में पाएं।',
+    subscribePlaceholder: 'आपका ईमेल...',
+    subscribeBtn: 'सब्सक्राइब करें',
+    readingListKicker: 'आपकी रीडिंग लिस्ट',
+    savedTitle: 'सेव किए गए समाचार',
+    footerAbout: 'दुनिया भर में 24x7 निष्पक्ष ब्रेकिंग न्यूज़, लाइव वीडियो स्ट्रीमिंग और विस्तृत संपादकीय।',
+    footerMotto: '“निरपेक्ष खबर, निर्भीक पत्रकारिता।”',
+    footerLiveLink: '● युगांतर लाइव 24/7',
+    footerOfficialDesk: 'आधिकारिक डेस्क',
+    footerNewsSections: 'समाचार अनुभाग',
+    footerConnectTitle: 'हमसे जुड़ें',
+    footerConnectText: 'सत्यापित ब्रेकिंग अपडेट के लिए आधिकारिक चैनल फॉलो करें।',
+    footerSecTop: 'मुख्य समाचार',
+    footerSecNational: 'राष्ट्रीय',
+    footerSecWorld: 'दुनिया',
+    footerSecBusiness: 'व्यापार और वित्त',
+    footerSecTech: 'टेक और एआई',
+    footerSecSports: 'खेल',
+    footerCopyright: '© 2026 युगांतर न्यूज़ नेटवर्क। सर्वाधिकार सुरक्षित।',
+    footerFactCheck: '✦ फ़ैक्ट-चेक्ड न्यूज़रूम',
+    emptyArticles: 'इस श्रेणी में कोई समाचार उपलब्ध नहीं है।',
+    emptySaved: 'आपकी सेव की गई सूची खाली है।',
+    saveArticle: '☆ सेव करें',
+    savedArticle: '★ सेव किया गया',
+    viewSource: 'मूल स्रोत देखें'
+  }
+};
+
+function updateStaticLanguage(lang = state.language) {
+  const dict = translations[lang] || translations.EN;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (dict[key]) {
+      const icon = el.querySelector('i');
+      if (icon) {
+        el.textContent = ' ' + dict[key];
+        el.prepend(icon);
+      } else {
+        el.textContent = dict[key];
+      }
+    }
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    if (dict[key]) el.placeholder = dict[key];
+  });
+}
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const safeUrl = value => {
@@ -41,11 +228,14 @@ const dateText = value => {
 const setStatus = (element, message, error = false) => { if (element) { element.textContent = message; element.className = `status${error ? ' error' : ''}`; } };
 const isSaved = id => state.saved.some(article => article.id === id);
 
+const sunIconSvg = `<svg class="theme-icon-svg sun-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+const moonIconSvg = `<svg class="theme-icon-svg moon-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>`;
+
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   const toggle = $('theme-toggle');
   if (toggle) {
-    toggle.textContent = theme === 'dark' ? '☀' : '☾';
+    toggle.innerHTML = theme === 'dark' ? moonIconSvg : sunIconSvg;
     toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     toggle.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
   }
@@ -67,7 +257,8 @@ function renderSaved() {
   if (count) count.textContent = String(state.saved.length);
   const target = $('saved-list');
   if (!target) return;
-  if (!state.saved.length) { target.innerHTML = '<div class="empty-state">Your saved reading list is empty.</div>'; return; }
+  const dict = translations[state.language] || translations.EN;
+  if (!state.saved.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptySaved)}</div>`; return; }
   target.innerHTML = state.saved.map(article => `<div class="saved-item"><button class="saved-open" data-open-saved="${escapeHtml(article.id)}" type="button"><strong>${escapeHtml(text(article.title))}</strong><small>${escapeHtml(article.sourceAgency || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></button><button class="saved-remove" data-remove-saved="${escapeHtml(article.id)}" type="button" aria-label="Remove saved article">×</button></div>`).join('');
   target.querySelectorAll('[data-open-saved]').forEach(button => button.addEventListener('click', () => { $('saved-dialog').close(); openArticle(button.dataset.openSaved); }));
   target.querySelectorAll('[data-remove-saved]').forEach(button => button.addEventListener('click', () => {
@@ -87,18 +278,19 @@ function showSetupMessage() {
 
 function updateClock() {
   const target = $('current-date');
-  if (target) target.textContent = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date());
+  if (target) target.textContent = new Intl.DateTimeFormat(state.language === 'BN' ? 'bn-BD' : (state.language === 'HI' ? 'hi-IN' : undefined), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date());
 }
 
 function renderArticles() {
   const target = $('articles');
   const term = state.search.trim().toLowerCase();
+  const dict = translations[state.language] || translations.EN;
   const articles = state.articles.filter(article => !legacyWireNames.has(article.sourceAgency) && article.sourceType !== 'wire').filter(article => {
     const categoryMatch = state.category === 'all' || article.category === state.category;
     const searchable = `${text(article.title)} ${text(article.summary)} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
     return categoryMatch && (!term || searchable.includes(term));
   });
-  if (!articles.length) { target.innerHTML = '<div class="empty-state">No published stories match this view.</div>'; return; }
+  if (!articles.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptyArticles)}</div>`; return; }
   target.innerHTML = articles.map(article => `<article class="article-card" data-article-id="${escapeHtml(article.id)}">
     ${imageMarkup(article.image, text(article.title), 'YUGANTAR')}
     <div class="article-body"><span class="tag">${escapeHtml(article.category || 'NEWS')}</span><h3>${escapeHtml(text(article.title))}</h3><p>${escapeHtml(text(article.summary))}</p><small>${escapeHtml(article.sourceAgency || article.author || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></div>
@@ -113,7 +305,8 @@ function openArticle(id) {
   const article = state.articles.find(item => item.id === id) || state.saved.find(item => item.id === id);
   if (!article) return;
   const sourceUrl = safeUrl(article.sourceUrl);
-  $('article-detail').innerHTML = `<span class="tag">${escapeHtml(article.category || 'NEWS')}</span><h1>${escapeHtml(text(article.title))}</h1><p class="muted">${escapeHtml(article.author || 'YUGANTAR Editorial')} · ${escapeHtml(dateText(article.publishedAt))}</p>${imageMarkup(article.image, text(article.title), 'YUGANTAR')}<div class="article-actions"><button class="button" data-dialog-save="${escapeHtml(article.id)}" type="button">${isSaved(article.id) ? '★ Saved' : '☆ Save article'}</button>${sourceUrl ? `<a class="button button-outline" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">View original source</a>` : ''}</div><p class="lead">${escapeHtml(text(article.summary))}</p><div class="article-copy">${escapeHtml(text(article.content) || text(article.summary)).replace(/\n/g, '<br>')}</div>`;
+  const dict = translations[state.language] || translations.EN;
+  $('article-detail').innerHTML = `<span class="tag">${escapeHtml(article.category || 'NEWS')}</span><h1>${escapeHtml(text(article.title))}</h1><p class="muted">${escapeHtml(article.author || 'YUGANTAR Editorial')} · ${escapeHtml(dateText(article.publishedAt))}</p>${imageMarkup(article.image, text(article.title), 'YUGANTAR')}<div class="article-actions"><button class="button" data-dialog-save="${escapeHtml(article.id)}" type="button">${isSaved(article.id) ? dict.savedArticle : dict.saveArticle}</button>${sourceUrl ? `<a class="button button-outline" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(dict.viewSource)}</a>` : ''}</div><p class="lead">${escapeHtml(text(article.summary))}</p><div class="article-copy">${escapeHtml(text(article.content) || text(article.summary)).replace(/\n/g, '<br>')}</div>`;
   $('article-detail').querySelector('[data-dialog-save]')?.addEventListener('click', () => toggleSaved(article.id));
   bindImageFallbacks($('article-detail'));
   $('article-dialog').showModal();
@@ -221,12 +414,26 @@ async function subscribe(event) {
 
 function bindUi() {
   const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme'); } catch { return null; } })();
-  setTheme(storedTheme || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  const hour = new Date().getHours();
+  const defaultTheme = (hour >= 6 && hour < 18) ? 'light' : 'dark';
+  setTheme(storedTheme || defaultTheme);
   $('theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   $('saved-toggle').addEventListener('click', () => $('saved-dialog').showModal());
   $('close-saved').addEventListener('click', () => $('saved-dialog').close());
+  const langSelect = $('language');
+  if (langSelect) langSelect.value = state.language;
+  updateStaticLanguage(state.language);
   renderSaved();
-  $('language').addEventListener('change', event => { state.language = event.target.value; renderArticles(); renderHero(); renderHeadlineStrip(); renderSaved(); if (state.poll) renderPoll(state.poll); });
+  langSelect?.addEventListener('change', event => {
+    state.language = event.target.value;
+    try { localStorage.setItem(savedLanguageKey, state.language); } catch {}
+    updateStaticLanguage(state.language);
+    renderArticles();
+    renderHero();
+    renderHeadlineStrip();
+    renderSaved();
+    if (state.poll) renderPoll(state.poll);
+  });
   $('search').addEventListener('input', event => { state.search = event.target.value; renderArticles(); });
   document.querySelectorAll('[data-category]').forEach(button => button.addEventListener('click', () => { state.category = button.dataset.category; document.querySelectorAll('.category').forEach(item => item.classList.toggle('active', item === button)); renderArticles(); }));
   document.querySelectorAll('[data-footer-category]').forEach(link => link.addEventListener('click', () => {
@@ -240,7 +447,7 @@ function bindUi() {
 
 bindUi();
 updateClock();
-setInterval(updateClock, 60000);
+setInterval(updateClock, 1000);
 if (!firebaseConfigured) showSetupMessage();
 else {
   const app = initializeApp(firebaseConfig);

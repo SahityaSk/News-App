@@ -21,13 +21,13 @@
   <div id="setup-banner" class="notice hidden"></div>
   <header class="site-header">
     <div class="utility-bar">
-      <div class="shell utility-inner"><span class="utility-live"><i></i> LIVE NEWS NETWORK</span><span
-          id="current-date">Loading newsroom time…</span><span id="sync-status">LIVE DATA</span></div>
+      <div class="shell utility-inner"><span class="utility-live" data-i18n="utilityLive"><i></i> LIVE NEWS NETWORK</span><span
+          id="current-date">Loading newsroom time…</span><span id="sync-status" data-i18n="syncStatus">LIVE DATA</span></div>
     </div>
     <div class="shell header-row">
       <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
         <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
-        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small>Truth • Speed • Unbiased
+        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small data-i18n="brandSlogan">Truth • Speed • Unbiased
             Coverage</small></span>
       </a>
       <div class="header-actions">
@@ -40,23 +40,23 @@
         <button id="saved-toggle" class="icon-button" type="button" aria-label="Open saved articles"
           title="Saved articles">☆ <span id="saved-count">0</span></button>
         <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch theme"
-          title="Switch theme">☾</button>
+          title="Switch theme"><svg class="theme-icon-svg moon-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg></button>
       </div>
     </div>
     <nav class="category-nav shell" aria-label="News categories">
-      <button class="category active" data-category="all">Latest</button>
-      <button class="category" data-category="national">National</button>
-      <button class="category" data-category="world">World</button>
-      <button class="category" data-category="business">Business</button>
-      <button class="category" data-category="sports">Sports</button>
-      <button class="category" data-category="tech">Tech</button>
-      <button class="category" data-category="entertainment">Entertainment</button>
+      <button class="category active" data-category="all" data-i18n="catAll">Latest</button>
+      <button class="category" data-category="national" data-i18n="catNational">National</button>
+      <button class="category" data-category="world" data-i18n="catWorld">World</button>
+      <button class="category" data-category="business" data-i18n="catBusiness">Business</button>
+      <button class="category" data-category="sports" data-i18n="catSports">Sports</button>
+      <button class="category" data-category="tech" data-i18n="catTech">Tech</button>
+      <button class="category" data-category="entertainment" data-i18n="catEntertainment">Entertainment</button>
     </nav>
   </header>
 
   <main>
     <section class="ticker" aria-label="Breaking news">
-      <div class="shell ticker-row"><strong>BREAKING</strong>
+      <div class="shell ticker-row"><strong data-i18n="tickerBreaking">BREAKING</strong>
         <div id="ticker-items">Connecting to live updates…</div>
       </div>
     </section>
@@ -65,30 +65,30 @@
       <div id="hero-card" class="hero-card empty-state">Loading the latest newsroom update…</div>
       <aside class="live-card">
         <div class="live-card-head">
-          <div class="section-kicker">LIVE TV</div><span class="live-pill"><i></i>24/7</span>
+          <div class="section-kicker" data-i18n="liveTvKicker">LIVE TV</div><span class="live-pill"><i></i>24/7</span>
         </div>
-        <h2 id="live-title">Live channel</h2>
+        <h2 id="live-title" data-i18n="liveTvTitle">Live channel</h2>
         <div id="live-player" class="media-placeholder">No live stream configured.</div>
-        <p id="live-meta" class="muted">The editorial desk can change the stream URL without redeploying the frontend.
+        <p id="live-meta" class="muted" data-i18n="liveTvMeta">The editorial desk can change the stream URL without redeploying the frontend.
         </p>
         <a id="live-action" class="button button-light hidden" href="#live-player" target="_blank"
-          rel="noopener noreferrer">Open live coverage</a>
+          rel="noopener noreferrer" data-i18n="liveTvAction">Open live coverage</a>
       </aside>
     </section>
 
     <section class="shell headline-strip-section" aria-label="Top developments">
-      <div class="strip-label"><span class="section-kicker">IN FOCUS</span><strong>Top developments</strong></div>
+      <div class="strip-label"><span class="section-kicker" data-i18n="inFocusKicker">IN FOCUS</span><strong data-i18n="inFocusTitle">Top developments</strong></div>
       <div id="headline-strip" class="headline-strip"><span class="muted">Loading the latest developments…</span></div>
     </section>
 
     <section class="shell content-section">
       <div class="section-heading">
         <div>
-          <div class="section-kicker">NEWSROOM</div>
-          <h1>Latest stories</h1>
-          <p class="section-intro">Independent reporting, refreshed from the newsroom and trusted public feeds.</p>
+          <div class="section-kicker" data-i18n="newsroomKicker">NEWSROOM</div>
+          <h1 data-i18n="newsroomTitle">Latest stories</h1>
+          <p class="section-intro" data-i18n="newsroomIntro">Independent reporting, refreshed from the newsroom and trusted public feeds.</p>
         </div><label class="search-box"><span class="sr-only">Search articles</span><span
-            class="search-icon">⌕</span><input id="search" type="search" placeholder="Search stories"></label>
+            class="search-icon">⌕</span><input id="search" type="search" placeholder="Search stories" data-i18n-placeholder="searchPlaceholder"></label>
       </div>
       <div id="articles" class="article-grid">
         <div class="empty-state">Loading articles…</div>
@@ -99,17 +99,17 @@
       <div>
         <div class="section-heading compact">
           <div>
-            <div class="section-kicker">OFFICIAL SOCIAL</div>
-            <h2>From YUGANTAR channels</h2>
+            <div class="section-kicker" data-i18n="socialKicker">OFFICIAL SOCIAL</div>
+            <h2 data-i18n="socialTitle">From YUGANTAR channels</h2>
           </div>
-          <a class="button button-outline" href="./videos.html">Watch all videos</a>
+          <a class="button button-outline" href="./videos.html" data-i18n="watchAllVideos">Watch all videos</a>
         </div>
         <div id="videos" class="video-grid">
           <div class="empty-state">Loading official YouTube and Facebook posts…</div>
         </div>
       </div>
       <div class="panel">
-        <div class="section-kicker">OPINION</div>
+        <div class="section-kicker" data-i18n="opinionKicker">OPINION</div>
         <h2 id="poll-question">Loading poll…</h2>
         <div id="poll-options"></div>
         <p id="poll-status" class="muted"></p>
@@ -118,13 +118,13 @@
 
     <section class="shell content-section newsletter panel">
       <div>
-        <div class="section-kicker">NEWSLETTER</div>
-        <h2>Get the daily bulletin</h2>
-        <p class="muted">Top stories, live updates, and newsroom briefs delivered to your inbox.</p>
+        <div class="section-kicker" data-i18n="newsletterKicker">NEWSLETTER</div>
+        <h2 data-i18n="newsletterTitle">Get the daily bulletin</h2>
+        <p class="muted" data-i18n="newsletterMuted">Top stories, live updates, and newsroom briefs delivered to your inbox.</p>
       </div>
       <form id="newsletter-form" class="inline-form"><input id="newsletter-email" type="email" required
-          placeholder="you@example.com" aria-label="Email address"><button class="button"
-          type="submit">Subscribe</button></form>
+          placeholder="you@example.com" aria-label="Email address" data-i18n-placeholder="subscribePlaceholder"><button class="button"
+          type="submit" data-i18n="subscribeBtn">Subscribe</button></form>
       <p id="newsletter-status" class="status" aria-live="polite"></p>
     </section>
   </main>
@@ -135,8 +135,8 @@
   </dialog>
   <dialog id="saved-dialog" class="saved-dialog"><button id="close-saved" class="dialog-close"
       aria-label="Close saved articles">×</button>
-    <div class="section-kicker">YOUR READING LIST</div>
-    <h2>Saved articles</h2>
+    <div class="section-kicker" data-i18n="readingListKicker">YOUR READING LIST</div>
+    <h2 data-i18n="savedTitle">Saved articles</h2>
     <div id="saved-list" class="saved-list"></div>
   </dialog>
   <footer class="site-footer">
@@ -145,13 +145,13 @@
         <div class="footer-brand"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo">
           <div><strong>YUGANTAR</strong><small>GLOBAL NEWS NETWORK</small></div>
         </div>
-        <p>Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial
+        <p data-i18n="footerAbout">Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial
           intelligence globally.</p>
-        <p class="footer-motto">“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”</p>
-        <a class="footer-live-link" href="#live-player">● YUGANTAR LIVE 24/7</a>
+        <p class="footer-motto" data-i18n="footerMotto">“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”</p>
+        <a class="footer-live-link" href="#live-player" data-i18n="footerLiveLink">● YUGANTAR LIVE 24/7</a>
       </section>
       <section>
-        <h2 class="footer-title">Official desk</h2>
+        <h2 class="footer-title" data-i18n="footerOfficialDesk">Official desk</h2>
         <ul class="footer-links">
           <li><a href="tel:+918479084770"><span class="contact-icon">☎</span> +91 84790 84770</a></li>
           <li><a href="mailto:office.yugantarnews@gmail.com"><span class="contact-icon">✉</span>
@@ -161,19 +161,19 @@
         </ul>
       </section>
       <section>
-        <h2 class="footer-title">News sections</h2>
+        <h2 class="footer-title" data-i18n="footerNewsSections">News sections</h2>
         <ul class="footer-links footer-section-links">
-          <li><a href="#articles">Top stories</a></li>
-          <li><a href="#articles" data-footer-category="national">National</a></li>
-          <li><a href="#articles" data-footer-category="world">World</a></li>
-          <li><a href="#articles" data-footer-category="business">Business &amp; finance</a></li>
-          <li><a href="#articles" data-footer-category="tech">Tech &amp; AI</a></li>
-          <li><a href="#articles" data-footer-category="sports">Sports</a></li>
+          <li><a href="#articles" data-i18n="footerSecTop">Top stories</a></li>
+          <li><a href="#articles" data-footer-category="national" data-i18n="footerSecNational">National</a></li>
+          <li><a href="#articles" data-footer-category="world" data-i18n="footerSecWorld">World</a></li>
+          <li><a href="#articles" data-footer-category="business" data-i18n="footerSecBusiness">Business &amp; finance</a></li>
+          <li><a href="#articles" data-footer-category="tech" data-i18n="footerSecTech">Tech &amp; AI</a></li>
+          <li><a href="#articles" data-footer-category="sports" data-i18n="footerSecSports">Sports</a></li>
         </ul>
       </section>
       <section>
-        <h2 class="footer-title">Connect with us</h2>
-        <p>Follow official channels for verified breaking updates.</p>
+        <h2 class="footer-title" data-i18n="footerConnectTitle">Connect with us</h2>
+        <p data-i18n="footerConnectText">Follow official channels for verified breaking updates.</p>
         <div class="social-links"><a href="https://instagram.com/yugantar.news" target="_blank"
             rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/YugantarNewsLive" target="_blank"
             rel="noopener noreferrer">Facebook</a><a href="https://x.com/yugantarnews" target="_blank"
@@ -181,8 +181,8 @@
             rel="noopener noreferrer">WhatsApp</a></div>
       </section>
     </div>
-    <div class="shell footer-bottom"><span>© 2026 Yugantar News Network. All rights reserved.</span><span>Source
-        attribution and rights must be verified before publication.</span><span>✦ Fact-checked newsroom</span></div>
+    <div class="shell footer-bottom"><span data-i18n="footerCopyright">© 2026 Yugantar News Network. All rights reserved.</span><span>Source
+        attribution and rights must be verified before publication.</span><span data-i18n="footerFactCheck">✦ Fact-checked newsroom</span></div>
   </footer>
   <div id="fb-root"></div>
   <script>window.fbAsyncInit = () => window.FB?.XFBML?.parse(document.body);</script>
