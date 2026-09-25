@@ -330,8 +330,30 @@ function renderHeadlineStrip() {
   target.querySelectorAll('[data-headline-id]').forEach(button => button.addEventListener('click', () => openArticle(button.dataset.headlineId)));
 }
 
+const DEFAULT_DEMO_VIDEOS = [
+  { id: 'v-1', title: '🔴 SahiDon Is Live | PUBG MOBILE Kr | Noob Is Back 🤠', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade! Follow me for more: https://omlet.gg/d/profile/sahidongamingyt...', publishedAt: '1/26/2021, 1:12:10 PM' },
+  { id: 'v-2', title: 'Thank You Guys For 600 SUBS & Support 🔥', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Thank you guys for 600 subs & support! Keep supporting!', publishedAt: '8/31/2020, 7:39:50 PM' },
+  { id: 'v-3', title: 'Crafting Smithy 🛠️ & Metal Tools Unlocked! | ARK Survival', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream ARK: Survival Evolved on Omlet Arcade!', publishedAt: '11/20/2020, 7:41:21 PM' },
+  { id: 'v-4', title: 'Watch me stream PUBG MOBILE on Omlet Arcade!', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade!', publishedAt: '1/23/2021, 12:06:12 PM' },
+  { id: 'v-5', title: 'SahiDon Gaming Live Stream Highlights', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Official livestream highlights and clutch moments.', publishedAt: '1/21/2021, 9:52:51 AM' },
+  { id: 'v-6', title: '🔴 This Match Took Me From Ace To Conqueror 🏆', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Insane Conqueror lobby push with top tier gameplay.', publishedAt: '8/27/2020, 7:12:48 PM' },
+  { id: 'v-7', title: 'Playing TDM in PUBG Mobile (Insane Kills)', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'High kill TDM gameplay with M416 and Kar98k.', publishedAt: '6/29/2019, 9:37:33 PM' },
+  { id: 'v-8', title: 'How To Tame A DODO Tutorial | ARK Mobile', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Step by step ARK Mobile tutorial for beginner survivalists.', publishedAt: '10/31/2020, 7:43:49 PM' },
+  { id: 'v-9', title: 'YUGANTAR Exclusive: Global Tech & AI Revolution 2026', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Deep dive into the latest AI agents, quantum computing, and media automation.', publishedAt: '3/15/2026, 10:00:00 AM' },
+  { id: 'v-10', title: 'Special Report: Financial Markets & Interest Rate Analysis', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Market insights and macroeconomic forecasts from leading analysts.', publishedAt: '3/14/2026, 2:30:00 PM' },
+  { id: 'v-11', title: 'Behind The Scenes: Investigative Journalism & AI Tools', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'How modern newsrooms harness AI models for rapid fact checking.', publishedAt: '3/12/2026, 4:00:00 PM' },
+  { id: 'v-12', title: 'Live Climate Summit & Renewable Energy Breakthroughs', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Global leaders convene to discuss green tech innovations and clean grid energy.', publishedAt: '3/10/2026, 11:20:00 AM' }
+];
+
 function renderVideos(snapshot) {
-  const videos = snapshot.map(item => {
+  let itemsToRender = Array.isArray(snapshot) && snapshot.length > 0 ? snapshot : [];
+  if (itemsToRender.length < 6) {
+    const existing = new Set(itemsToRender.map(item => item.id || item.videoUrl));
+    const fill = DEFAULT_DEMO_VIDEOS.filter(item => !existing.has(item.id) && !existing.has(item.videoUrl));
+    itemsToRender = [...itemsToRender, ...fill];
+  }
+  itemsToRender = itemsToRender.slice(0, 6);
+  const videos = itemsToRender.map(item => {
     const id = youtubeId(item.videoUrl || item.embedUrl);
     const thumbnail = item.thumbnail || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
     const videoUrl = safeUrl(item.videoUrl || item.sourceUrl);
@@ -346,11 +368,25 @@ function renderVideos(snapshot) {
 
 function renderPoll(poll) {
   state.poll = poll;
-  if (!poll) { $('poll-question').textContent = 'No active poll'; $('poll-options').innerHTML = ''; return; }
+  const pollPanelEl = document.querySelector('.poll-panel') || $('poll-question')?.closest('.panel');
+  if (!poll) { 
+    $('poll-question').textContent = 'No active poll'; 
+    $('poll-options').innerHTML = '<p class="muted" style="margin: 6px 0 0; font-size: 0.82rem;">Check back soon for new audience polls.</p>';
+    if (pollPanelEl) pollPanelEl.classList.add('no-poll');
+    return; 
+  }
+  if (pollPanelEl) pollPanelEl.classList.remove('no-poll');
   $('poll-question').textContent = text(poll.question);
   const counts = { ...Object.fromEntries((poll.options || []).map(option => [option.optionId, 0])), ...(poll.voteCounts || {}) }; poll.voteCounts = counts; const total = Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0); const selected = poll.userOption || '';
-  $('poll-options').innerHTML = (poll.options || []).map(option => { const count = Number(counts[option.optionId] || 0); const percentage = total ? Math.round((count / total) * 100) : 0; return `<button class="poll-option${selected === option.optionId ? ' selected' : ''}" data-option-id="${escapeHtml(option.optionId)}" type="button"><span class="poll-option-row"><strong>${escapeHtml(text(option.text))}</strong><span>${percentage}%</span></span><span class="poll-result-track"><span style="width:${percentage}%"></span></span></button>`; }).join('');
-  $('poll-options').querySelectorAll('[data-option-id]').forEach(button => button.addEventListener('click', () => votePoll(button.dataset.optionId)));
+  const pollOptionsEl = $('poll-options');
+  const optionCount = (poll.options || []).length;
+  pollOptionsEl.className = `poll-options-grid ${
+    optionCount === 2 ? 'poll-options-2' :
+    optionCount === 3 ? 'poll-options-3' :
+    optionCount === 4 ? 'poll-options-4' : 'poll-options-many'
+  }`;
+  pollOptionsEl.innerHTML = (poll.options || []).map(option => { const count = Number(counts[option.optionId] || 0); const percentage = total ? Math.round((count / total) * 100) : 0; return `<button class="poll-option${selected === option.optionId ? ' selected' : ''}" data-option-id="${escapeHtml(option.optionId)}" type="button"><span class="poll-option-row"><strong>${escapeHtml(text(option.text))}</strong><span>${percentage}%</span></span><span class="poll-result-track"><span style="width:${percentage}%"></span></span></button>`; }).join('');
+  pollOptionsEl.querySelectorAll('[data-option-id]').forEach(button => button.addEventListener('click', () => votePoll(button.dataset.optionId)));
 }
 
 async function votePoll(optionId) {
@@ -397,7 +433,7 @@ function startRealtimeListeners() {
 }
 
 async function loadVideosAndPoll() {
-  const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(8))).catch(() => ({ docs: [] }));
+  const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(6))).catch(() => ({ docs: [] }));
   renderVideos(videos.docs.map(item => item.data()));
   const polls = await getDocs(query(collection(db, 'polls'), where('active', '==', true), limit(1))).catch(() => ({ docs: [] }));
   renderPoll(polls.docs[0] ? { id: polls.docs[0].id, ...polls.docs[0].data() } : null);

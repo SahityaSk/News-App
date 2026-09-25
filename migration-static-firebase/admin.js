@@ -64,18 +64,29 @@ function updateImagePreview() {
   preview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Cover preview" onerror="this.parentElement.textContent='This image URL could not be loaded.'">` : 'Cover preview appears here';
 }
 
+let articleSearchQuery = '';
+let videoSearchQuery = '';
+let hiddenVideoSearchQuery = '';
+
 function renderArticleList() {
   const target = $('article-list');
-  if (!articleCache.length) { target.innerHTML = '<div class="empty-state">No articles found.</div>'; return; }
-  target.innerHTML = articleCache.map(article => `<div class="admin-list-item"><div><strong>${escapeHtml(displayText(article.title))}</strong><small><span class="status-chip ${escapeHtml(article.status || 'draft')}">${escapeHtml(article.status || 'draft')}</span> ${escapeHtml(article.category || 'news')} · ${escapeHtml(dateText(article.updatedAt || article.publishedAt))}</small></div><div class="item-actions"><button class="text-button" type="button" data-edit-article="${escapeHtml(article.id)}">Edit</button>${currentRole !== 'reporter' ? `<button class="text-button danger" type="button" data-delete-article="${escapeHtml(article.id)}">Delete</button>` : ''}</div></div>`).join('');
+  const filtered = articleSearchQuery 
+    ? articleCache.filter(item => (displayText(item.title) || '').toLowerCase().includes(articleSearchQuery))
+    : articleCache;
+  if (!filtered.length) { target.innerHTML = `<div class="empty-state">${articleSearchQuery ? 'No articles match "' + escapeHtml(articleSearchQuery) + '"' : 'No articles found.'}</div>`; return; }
+  target.innerHTML = filtered.map(article => `<div class="admin-list-item"><div><strong>${escapeHtml(displayText(article.title))}</strong><small><span class="status-chip ${escapeHtml(article.status || 'draft')}">${escapeHtml(article.status || 'draft')}</span> ${escapeHtml(article.category || 'news')} · ${escapeHtml(dateText(article.updatedAt || article.publishedAt))}</small></div><div class="item-actions"><button class="text-button" type="button" data-edit-article="${escapeHtml(article.id)}">Edit</button>${currentRole !== 'reporter' ? `<button class="text-button danger" type="button" data-delete-article="${escapeHtml(article.id)}">Delete</button>` : ''}</div></div>`).join('');
   target.querySelectorAll('[data-edit-article]').forEach(button => button.addEventListener('click', () => editArticle(button.dataset.editArticle)));
   target.querySelectorAll('[data-delete-article]').forEach(button => button.addEventListener('click', () => deleteArticle(button.dataset.deleteArticle)));
 }
 
 function renderSimpleList(targetId, items, type) {
   const target = $(targetId);
-  if (!items.length) { target.innerHTML = '<div class="empty-state">No items found.</div>'; return; }
-  target.innerHTML = items.map(item => {
+  const query = type === 'video' ? videoSearchQuery : '';
+  const filtered = query 
+    ? items.filter(item => (item.title || '').toLowerCase().includes(query))
+    : items;
+  if (!filtered.length) { target.innerHTML = `<div class="empty-state">${query ? 'No videos match "' + escapeHtml(query) + '"' : 'No items found.'}</div>`; return; }
+  target.innerHTML = filtered.map(item => {
     const label = type === 'ticker' ? displayText(item.title) : item.title || 'Untitled';
     const actions = type === 'video'
       ? `<button class="text-button" type="button" data-edit-video="${escapeHtml(item.id)}">Edit</button><button class="text-button danger" type="button" data-hide-video="${escapeHtml(item.id)}">Hide</button>`
@@ -88,14 +99,44 @@ function renderSimpleList(targetId, items, type) {
   target.querySelectorAll('[data-delete-ticker]').forEach(button => button.addEventListener('click', () => deleteTicker(button.dataset.deleteTicker)));
 }
 
+const DEFAULT_DEMO_VIDEOS = [
+  { id: 'v-1', title: '🔴 SahiDon Is Live | PUBG MOBILE Kr | Noob Is Back 🤠', provider: 'youtube', publishedAt: '1/26/2021, 1:12:10 PM' },
+  { id: 'v-2', title: 'Thank You Guys For 600 SUBS & Support 🔥', provider: 'youtube', publishedAt: '8/31/2020, 7:39:50 PM' },
+  { id: 'v-3', title: 'Crafting Smithy 🛠️ & Metal Tools Unlocked! | ARK Survival', provider: 'youtube', publishedAt: '11/20/2020, 7:41:21 PM' },
+  { id: 'v-4', title: 'Watch me stream PUBG MOBILE on Omlet Arcade!', provider: 'youtube', publishedAt: '1/23/2021, 12:06:12 PM' },
+  { id: 'v-5', title: 'SahiDon Gaming Live Stream Highlights', provider: 'youtube', publishedAt: '1/21/2021, 9:52:51 AM' },
+  { id: 'v-6', title: '🔴 This Match Took Me From Ace To Conqueror 🏆', provider: 'youtube', publishedAt: '8/27/2020, 7:12:48 PM' },
+  { id: 'v-7', title: 'Playing TDM in PUBG Mobile (Insane Kills)', provider: 'youtube', publishedAt: '6/29/2019, 9:37:33 PM' },
+  { id: 'v-8', title: 'How To Tame A DODO Tutorial | ARK Mobile', provider: 'youtube', publishedAt: '10/31/2020, 7:43:49 PM' },
+  { id: 'v-9', title: 'YUGANTAR Exclusive: Global Tech & AI Revolution 2026', provider: 'youtube', publishedAt: '3/15/2026, 10:00:00 AM' },
+  { id: 'v-10', title: 'Special Report: Financial Markets & Interest Rate Analysis', provider: 'youtube', publishedAt: '3/14/2026, 2:30:00 PM' },
+  { id: 'v-11', title: 'Behind The Scenes: Investigative Journalism & AI Tools', provider: 'youtube', publishedAt: '3/12/2026, 4:00:00 PM' },
+  { id: 'v-12', title: 'Live Climate Summit & Renewable Energy Breakthroughs', provider: 'youtube', publishedAt: '3/10/2026, 11:20:00 AM' }
+];
+
+const DEFAULT_DEMO_ARTICLES = [
+  { id: 'art-1', title: 'Tonganoxie Recreation Commission, County Road Upgrade Approved', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-2', title: 'UNECA and AUDA-NEPAD renew partnership to boost Infrastructure', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-3', title: "'Vampire Carnival' Trailer Unveils a Bloody Spectacle Ahead of Release", status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-4', title: 'Man Robbed of ¥1 Million and Shoes While Walking Home at Night', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-5', title: 'Evidence tampering: Judge recuses self from Yugantar high-profile hearing', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-6', title: 'Waleed Aly | WAtoday Special Analysis on Asian Geopolitics', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-7', title: 'Woman jailed over ammonia attack on friend in tragic dispute', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-8', title: 'NAMI Walks Rome this weekend for Global Mental Health Initiative', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-9', title: 'Global Semiconductor Supply Chains See Surge in Production Rates', status: 'published', category: 'tech', publishedAt: '9/25/2026, 1:16:47 AM' },
+  { id: 'art-10', title: 'Renewable Energy Grid Investments Hit Historic Peak in Q3', status: 'published', category: 'science', publishedAt: '9/25/2026, 1:16:47 AM' }
+];
+
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
     const [articlesSnapshot, tickersSnapshot, videosSnapshot, controlsSnapshot] = await Promise.all([getDocs(collection(db, 'articles')), getDocs(collection(db, 'tickers')), getDocs(collection(db, 'videoItems')), getDocs(collection(db, 'videoControls'))]);
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
+    if (articleCache.length < 8) articleCache = [...articleCache, ...DEFAULT_DEMO_ARTICLES.filter(d => !articleCache.some(a => a.id === d.id))];
     const hiddenIds = new Set(controlsSnapshot.docs.filter(item => item.data().hidden === true).map(item => item.id));
     const allVideos = videosSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
     videoCache = allVideos.filter(item => item.active !== false && !hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
+    if (videoCache.length < 8) videoCache = [...videoCache, ...DEFAULT_DEMO_VIDEOS.filter(d => !videoCache.some(v => v.id === d.id))];
     hiddenVideoCache = allVideos.filter(item => item.active === false || hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
     const tickers = tickerCache = tickersSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.active !== false);
     tickerCache.sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
@@ -216,6 +257,9 @@ async function deletePoll(id) {
 function bindForms(auth) {
   activeAuth = auth;
   $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm;
+  $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
+  $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
+  $('search-hidden-videos')?.addEventListener('input', (e) => { hiddenVideoSearchQuery = e.target.value.trim().toLowerCase(); renderHiddenVideos(); });
   document.querySelectorAll('[data-admin-tab]').forEach(button => button.addEventListener('click', () => { const name = button.dataset.adminTab; document.querySelectorAll('[data-admin-tab]').forEach(item => item.classList.toggle('active', item === button)); document.querySelectorAll('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === name)); }));
   $('article-form').onsubmit = async event => { event.preventDefault(); try { const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };

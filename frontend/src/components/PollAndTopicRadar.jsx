@@ -69,7 +69,7 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
   };
 
   return (
-    <section className="container" style={{ margin: '1.5rem auto 1rem auto' }}>
+    <section className="container" style={{ margin: '0.5rem auto 1rem auto' }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
@@ -115,8 +115,17 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
               {activePoll.question}
             </h3>
 
-            {/* Poll Options */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Poll Options - Compact & Dynamic Grid layout based on option count */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: activePoll.options.length === 2 
+                ? 'repeat(auto-fit, minmax(160px, 1fr))' 
+                : activePoll.options.length >= 4 
+                  ? 'repeat(auto-fit, minmax(200px, 1fr))' 
+                  : 'repeat(auto-fit, minmax(170px, 1fr))',
+              gap: '8px',
+              marginTop: '0.5rem'
+            }}>
               {activePoll.options.map((opt) => {
                 const optId = opt.optionId || opt.id;
                 const isSelected = selectedOption === optId;
@@ -125,22 +134,39 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
                   <button
                     key={optId}
                     onClick={() => handleVote(optId)}
+                    disabled={hasVoted || submitting}
+                    title={opt.text}
                     style={{
                       position: 'relative',
                       overflow: 'hidden',
-                      padding: '0.75rem 1rem',
+                      padding: '0.55rem 0.8rem',
                       borderRadius: 'var(--radius-md)',
-                      border: isSelected ? '2px solid var(--accent-red)' : '1px solid var(--border-color)',
-                      background: 'var(--bg-card)',
+                      border: isSelected ? '1.5px solid var(--accent-red)' : '1px solid var(--border-color)',
+                      background: isSelected ? 'rgba(220, 38, 38, 0.12)' : 'var(--bg-card)',
                       color: 'var(--text-primary)',
                       textAlign: 'left',
-                      fontWeight: '700',
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '0.82rem',
+                      cursor: hasVoted ? 'default' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      transition: 'all 0.2s'
+                      gap: '8px',
+                      minHeight: '38px',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                    onMouseOver={(e) => {
+                      if (!hasVoted) {
+                        e.currentTarget.style.borderColor = 'var(--accent-red)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (!hasVoted) {
+                        e.currentTarget.style.borderColor = isSelected ? 'var(--accent-red)' : 'var(--border-color)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }
                     }}
                   >
                     {/* Animated Fill Bar if voted */}
@@ -151,19 +177,37 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
                         top: 0,
                         bottom: 0,
                         width: `${percent}%`,
-                        background: isSelected ? 'rgba(220, 38, 38, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                        background: isSelected 
+                          ? 'linear-gradient(90deg, rgba(220, 38, 38, 0.35) 0%, rgba(220, 38, 38, 0.2) 100%)' 
+                          : 'linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%)',
                         transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                         zIndex: 1
                       }} />
                     )}
 
-                    <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {isSelected && <CheckCircle2 size={16} style={{ color: 'var(--accent-red)' }} />}
-                      {opt.text}
+                    <span style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      lineHeight: '1.25',
+                      wordBreak: 'break-word'
+                    }}>
+                      {isSelected && <CheckCircle2 size={14} style={{ color: 'var(--accent-red)', flexShrink: 0 }} />}
+                      <span>{opt.text}</span>
                     </span>
 
                     {hasVoted && (
-                      <span style={{ position: 'relative', zIndex: 2, fontWeight: '900', color: isSelected ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                      <span style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        fontWeight: '800',
+                        fontSize: '0.78rem',
+                        color: isSelected ? 'var(--accent-red)' : 'var(--text-muted)',
+                        marginLeft: '4px',
+                        flexShrink: 0
+                      }}>
                         {percent}%
                       </span>
                     )}
@@ -174,7 +218,7 @@ export default function PollAndTopicRadar({ language = 'EN', onSelectTag, active
           </div>
 
           {hasVoted && (
-            <p style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '700', margin: '10px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <p style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '700', margin: '8px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
               ✓ Thank you for voting! Results updated live.
             </p>
           )}
