@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="YUGANTAR District Newsroom - West Bengal Local Coverage">
+  <meta name="theme-color" content="#09111f">
+  <meta property="og:title" content="West Bengal District News - YUGANTAR">
+  <meta property="og:description" content="24x7 Verified local news from all 23 districts of West Bengal">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
+  <title>West Bengal District News | YUGANTAR</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <noscript>
+    <div class="notice">YUGANTAR News requires JavaScript to load live district coverage.</div>
+  </noscript>
+
+  <header class="site-header">
+    <div class="utility-bar">
+      <div class="shell utility-inner">
+        <span class="utility-live" data-i18n="utilityLive"><i></i> BENGAL DISTRICTS DESK</span>
+        <span id="current-date">Loading newsroom time…</span>
+        <span id="sync-status">DISTRICT DATA LIVE</span>
+      </div>
+    </div>
+    <div class="shell header-row">
+      <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
+        <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
+        <span class="brand-copy">
+          <strong>YUGANTAR <em>BENGAL</em></strong>
+          <small>23 Districts Verified News</small>
+        </span>
+      </a>
+      <div class="header-actions">
+        <a class="button button-muted" href="./index.html">← All News</a>
+        <label class="sr-only" for="language">Language</label>
+        <select id="language">
+          <option value="EN">English</option>
+          <option value="BN">বাংলা</option>
+          <option value="HI">हिन्दी</option>
+        </select>
+        <button id="saved-toggle" class="icon-button" type="button" aria-label="Open saved articles" title="Saved articles">☆ <span id="saved-count">0</span></button>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch theme" title="Switch theme"><svg class="theme-icon-svg moon-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg></button>
+        
+        <button id="subscribers-btn" class="header-action-btn subscribers-btn" type="button" title="View Subscribers & Subscribe">
+          <svg class="sub-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <span class="sub-badge"><strong id="header-sub-count">254.8K</strong> Subs</span>
+        </button>
+
+        <button id="jobs-btn" class="header-action-btn jobs-btn" type="button" title="Careers & Job Opportunities">
+          <svg class="briefcase-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span class="jobs-label">Careers <span class="hiring-badge">Hiring</span></span>
+        </button>
+      </div>
+    </div>
+    <nav class="category-nav shell" aria-label="District category filter">
+      <button class="category active" data-district-cat="all">All District News</button>
+      <button class="category" data-district-cat="INFRASTRUCTURE">Infrastructure</button>
+      <button class="category" data-district-cat="CULTURE & TOURISM">Culture & Tourism</button>
+      <button class="category" data-district-cat="ECONOMY & AGRI">Economy & Agri</button>
+      <button class="category" data-district-cat="EDUCATION & HEALTH">Health & Education</button>
+      <button class="category" data-district-cat="ENVIRONMENT">Environment</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- District Banner Header -->
+    <section class="district-hero-section shell">
+      <div class="district-hero-card">
+        <div class="district-hero-header">
+          <div>
+            <div class="district-badge-row">
+              <span class="district-region-pill" id="district-region-pill">WEST BENGAL</span>
+              <span class="live-pill"><i></i>LIVE DESK</span>
+            </div>
+            <h1 id="district-title">Loading District…</h1>
+            <p id="district-subtitle" class="district-subtitle"></p>
+          </div>
+          <div class="district-select-wrapper">
+            <label for="district-select">Switch District:</label>
+            <select id="district-select" class="district-select">
+              <!-- Dynamically populated with all 23 districts -->
+            </select>
+          </div>
+        </div>
+
+        <div class="district-stats-bar">
+          <div class="stat-item">
+            <span>District HQ</span>
+            <strong id="stat-hq">—</strong>
+          </div>
+          <div class="stat-item">
+            <span>Region Zone</span>
+            <strong id="stat-region">—</strong>
+          </div>
+          <div class="stat-item">
+            <span>Active Stories</span>
+            <strong id="stat-count">—</strong>
+          </div>
+          <div class="stat-item">
+            <span>Local Status</span>
+            <strong id="stat-status" class="status-live-text">● Verified Feed</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- District Breaking Ticker -->
+    <section class="ticker shell" aria-label="District Breaking News">
+      <div class="ticker-row">
+        <strong>DISTRICT TICKER</strong>
+        <div id="district-ticker">Loading local updates…</div>
+      </div>
+    </section>
+
+    <!-- Main Content Grid with WB Interactive Map Side Drawer -->
+    <section class="shell content-section district-content-layout">
+      <div class="district-main-column">
+        <div class="section-heading">
+          <div>
+            <div class="section-kicker">LOCAL DESK REPORTING</div>
+            <h2>Latest District Coverage</h2>
+            <p class="section-intro" id="district-intro-desc">Real-time ground reports and development news.</p>
+          </div>
+          <label class="search-box">
+            <span class="sr-only">Search district stories</span>
+            <span class="search-icon">⌕</span>
+            <input id="district-search" type="search" placeholder="Search in this district…">
+          </label>
+        </div>
+
+        <div id="district-articles" class="article-grid">
+          <div class="empty-state">Loading stories for this district…</div>
+        </div>
+      </div>
+
+      <!-- Right Column Mini WB Map for Quick Hop -->
+      <aside class="district-map-sidebar panel">
+        <div class="section-kicker">INTERACTIVE MAP</div>
+        <h3>West Bengal Map</h3>
+        <p class="muted" style="font-size: 0.8rem; margin-top: 4px;">Click any district to switch views instantly.</p>
+        <div id="mini-wb-map-container" class="mini-wb-map-box"></div>
+        <div id="district-list-quick" class="district-quick-list"></div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- Article Detail Dialog -->
+  <dialog id="article-dialog" class="article-dialog">
+    <button id="close-dialog" class="dialog-close" aria-label="Close article">×</button>
+    <article id="article-detail"></article>
+  </dialog>
+
+  <!-- Saved Articles Dialog -->
+  <dialog id="saved-dialog" class="saved-dialog">
+    <button id="close-saved" class="dialog-close" aria-label="Close saved articles">×</button>
+    <div class="section-kicker">YOUR READING LIST</div>
+    <h2>Saved articles</h2>
+    <div id="saved-list" class="saved-list"></div>
+  </dialog>
+
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <section class="footer-about">
+        <div class="footer-brand"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo">
+          <div><strong>YUGANTAR</strong><small>BENGAL DISTRICT DESK</small></div>
+        </div>
+        <p>Providing verified district news from all 23 districts of West Bengal 24x7.</p>
+        <p class="footer-motto">“পশ্চিমবঙ্গের ২৩টি জেলার বিশ্বাসযোগ্য খবর।”</p>
+        <a class="footer-live-link" href="./index.html">● RETURN TO MAIN NEWSROOM</a>
+      </section>
+      <section>
+        <h2 class="footer-title">Official desk</h2>
+        <ul class="footer-links">
+          <li><a href="tel:+918479084770"><span class="contact-icon">☎</span> +91 84790 84770</a></li>
+          <li><a href="mailto:office.yugantarnews@gmail.com"><span class="contact-icon">✉</span> office.yugantarnews@gmail.com</a></li>
+        </ul>
+      </section>
+      <section>
+        <h2 class="footer-title">Quick Regions</h2>
+        <ul class="footer-links">
+          <li><a href="./district.html?district=kolkata">Kolkata Desk</a></li>
+          <li><a href="./district.html?district=darjeeling">North Bengal Desk</a></li>
+          <li><a href="./district.html?district=south-24-parganas">Coastal Delta Desk</a></li>
+          <li><a href="./district.html?district=paschim-bardhaman">Western Rarh Desk</a></li>
+        </ul>
+      </section>
+      <section>
+        <h2 class="footer-title">Connect</h2>
+        <div class="social-links">
+          <a href="https://instagram.com/yugantar.news" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://www.facebook.com/YugantarNewsLive" target="_blank" rel="noopener noreferrer">Facebook</a>
+        </div>
+      </section>
+    </div>
+    <div class="shell footer-bottom">
+      <span>© 2026 Yugantar News Network. West Bengal District Coverage.</span>
+      <span>✦ Fact-checked local journalism</span>
+    </div>
+  </footer>
+
+  <dialog id="subscribers-dialog" class="dialog custom-modal">
+    <div class="dialog-card">
+      <button id="close-subscribers-dialog" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+      <div class="modal-header-hero sub-hero">
+        <span class="tag tag-red" style="color:#ffb9c0;">YUGANTAR COMMUNITY</span>
+        <h2>Subscriber Hub & Daily News Alerts</h2>
+        <p>Join thousands of verified readers staying updated 24x7 across West Bengal.</p>
+      </div>
+      <div class="sub-stats-grid">
+        <div class="sub-stat-card">
+          <strong id="modal-sub-count">254,820</strong>
+          <small>Active Subscribers</small>
+        </div>
+        <div class="sub-stat-card">
+          <strong>1.2 Million</strong>
+          <small>Monthly Readers</small>
+        </div>
+        <div class="sub-stat-card">
+          <strong>23 Districts</strong>
+          <small>WB Coverage</small>
+        </div>
+      </div>
+      <form id="subscriber-form" class="modal-form">
+        <h3>Subscribe to Instant News Alerts</h3>
+        <p class="muted" style="margin-bottom:14px;">Receive daily verified news bulletins, breaking alerts & district digests directly in your inbox or WhatsApp.</p>
+        <div class="form-group">
+          <label for="sub-name">Full Name *</label>
+          <input type="text" id="sub-name" required placeholder="e.g. Anirban Roy">
+        </div>
+        <div class="form-group">
+          <label for="sub-contact">Email address or Mobile Number *</label>
+          <input type="text" id="sub-contact" required placeholder="name@example.com or +91 9876543210">
+        </div>
+        <div class="form-group">
+          <label for="sub-district">Preferred District for Local Alerts</label>
+          <select id="sub-district">
+            <option value="all">All Bengal (All 23 Districts)</option>
+            <option value="kolkata">Kolkata</option>
+            <option value="darjeeling">Darjeeling</option>
+            <option value="hooghly">Hooghly</option>
+            <option value="howrah">Howrah</option>
+            <option value="north-24-parganas">North 24 Parganas</option>
+            <option value="south-24-parganas">South 24 Parganas</option>
+            <option value="murshidabad">Murshidabad</option>
+            <option value="purba-bardhaman">Purba Bardhaman</option>
+            <option value="paschim-bardhaman">Paschim Bardhaman</option>
+            <option value="purulia">Purulia</option>
+            <option value="bankura">Bankura</option>
+            <option value="malda">Malda</option>
+            <option value="jalpaiguri">Jalpaiguri</option>
+          </select>
+        </div>
+        <button class="button button-block" type="submit" style="margin-top:10px;">💖 Subscribe Now (Free)</button>
+        <div id="sub-success-msg" class="status success hidden" style="margin-top:12px;">🎉 Thank you for subscribing! Your news alerts are activated.</div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="jobs-dialog" class="dialog custom-modal">
+    <div class="dialog-card">
+      <button id="close-jobs-dialog" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+      <div class="modal-header-hero jobs-hero">
+        <span class="tag tag-blue" style="color:#93c5fd;">WE ARE HIRING</span>
+        <h2>Join Team YUGANTAR News</h2>
+        <p>Build your journalism career with West Bengal's fastest growing digital news network.</p>
+      </div>
+      
+      <div class="open-positions-section">
+        <h3 style="font-size:1.05rem; margin-bottom:10px;">Featured Open Positions</h3>
+        <div class="jobs-list">
+          <div class="job-opening-card">
+            <div class="job-info">
+              <strong>District News Reporter (All 23 Districts)</strong>
+              <small>Field Reporting • Full-Time / Freelance • All WB Districts</small>
+            </div>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="District News Reporter (Field)">Apply Now</button>
+          </div>
+          <div class="job-opening-card">
+            <div class="job-info">
+              <strong>Video Journalist & Anchor</strong>
+              <small>Media Studio • Full-Time • Kolkata / Howrah</small>
+            </div>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Video Journalist & Anchor">Apply Now</button>
+          </div>
+          <div class="job-opening-card">
+            <div class="job-info">
+              <strong>Content Editor (Bengali / English / Hindi)</strong>
+              <small>Desk Desk • Full-Time / Remote • Kolkata HQ</small>
+            </div>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Content Editor">Apply Now</button>
+          </div>
+          <div class="job-opening-card">
+            <div class="job-info">
+              <strong>Digital Marketing & Growth Specialist</strong>
+              <small>Growth Team • Full-Time • Remote / Hybrid</small>
+            </div>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Digital Marketing Specialist">Apply Now</button>
+          </div>
+        </div>
+      </div>
+
+      <form id="job-application-form" class="modal-form" style="margin-top:22px; padding-top:16px; border-top:1px solid var(--line);">
+        <h3 style="font-size:1.1rem; margin-bottom:6px;">Submit Candidate Application</h3>
+        <p class="muted" style="margin-bottom:14px;">Fill out your details below and our recruitment desk will review your application.</p>
+        <div class="form-group">
+          <label for="job-position">Applying For Position *</label>
+          <select id="job-position" required>
+            <option value="District News Reporter (Field)">District News Reporter (Field)</option>
+            <option value="Video Journalist & Anchor">Video Journalist & Anchor</option>
+            <option value="Content Editor (Bengali/English/Hindi)">Content Editor</option>
+            <option value="Digital Marketing Specialist">Digital Marketing Specialist</option>
+            <option value="Web & Mobile Developer">Web & Mobile Developer</option>
+            <option value="Other / Open Application">Other / Open Application</option>
+          </select>
+        </div>
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="job-name">Candidate Full Name *</label>
+            <input type="text" id="job-name" required placeholder="e.g. Sourav Mukherjee">
+          </div>
+          <div class="form-group">
+            <label for="job-phone">Mobile Number *</label>
+            <input type="tel" id="job-phone" required placeholder="+91 9830012345">
+          </div>
+        </div>
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="job-email">Email Address *</label>
+            <input type="email" id="job-email" required placeholder="sourav@example.com">
+          </div>
+          <div class="form-group">
+            <label for="job-district">District / Location *</label>
+            <input type="text" id="job-district" required placeholder="e.g. Midnapore / Kolkata">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="job-portfolio">Portfolio / Resume Link (Optional)</label>
+          <input type="url" id="job-portfolio" placeholder="https://drive.google.com/... or LinkedIn profile">
+        </div>
+        <div class="form-group">
+          <label for="job-pitch">Why do you want to join YUGANTAR? (Short Note)</label>
+          <textarea id="job-pitch" rows="3" placeholder="Tell us briefly about your journalism experience, skills or background..."></textarea>
+        </div>
+        <button class="button button-block" type="submit" style="margin-top:10px;">🚀 Submit Application</button>
+        <div id="job-success-msg" class="status success hidden" style="margin-top:12px;">✅ Application received! Our recruitment desk will contact short-listed candidates shortly.</div>
+      </form>
+    </div>
+  </dialog>
+
+  <script type="module" src="./district.js"></script>
+</body>
+
+</html>

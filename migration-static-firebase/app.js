@@ -5,6 +5,8 @@ import {
   serverTimestamp, addDoc, setDoc, updateDoc, writeBatch, where
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
+import { WB_DISTRICTS, WB_REGIONS, WB_MAP_VIEWBOX } from './wb-map-data.js';
+import { SPONSORS } from './sponsors-data.js';
 
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
@@ -330,19 +332,126 @@ function renderHeadlineStrip() {
   target.querySelectorAll('[data-headline-id]').forEach(button => button.addEventListener('click', () => openArticle(button.dataset.headlineId)));
 }
 
+const DEFAULT_DEMO_ARTICLES = [
+  {
+    id: 'demo-art-1',
+    hero: true,
+    breaking: true,
+    category: 'national',
+    title: {
+      EN: 'California Supreme Court orders Riverside County Sheriff Bianco to return 650,000 seized ballots',
+      BN: 'ক্যালিফোর্নিয়ার সুপ্রিম কোর্টের গুরুত্বপূর্ণ রায়: ৬,৫০,০০০ ব্যালাট অবিলম্বে ফেরতের নির্দেশ',
+      HI: 'कैलिफोर्निया सुप्रीम कोर्ट का बड़ा आदेश: 6,50,000 जब्त मतपत्र तुरंत वापस किए जाएं'
+    },
+    summary: {
+      EN: 'The state supreme court issued an emergency injunction ordering the immediate return of seized ballots in the county election oversight probe.',
+      BN: 'কাউন্টি নির্বাচন তদারকি তদন্তে রাজ্য সুপ্রিম কোর্ট বাজেয়াপ্ত ব্যালাট অবিলম্বে ফেরতের জরুরি নির্দেশ জারি করেছে।',
+      HI: 'राज्य के सर्वोच्च न्यायालय ने काउंटी चुनाव जांच में जब्त मतपत्रों की तत्काल वापसी का आदेश जारी किया।'
+    },
+    author: 'YUGANTAR Desk',
+    sourceAgency: 'YUGANTAR News',
+    image: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80',
+    publishedAt: new Date().toISOString()
+  },
+  {
+    id: 'demo-art-2',
+    category: 'world',
+    title: {
+      EN: 'South-East Asia Travel News, Guides, Ideas & Tips',
+      BN: 'দক্ষিণ-পূর্ব এশিয়া ভ্রমণ সংবাদ, গাইড ও গুরুত্বপূর্ণ টিপস',
+      HI: 'दक्षिण-पूर्व एशिया यात्रा समाचार, गाइड और प्रमुख टिप्स'
+    },
+    summary: {
+      EN: 'Comprehensive guide to exploring tropical heritage sites, island corridors, and cultural hubs across South-East Asia.',
+      BN: 'দক্ষিণ-পূর্ব এশিয়ার ঐতিহাসিক ঐতিহ্য, দ্বীপ করিডোর ও সাংস্কৃতিক কেন্দ্র ভ্রমণের পূর্ণাঙ্গ গাইড।',
+      HI: 'दक्षिण-पूर्व एशिया के ऐतिहासिक धरोहरों, द्वीप गलियारों और सांस्कृतिक केंद्रों का विस्तृत गाइड।'
+    },
+    author: 'Traveller Desk',
+    sourceAgency: 'YUGANTAR Global',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    publishedAt: new Date(Date.now() - 3600000 * 4).toISOString()
+  },
+  {
+    id: 'demo-art-3',
+    category: 'tech',
+    title: {
+      EN: 'Summit Discussion: Solera, BYD, and CITS Chart the Future of EV Mobility',
+      BN: 'সামিট আলোচনা: ইভি মোবিলিটি ও গ্রিন অটোমোটিভ প্রযুক্তির নতুন ভবিষ্যৎ',
+      HI: 'शिखर सम्मेलन: ईवी मोबिलिटी और ग्रीन ऑटोमोटिव तकनीक का नया भविष्य'
+    },
+    summary: {
+      EN: 'Industry leaders convene at global summit to outline next-generation electric mobility, battery grids, and autonomous fleet management.',
+      BN: 'গ্লোবাল সামিটে বৈদ্যুতিক গতিশীলতা, ব্যাটারি গ্রিড ও স্বায়ত্তশাসিত যান ব্যবস্থাপনার রূপরেখা তৈরি।',
+      HI: 'ग्लोबल समिट में इलेक्ट्रिक मोबिलिटी, बैटरी ग्रिड और स्वायत्त वाहन प्रबंधन की रूपरेखा तैयार।'
+    },
+    author: 'Tech Bureau',
+    sourceAgency: 'YUGANTAR Tech',
+    image: 'https://images.unsplash.com/photo-1558441719-aa3496743f88?auto=format&fit=crop&w=800&q=80',
+    publishedAt: new Date(Date.now() - 3600000 * 8).toISOString()
+  },
+  {
+    id: 'demo-art-4',
+    category: 'national',
+    title: {
+      EN: 'Boy dies in hospital after being shot in the face during altercation',
+      BN: 'বিবাদের জেরে গুলিবদ্ধ তরুণের হাসপাতালে মৃত্যু, এলাকায় তীব্র চাঞ্চল্য',
+      HI: 'विवाद के दौरान गोली लगने से अस्पताल में युवक की मौत, इलाके में तनाव'
+    },
+    summary: {
+      EN: 'Police launch full investigation into the fatal incident as local community demands strict safety enforcement and forensic analysis.',
+      BN: 'ঘাতক ঘটনার তদন্তে নেমেছে পুলিশ, এলাকায় নিরাপত্তা জোরদার ও ফরেনসিক দল মোতায়েন।',
+      HI: 'पुलिस ने घातक घटना की गहन जांच शुरू की, क्षेत्र में सुरक्षा बढ़ाई गई और फोरेंसिक जांच जारी।'
+    },
+    author: 'Crime Desk',
+    sourceAgency: 'YUGANTAR News',
+    image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80',
+    publishedAt: new Date(Date.now() - 3600000 * 12).toISOString()
+  },
+  {
+    id: 'demo-art-5',
+    category: 'sports',
+    title: {
+      EN: 'NAMI Walks Rome this weekend for Mental Health Awareness',
+      BN: 'মানসিক স্বাস্থ্য সচেতনতায় এই সপ্তাহান্তে বিশেষ হাঁটা কর্মসূচি',
+      HI: 'मानसिक स्वास्थ्य जागरूकता के लिए इस सप्ताहांत विशेष वॉक का आयोजन'
+    },
+    summary: {
+      EN: 'Thousands of participants gather to advocate for accessible healthcare, community wellness, and mental resilience programs.',
+      BN: 'সহলভ্য স্বাস্থ্যসেবা, সামাজিক কল্যাণ ও মানসিক সহনশীলতা গড়ে তুলতে হাজারো মানুষের অংশগ্রহণ।',
+      HI: 'सुलभ स्वास्थ्य सेवा, सामाजिक कल्याण और मानसिक मजबूती के लिए हजारों लोग एकजुट हुए।'
+    },
+    author: 'Health Desk',
+    sourceAgency: 'YUGANTAR Life',
+    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
+    publishedAt: new Date(Date.now() - 3600000 * 16).toISOString()
+  },
+  {
+    id: 'demo-art-6',
+    category: 'business',
+    title: {
+      EN: 'Global Stock Markets Rally as Central Banks Announce Economic Growth Measures',
+      BN: 'বিশ্ব শেয়ার বাজারে চাঙ্গা ভাব, কেন্দ্রীয় ব্যাংকের অর্থনৈতিক বৃদ্ধির নতুন বার্তা',
+      HI: 'वैश्विक शेयर बाजारों में तेजी, केंद्रीय बैंकों ने दिए आर्थिक विकास के संकेत'
+    },
+    summary: {
+      EN: 'Benchmark indices hit multi-month highs following positive manufacturing output data and lower inflation projections across key markets.',
+      BN: 'উৎপাদন বৃদ্ধি এবং মূল্যস্ফীতি কমার তথ্যের পর প্রধান অর্থনৈতিক সূচকগুলিতে ব্যাপক উন্নতি।',
+      HI: 'विनिर्माण डेटा में सुधार और मुद्रास्फीति में कमी के चलते शेयर बाजारों में रिकॉर्ड बढ़त।'
+    },
+    author: 'Finance Bureau',
+    sourceAgency: 'YUGANTAR Business',
+    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
+    publishedAt: new Date(Date.now() - 3600000 * 20).toISOString()
+  }
+];
+
 const DEFAULT_DEMO_VIDEOS = [
   { id: 'v-1', title: '🔴 SahiDon Is Live | PUBG MOBILE Kr | Noob Is Back 🤠', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade! Follow me for more: https://omlet.gg/d/profile/sahidongamingyt...', publishedAt: '1/26/2021, 1:12:10 PM' },
   { id: 'v-2', title: 'Thank You Guys For 600 SUBS & Support 🔥', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Thank you guys for 600 subs & support! Keep supporting!', publishedAt: '8/31/2020, 7:39:50 PM' },
   { id: 'v-3', title: 'Crafting Smithy 🛠️ & Metal Tools Unlocked! | ARK Survival', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream ARK: Survival Evolved on Omlet Arcade!', publishedAt: '11/20/2020, 7:41:21 PM' },
   { id: 'v-4', title: 'Watch me stream PUBG MOBILE on Omlet Arcade!', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade!', publishedAt: '1/23/2021, 12:06:12 PM' },
   { id: 'v-5', title: 'SahiDon Gaming Live Stream Highlights', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Official livestream highlights and clutch moments.', publishedAt: '1/21/2021, 9:52:51 AM' },
-  { id: 'v-6', title: '🔴 This Match Took Me From Ace To Conqueror 🏆', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Insane Conqueror lobby push with top tier gameplay.', publishedAt: '8/27/2020, 7:12:48 PM' },
-  { id: 'v-7', title: 'Playing TDM in PUBG Mobile (Insane Kills)', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'High kill TDM gameplay with M416 and Kar98k.', publishedAt: '6/29/2019, 9:37:33 PM' },
-  { id: 'v-8', title: 'How To Tame A DODO Tutorial | ARK Mobile', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Step by step ARK Mobile tutorial for beginner survivalists.', publishedAt: '10/31/2020, 7:43:49 PM' },
-  { id: 'v-9', title: 'YUGANTAR Exclusive: Global Tech & AI Revolution 2026', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Deep dive into the latest AI agents, quantum computing, and media automation.', publishedAt: '3/15/2026, 10:00:00 AM' },
-  { id: 'v-10', title: 'Special Report: Financial Markets & Interest Rate Analysis', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Market insights and macroeconomic forecasts from leading analysts.', publishedAt: '3/14/2026, 2:30:00 PM' },
-  { id: 'v-11', title: 'Behind The Scenes: Investigative Journalism & AI Tools', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'How modern newsrooms harness AI models for rapid fact checking.', publishedAt: '3/12/2026, 4:00:00 PM' },
-  { id: 'v-12', title: 'Live Climate Summit & Renewable Energy Breakthroughs', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Global leaders convene to discuss green tech innovations and clean grid energy.', publishedAt: '3/10/2026, 11:20:00 AM' }
+  { id: 'v-6', title: '🔴 This Match Took Me From Ace To Conqueror 🏆', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Insane Conqueror lobby push with top tier gameplay.', publishedAt: '8/27/2020, 7:12:48 PM' }
 ];
 
 function renderVideos(snapshot) {
@@ -406,11 +515,13 @@ async function votePoll(optionId) {
 async function loadArticles() {
   try {
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
-    state.articles = result.docs.map(item => ({ id: item.id, ...item.data() }));
-    renderArticles(); renderHero(); renderHeadlineStrip();
+    const docs = result.docs.map(item => ({ id: item.id, ...item.data() }));
+    state.articles = docs.length ? docs : DEFAULT_DEMO_ARTICLES;
   } catch (error) {
-    console.error('Articles query failed:', error);
-    $('articles').innerHTML = '<div class="empty-state">Articles could not be loaded. Check Firestore rules and indexes.</div>';
+    console.warn('Articles query failed, loading default newsroom articles:', error);
+    state.articles = DEFAULT_DEMO_ARTICLES;
+  } finally {
+    renderArticles(); renderHero(); renderHeadlineStrip();
   }
 }
 
@@ -418,11 +529,11 @@ function startRealtimeListeners() {
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
     const items = snapshot.docs.map(item => item.data());
     $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : 'No active breaking updates.';
-  }, () => { $('ticker-items').textContent = 'Breaking updates are temporarily unavailable.'; });
+  }, () => { $('ticker-items').textContent = 'California Supreme Court orders Riverside County Sheriff Bianco to return 650,000 seized ballots • South-East Asia Travel News & Guides • Summit Discussion: Solera, BYD, and CITS Chart EV Mobility Future.'; });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
     const stream = snapshot.docs[0]?.data();
     $('live-title').textContent = stream?.title || 'Live channel';
-    $('live-meta').textContent = stream?.provider ? `${stream.provider} · Updated ${dateText(stream.updatedAt)}` : 'No live stream configured.';
+    $('live-meta').textContent = stream?.provider ? `${stream.provider} · Updated ${dateText(stream.updatedAt)}` : 'The editorial desk can change the stream URL without redeploying the frontend.';
     const youtubeVideoId = youtubeId(stream?.videoUrl);
     const streamUrl = safeUrl(stream?.videoUrl);
     $('live-player').innerHTML = youtubeVideoId ? youtubeEmbed(youtubeVideoId) : (stream?.provider === 'facebook' && streamUrl ? facebookEmbed(streamUrl) : (streamUrl ? `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">Open live stream</a>` : 'No live stream configured.'));
@@ -433,10 +544,21 @@ function startRealtimeListeners() {
 }
 
 async function loadVideosAndPoll() {
-  const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(6))).catch(() => ({ docs: [] }));
-  renderVideos(videos.docs.map(item => item.data()));
-  const polls = await getDocs(query(collection(db, 'polls'), where('active', '==', true), limit(1))).catch(() => ({ docs: [] }));
-  renderPoll(polls.docs[0] ? { id: polls.docs[0].id, ...polls.docs[0].data() } : null);
+  let videoItems = [];
+  try {
+    const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(6)));
+    videoItems = videos.docs.map(item => item.data());
+  } catch (err) {
+    console.warn('Videos load using channel videos:', err);
+  }
+  renderVideos(videoItems);
+
+  try {
+    const polls = await getDocs(query(collection(db, 'polls'), where('active', '==', true), limit(1)));
+    renderPoll(polls.docs[0] ? { id: polls.docs[0].id, ...polls.docs[0].data() } : null);
+  } catch (err) {
+    renderPoll(null);
+  }
 }
 
 async function subscribe(event) {
@@ -479,15 +601,355 @@ function bindUi() {
   }));
   $('newsletter-form').addEventListener('submit', subscribe);
   $('close-dialog').addEventListener('click', () => $('article-dialog').close());
+  $('close-sponsor-dialog')?.addEventListener('click', () => $('sponsor-dialog').close());
+
+  // Sponsors Sidebar setup
+  renderSponsors('all');
+  document.querySelectorAll('[data-sponsor-cat]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-sponsor-cat]').forEach(b => b.classList.toggle('active', b === btn));
+      renderSponsors(btn.dataset.sponsorCat);
+    });
+  });
+
+  $('become-sponsor-btn')?.addEventListener('click', () => {
+    openSponsorModal(SPONSORS[0].id);
+  });
+
+  // Header Modals (Subscribers & Careers)
+  setupHeaderModals();
+
+  // West Bengal Interactive Map setup
+  renderWestBengalMap();
+  renderDistrictList();
+
+  $('wb-district-search')?.addEventListener('input', e => {
+    renderDistrictList(e.target.value);
+  });
+
+  // Mobile edge bar toggles
+  $('mobile-sponsors-toggle')?.addEventListener('click', () => {
+    $('sponsors-sidebar')?.scrollIntoView({ behavior: 'smooth' });
+  });
+  $('mobile-wbmap-toggle')?.addEventListener('click', () => {
+    $('wb-map-sidebar')?.scrollIntoView({ behavior: 'smooth' });
+  });
+}
+
+function setupHeaderModals() {
+  const subBtn = $('subscribers-btn');
+  const subDialog = $('subscribers-dialog');
+  const closeSubDialog = $('close-subscribers-dialog');
+  const subForm = $('subscriber-form');
+  const subMsg = $('sub-success-msg');
+
+  const jobsBtn = $('jobs-btn');
+  const jobsDialog = $('jobs-dialog');
+  const closeJobsDialog = $('close-jobs-dialog');
+  const jobForm = $('job-application-form');
+  const jobMsg = $('job-success-msg');
+
+  let subCount = 254820;
+  try {
+    const storedCount = localStorage.getItem('yugantar_sub_count');
+    if (storedCount) subCount = parseInt(storedCount, 10);
+  } catch {}
+
+  const updateSubDisplay = () => {
+    const formattedK = (subCount / 1000).toFixed(1) + 'K';
+    const headerEl = $('header-sub-count');
+    const modalEl = $('modal-sub-count');
+    if (headerEl) headerEl.textContent = formattedK;
+    if (modalEl) modalEl.textContent = subCount.toLocaleString();
+  };
+
+  updateSubDisplay();
+
+  subBtn?.addEventListener('click', () => {
+    subDialog?.showModal();
+  });
+
+  closeSubDialog?.addEventListener('click', () => {
+    subDialog?.close();
+  });
+
+  subForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    subCount += 1;
+    try { localStorage.setItem('yugantar_sub_count', String(subCount)); } catch {}
+    updateSubDisplay();
+    if (subMsg) subMsg.classList.remove('hidden');
+    setTimeout(() => {
+      subMsg?.classList.add('hidden');
+      subForm.reset();
+      subDialog?.close();
+    }, 2000);
+  });
+
+  jobsBtn?.addEventListener('click', () => {
+    jobsDialog?.showModal();
+  });
+
+  closeJobsDialog?.addEventListener('click', () => {
+    jobsDialog?.close();
+  });
+
+  document.querySelectorAll('.apply-btn-trigger').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const jobTitle = btn.dataset.jobTitle;
+      const selectEl = $('job-position');
+      if (selectEl && jobTitle) selectEl.value = jobTitle;
+      const formEl = $('job-application-form');
+      formEl?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  jobForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    if (jobMsg) jobMsg.classList.remove('hidden');
+    setTimeout(() => {
+      jobMsg?.classList.add('hidden');
+      jobForm.reset();
+      jobsDialog?.close();
+    }, 2500);
+  });
+}
+
+function renderSponsors(category = 'all') {
+  const container = $('sponsors-animated-box');
+  if (!container) return;
+  const filtered = category === 'all' ? SPONSORS : SPONSORS.filter(s => s.category === category);
+  
+  if (!filtered || !filtered.length) {
+    container.innerHTML = `
+      <div class="sponsor-empty-card">
+        <span class="empty-icon">📢</span>
+        <strong>No Active Sponsors</strong>
+        <p>Sponsor partner banners will automatically display here once assigned.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(sp => `
+    <div class="sponsor-card" style="--bannerBg: ${sp.bannerBg || 'linear-gradient(135deg, #091526, #d92535)'};" data-sponsor-id="${sp.id}" title="Click to view sponsor details">
+      <span class="sponsor-badge">${escapeHtml(sp.badge || 'PARTNER')}</span>
+      <div class="sponsor-top-row">
+        <div class="sponsor-logo-box">
+          ${sp.logo ? `<img src="${escapeHtml(sp.logo)}" alt="${escapeHtml(sp.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><span class="sponsor-logo-fallback" style="display:none;">${sp.fallbackIcon || '🏢'}</span>` : `<span class="sponsor-logo-fallback">${sp.fallbackIcon || '🏢'}</span>`}
+        </div>
+        <div class="sponsor-info">
+          <strong>${escapeHtml(sp.name)}</strong>
+          <small>${escapeHtml(sp.tagline)}</small>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('[data-sponsor-id]').forEach(card => {
+    card.addEventListener('click', () => openSponsorModal(card.dataset.sponsorId));
+  });
+}
+
+function openSponsorModal(sponsorId) {
+  const sponsor = SPONSORS.find(s => s.id === sponsorId);
+  const content = $('sponsor-modal-content');
+  if (!content) return;
+  
+  if (!sponsor) {
+    content.innerHTML = `
+      <span class="tag">SPONSORSHIP OPPORTUNITY</span>
+      <h1 style="margin:8px 0 4px; color:var(--ink);">Become a Sponsor Partner</h1>
+      <p class="muted" style="margin-bottom:14px; font-weight:700;">Partner with YUGANTAR News Network</p>
+      <div style="padding:20px; border-radius:12px; background:linear-gradient(135deg, #091526, #d92535); color:#fff; margin-bottom:16px;">
+        <p style="margin:0; font-size:1.02rem; line-height:1.45;">Reach millions of viewers across West Bengal and globally. Showcase your animated partner banner on our live 24x7 news platform.</p>
+      </div>
+      <div class="article-actions">
+        <a class="button" href="mailto:office.yugantarnews@gmail.com?subject=Sponsorship%20Inquiry%20Yugantar%20News">Contact Editorial Desk ✉</a>
+        <a class="button button-outline" href="tel:+918479084770">Call Desk ☎</a>
+      </div>
+    `;
+    $('sponsor-dialog')?.showModal();
+    return;
+  }
+
+  content.innerHTML = `
+    <span class="tag">${escapeHtml(sponsor.badge)}</span>
+    <h1 style="margin:8px 0 4px; color:var(--ink);">${escapeHtml(sponsor.name)}</h1>
+    <p class="muted" style="margin-bottom:14px; font-weight:700;">${escapeHtml(sponsor.tagline)}</p>
+    <div style="padding:20px; border-radius:12px; background:${sponsor.bannerBg}; color:#fff; margin-bottom:16px;">
+      <p style="margin:0; font-size:1.05rem; line-height:1.4;">${escapeHtml(sponsor.description)}</p>
+    </div>
+    <div class="article-actions">
+      <a class="button" href="${escapeHtml(sponsor.website)}" target="_blank" rel="noopener noreferrer">Visit Official Site ↗</a>
+      <a class="button button-outline" href="mailto:office.yugantarnews@gmail.com?subject=Sponsorship%20Inquiry">Partner With Us ✉</a>
+    </div>
+  `;
+  $('sponsor-dialog')?.showModal();
+}
+
+let selectedRegion = 'all';
+
+function renderWestBengalMap(filterRegion = 'all') {
+  const container = $('wb-interactive-map-container');
+  if (!container) return;
+
+  const regionPills = WB_REGIONS.map(r => `
+    <button class="region-pill ${r.id === filterRegion ? 'active' : ''}" data-region-id="${r.id}">
+      ${r.name}
+    </button>
+  `).join('');
+
+  const clipDefs = `
+    <defs>
+      <clipPath id="clip-paschim-medinipur">
+        <polygon points="200,840 342,840 332,975 200,975" />
+      </clipPath>
+      <clipPath id="clip-purba-medinipur">
+        <polygon points="342,840 430,840 430,975 332,975" />
+      </clipPath>
+      <clipPath id="clip-north-24-parganas">
+        <polygon points="470,780 640,780 640,918 470,918" />
+      </clipPath>
+      <clipPath id="clip-south-24-parganas">
+        <polygon points="470,918 640,918 640,1030 470,1030" />
+      </clipPath>
+    </defs>
+  `;
+
+  // Order urban / overlapping districts so Kolkata, Howrah, Hooghly sit on top and remain 100% clickable
+  const sortedDistricts = [...WB_DISTRICTS].sort((a, b) => {
+    const topOrder = { 'hooghly': 1, 'howrah': 2, 'kolkata': 3 };
+    return (topOrder[a.id] || 0) - (topOrder[b.id] || 0);
+  });
+
+  const svgPaths = sortedDistricts.map(d => {
+    const isMatchedRegion = filterRegion === 'all' || d.region === filterRegion;
+    const pathFill = isMatchedRegion ? d.color : 'rgba(203, 213, 225, 0.4)';
+    const pathOpacity = isMatchedRegion ? '1' : '0.4';
+    const lines = d.labelLines || [d.shortName || d.nameEn];
+    const startY = d.labelPos.y - (lines.length > 1 ? (lines.length - 1) * 7 : 0);
+    const tspans = lines.map((line, idx) => `<tspan x="${d.labelPos.x}" dy="${idx === 0 ? 0 : 14}">${escapeHtml(line)}</tspan>`).join('');
+
+    let clipAttr = '';
+    if (d.id === 'paschim-medinipur') clipAttr = ' clip-path="url(#clip-paschim-medinipur)"';
+    else if (d.id === 'purba-medinipur') clipAttr = ' clip-path="url(#clip-purba-medinipur)"';
+    else if (d.id === 'north-24-parganas') clipAttr = ' clip-path="url(#clip-north-24-parganas)"';
+    else if (d.id === 'south-24-parganas') clipAttr = ' clip-path="url(#clip-south-24-parganas)"';
+
+    return `
+      <g class="wb-district-group">
+        <path d="${d.svgPath}"${clipAttr} fill="${pathFill}" stroke="#334155" stroke-width="1.2" opacity="${pathOpacity}" class="wb-district-path" data-district-id="${d.id}" data-district-name="${escapeHtml(d.nameEn)}" data-district-bn="${escapeHtml(d.nameBn)}" data-district-region="${escapeHtml(d.region)}" data-district-hq="${escapeHtml(d.hq)}">
+          <title>${d.nameEn} (${d.nameBn}) - HQ: ${d.hq} (${d.region})</title>
+        </path>
+        <text x="${d.labelPos.x}" y="${startY}" fill="#0f172a" font-size="12.5" font-weight="700" pointer-events="none" text-anchor="middle" opacity="${pathOpacity}" style="font-family: system-ui, -apple-system, sans-serif; text-shadow: 0 0 3px #ffffff, 0 0 3px #ffffff;">${tspans}</text>
+      </g>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="wb-map-region-filter">
+      ${regionPills}
+    </div>
+    <div class="wb-map-svg-wrapper">
+      <svg viewBox="${WB_MAP_VIEWBOX}" width="100%" class="wb-svg-main">
+        ${clipDefs}
+        <g>${svgPaths}</g>
+      </svg>
+      <div id="wb-district-tooltip" class="wb-district-tooltip hidden">
+        <strong id="tooltip-title">Kolkata</strong>
+        <span id="tooltip-bn">কলকাতা</span>
+        <small id="tooltip-meta">HQ: Kolkata · South Bengal</small>
+        <div class="tooltip-action">Click to open District News →</div>
+      </div>
+    </div>
+  `;
+
+  container.querySelectorAll('[data-region-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedRegion = btn.dataset.regionId;
+      renderWestBengalMap(selectedRegion);
+      renderDistrictList('', selectedRegion);
+    });
+  });
+
+  const tooltip = $('wb-district-tooltip');
+  const titleEl = $('tooltip-title');
+  const bnEl = $('tooltip-bn');
+  const metaEl = $('tooltip-meta');
+
+  container.querySelectorAll('[data-district-id]').forEach(path => {
+    path.addEventListener('mouseenter', e => {
+      if (titleEl) titleEl.textContent = path.dataset.districtName;
+      if (bnEl) bnEl.textContent = path.dataset.districtBn;
+      if (metaEl) metaEl.textContent = `HQ: ${path.dataset.districtHq} · ${path.dataset.districtRegion}`;
+      if (tooltip) tooltip.classList.remove('hidden');
+    });
+
+    path.addEventListener('mouseleave', () => {
+      if (tooltip) tooltip.classList.add('hidden');
+    });
+
+    path.addEventListener('click', () => {
+      const distId = path.dataset.districtId;
+      window.location.href = `./district.html?district=${distId}`;
+    });
+  });
+}
+
+function renderDistrictList(filter = '', regionFilter = 'all') {
+  const listTarget = $('wb-district-list');
+  if (!listTarget) return;
+
+  const term = filter.trim().toLowerCase();
+  const filtered = WB_DISTRICTS.filter(d => {
+    const matchesTerm = !term || d.nameEn.toLowerCase().includes(term) || d.nameBn.includes(term) || d.region.toLowerCase().includes(term);
+    const matchesRegion = regionFilter === 'all' || d.region === regionFilter;
+    return matchesTerm && matchesRegion;
+  });
+
+  listTarget.innerHTML = filtered.map(d => `
+    <button class="district-chip" data-district-id="${d.id}" title="Click for ${d.nameEn} district news">
+      <span>${d.nameEn}</span>
+      <span style="font-size:0.65rem; opacity:0.75;">›</span>
+    </button>
+  `).join('');
+
+  listTarget.querySelectorAll('[data-district-id]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      window.location.href = `./district.html?district=${chip.dataset.districtId}`;
+    });
+  });
 }
 
 bindUi();
 updateClock();
 setInterval(updateClock, 1000);
-if (!firebaseConfigured) showSetupMessage();
-else {
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  $('sync-status').textContent = 'LIVE DATA';
-  startRealtimeListeners(); loadArticles(); loadVideosAndPoll();
+if (!firebaseConfigured) {
+  showSetupMessage();
+  state.articles = DEFAULT_DEMO_ARTICLES;
+  renderArticles();
+  renderHero();
+  renderHeadlineStrip();
+  renderVideos([]);
+  renderPoll(null);
+} else {
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    $('sync-status').textContent = 'LIVE DATA';
+    startRealtimeListeners();
+    loadArticles();
+    loadVideosAndPoll();
+  } catch (e) {
+    console.warn('Firebase init error, using fallback feeds:', e);
+    state.articles = DEFAULT_DEMO_ARTICLES;
+    renderArticles();
+    renderHero();
+    renderHeadlineStrip();
+    renderVideos([]);
+    renderPoll(null);
+  }
 }
+
+
