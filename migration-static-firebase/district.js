@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
 const savedLanguageKey = 'yugantar_language';
 
-const getStoredLanguage = () => { try { return localStorage.getItem(savedLanguageKey) || 'EN'; } catch { return 'EN'; } };
+const getStoredLanguage = () => { try { return localStorage.getItem(savedLanguageKey) || 'BN'; } catch { return 'BN'; } };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
 
 const state = {
@@ -288,7 +288,7 @@ async function loadFirestoreData() {
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
     state.firestoreArticles = result.docs.map(item => ({ id: item.id, ...item.data() }));
   } catch (err) {
-    console.warn('Firestore load failed for district page, using local district news:', err);
+    console.warn('Firestore load failed for district page; showing an empty district state:', err);
   } finally {
     loadDistrictArticles();
   }

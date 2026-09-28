@@ -56,7 +56,7 @@ function render(items) {
 
 async function loadVideos() {
   if (!firebaseConfigured) {
-    loadedItems = DEFAULT_DEMO_VIDEOS;
+    loadedItems = [];
     render(loadedItems);
     return;
   }
@@ -65,12 +65,11 @@ async function loadVideos() {
     if (cursor) constraints.push(startAfter(cursor));
     const snapshot = await getDocs(query(collection(db, 'videoItems'), ...constraints));
     loadedItems = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
-    if (!loadedItems.length && page === 1) loadedItems = DEFAULT_DEMO_VIDEOS;
     history[page] = snapshot.docs[snapshot.docs.length - 1] || null;
     render(loadedItems);
   } catch (error) {
     console.error(error);
-    loadedItems = DEFAULT_DEMO_VIDEOS;
+    loadedItems = [];
     render(loadedItems);
   }
 }

@@ -11,7 +11,7 @@ import { SPONSORS } from './sponsors-data.js';
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
 const savedLanguageKey = 'yugantar_language';
-const getStoredLanguage = () => { try { return localStorage.getItem(savedLanguageKey) || 'EN'; } catch { return 'EN'; } };
+const getStoredLanguage = () => { try { return localStorage.getItem(savedLanguageKey) || 'BN'; } catch { return 'BN'; } };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
 const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], saved: readSaved(), poll: null };
 let db;
@@ -52,7 +52,7 @@ const translations = {
     readingListKicker: 'YOUR READING LIST',
     savedTitle: 'Saved articles',
     footerAbout: 'Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial intelligence globally.',
-    footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
+    footerMotto: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     footerLiveLink: '● YUGANTAR LIVE 24/7',
     footerOfficialDesk: 'Official desk',
     footerNewsSections: 'News sections',
@@ -106,7 +106,7 @@ const translations = {
     readingListKicker: 'আপনার পঠন তালিকা',
     savedTitle: 'সেভ করা খবর',
     footerAbout: 'বিশ্বজুড়ে ২৪x৭ নিরপেক্ষ ব্রেকিং নিউজ, রিয়েল-টাইম ভিডিও স্ট্রিমিং এবং বিস্তারিত সম্পাদকীয় পরিবেশন।',
-    footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
+    footerMotto: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     footerLiveLink: '● যুগান্তর লাইভ ২৪/৭',
     footerOfficialDesk: 'অফিসিয়াল ডেস্ক',
     footerNewsSections: 'সংবাদ বিভাগ',
@@ -160,7 +160,7 @@ const translations = {
     readingListKicker: 'आपकी रीडिंग लिस्ट',
     savedTitle: 'सेव किए गए समाचार',
     footerAbout: 'दुनिया भर में 24x7 निष्पक्ष ब्रेकिंग न्यूज़, लाइव वीडियो स्ट्रीमिंग और विस्तृत संपादकीय।',
-    footerMotto: '“निरपेक्ष खबर, निर्भीक पत्रकारिता।”',
+    footerMotto: 'निष्पक्ष खबर, निर्भीक पत्रकारिता | बंगाल, देश और दुनिया की खबर | सच के साथ, जनता के पास।',
     footerLiveLink: '● युगांतर लाइव 24/7',
     footerOfficialDesk: 'आधिकारिक डेस्क',
     footerNewsSections: 'समाचार अनुभाग',
@@ -455,13 +455,7 @@ const DEFAULT_DEMO_VIDEOS = [
 ];
 
 function renderVideos(snapshot) {
-  let itemsToRender = Array.isArray(snapshot) && snapshot.length > 0 ? snapshot : [];
-  if (itemsToRender.length < 6) {
-    const existing = new Set(itemsToRender.map(item => item.id || item.videoUrl));
-    const fill = DEFAULT_DEMO_VIDEOS.filter(item => !existing.has(item.id) && !existing.has(item.videoUrl));
-    itemsToRender = [...itemsToRender, ...fill];
-  }
-  itemsToRender = itemsToRender.slice(0, 6);
+  const itemsToRender = Array.isArray(snapshot) ? snapshot.slice(0, 6) : [];
   const videos = itemsToRender.map(item => {
     const id = youtubeId(item.videoUrl || item.embedUrl);
     const thumbnail = item.thumbnail || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
@@ -516,10 +510,10 @@ async function loadArticles() {
   try {
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
     const docs = result.docs.map(item => ({ id: item.id, ...item.data() }));
-    state.articles = docs.length ? docs : DEFAULT_DEMO_ARTICLES;
+    state.articles = docs;
   } catch (error) {
-    console.warn('Articles query failed, loading default newsroom articles:', error);
-    state.articles = DEFAULT_DEMO_ARTICLES;
+    console.warn('Articles query failed; showing an empty newsroom state:', error);
+    state.articles = [];
   } finally {
     renderArticles(); renderHero(); renderHeadlineStrip();
   }
@@ -529,7 +523,7 @@ function startRealtimeListeners() {
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
     const items = snapshot.docs.map(item => item.data());
     $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : 'No active breaking updates.';
-  }, () => { $('ticker-items').textContent = 'California Supreme Court orders Riverside County Sheriff Bianco to return 650,000 seized ballots • South-East Asia Travel News & Guides • Summit Discussion: Solera, BYD, and CITS Chart EV Mobility Future.'; });
+  }, () => { $('ticker-items').textContent = 'Live breaking updates are temporarily unavailable.'; });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
     const stream = snapshot.docs[0]?.data();
     $('live-title').textContent = stream?.title || 'Live channel';
@@ -907,7 +901,7 @@ updateClock();
 setInterval(updateClock, 1000);
 if (!firebaseConfigured) {
   showSetupMessage();
-  state.articles = DEFAULT_DEMO_ARTICLES;
+  state.articles = [];
   renderArticles();
   renderHero();
   renderHeadlineStrip();
@@ -922,8 +916,8 @@ if (!firebaseConfigured) {
     loadArticles();
     loadVideosAndPoll();
   } catch (e) {
-    console.warn('Firebase init error, using fallback feeds:', e);
-    state.articles = DEFAULT_DEMO_ARTICLES;
+    console.warn('Firebase init error; showing empty production states:', e);
+    state.articles = [];
     renderArticles();
     renderHero();
     renderHeadlineStrip();
