@@ -11,6 +11,7 @@
   <meta property="og:type" content="website">
   <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
   <title>YUGANTAR News</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="./styles.css">
 </head>
 
@@ -133,7 +134,13 @@
           </div>
         </section>
 
-        <section class="content-section split-section">
+        <section class="content-section community-section">
+          <div class="panel poll-panel">
+            <div class="section-kicker" data-i18n="opinionKicker">OPINION</div>
+            <h2 id="poll-question">Loading poll…</h2>
+            <div id="poll-options"></div>
+            <p id="poll-status" class="muted"></p>
+          </div>
           <div>
             <div class="section-heading compact">
               <div>
@@ -145,12 +152,6 @@
             <div id="videos" class="video-grid">
               <div class="empty-state">Loading official YouTube and Facebook posts…</div>
             </div>
-          </div>
-          <div class="panel poll-panel">
-            <div class="section-kicker" data-i18n="opinionKicker">OPINION</div>
-            <h2 id="poll-question">Loading poll…</h2>
-            <div id="poll-options"></div>
-            <p id="poll-status" class="muted"></p>
           </div>
         </section>
 
@@ -176,7 +177,7 @@
         </div>
         <p class="sidebar-desc">Select any district on the interactive map to view specific news stories for that district.</p>
 
-        <!-- West Bengal Interactive Map SVG Container -->
+        <!-- West Bengal Interactive Map GeoJSON Container -->
         <div id="wb-interactive-map-container" class="wb-map-box">
           <!-- Rendered by JS -->
         </div>
@@ -414,6 +415,8 @@
     </div>
   </dialog>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script type="module" src="./app.js"></script>
 </body>
 

@@ -59,7 +59,7 @@ function populateDistrictSelect() {
   });
 }
 
-function renderMiniWbMap() {
+function renderMiniWbMapLegacy() {
   const container = $('mini-wb-map-container');
   if (!container) return;
 
@@ -119,6 +119,47 @@ function renderMiniWbMap() {
     listTarget.querySelectorAll('[data-district-id]').forEach(btn => {
       btn.addEventListener('click', () => switchDistrict(btn.dataset.districtId));
     });
+  }
+}
+
+async function renderMiniWbMap() {
+  const container = $('mini-wb-map-container');
+  if (!container || !window.L) return;
+  const currentDist = WB_DISTRICTS.find(d => d.id === state.districtId) || WB_DISTRICTS[0];
+  const normalize = value => String(value || '').toLowerCase().replace(/pashchim/g, 'paschim').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const metadata = feature => WB_DISTRICTS.find(d => normalize(d.nameEn) === normalize(feature?.properties?.dtname || feature?.properties?.d_pan_name));
+  container.innerHTML = '<div class="district-leaflet-map" aria-label="Clickable West Bengal district map"></div>';
+  try {
+    const response = await fetch('./assets/west-bengal-districts.geojson');
+    if (!response.ok) throw new Error(`Map data request failed: ${response.status}`);
+    const geoJson = await response.json();
+    const map = window.L.map(container.querySelector('.district-leaflet-map'), { zoomControl: false, scrollWheelZoom: false, dragging: false, attributionControl: false });
+    const layer = window.L.geoJSON(geoJson, {
+      style: feature => {
+        const district = metadata(feature);
+        const active = district?.id === currentDist.id;
+        return { color: active ? '#ffffff' : '#334155', weight: active ? 2.5 : 1, fillColor: active ? '#d92535' : (district?.color || '#94a3b8'), fillOpacity: active ? 1 : 0.72 };
+      },
+      onEachFeature: (feature, featureLayer) => {
+        const district = metadata(feature);
+        if (!district) return;
+        featureLayer.bindTooltip(district.nameEn, { sticky: true });
+        featureLayer.on('click', () => switchDistrict(district.id));
+        featureLayer.on('mouseover', event => event.target.setStyle({ weight: 2.5, color: '#ffffff', fillColor: '#d92535', fillOpacity: 1 }));
+        featureLayer.on('mouseout', event => layer.resetStyle(event.target));
+      }
+    }).addTo(map);
+    map.fitBounds(layer.getBounds(), { padding: [4, 4] });
+    window.setTimeout(() => map.invalidateSize(), 0);
+  } catch (error) {
+    console.error('District GeoJSON map failed:', error);
+    container.innerHTML = '<div class="empty-state">Map unavailable. Use the district selector above.</div>';
+  }
+
+  const listTarget = $('district-list-quick');
+  if (listTarget) {
+    listTarget.innerHTML = WB_DISTRICTS.map(d => `<button class="district-chip ${d.id === state.districtId ? 'active' : ''}" data-district-id="${d.id}">${d.nameEn}</button>`).join('');
+    listTarget.querySelectorAll('[data-district-id]').forEach(btn => btn.addEventListener('click', () => switchDistrict(btn.dataset.districtId)));
   }
 }
 
