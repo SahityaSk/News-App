@@ -294,9 +294,11 @@ try {
     foreach (listFirestoreCollection($projectId, $token, 'videoControls') as $control) {
         if (!empty($control['hidden'])) $videoControls[(string) ($control['id'] ?? '')] = true;
     }
-    $youtubeSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'youtube' && ($source['active'] ?? false)));
+    $youtubeSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'youtube'
+        && ($source['active'] ?? false)
+        && trim((string) ($source['channelId'] ?? $source['channelOrPageId'] ?? '')) !== ''));
     $facebookSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'facebook' && ($source['active'] ?? false)));
-    if (!$remoteSources) {
+    if (!$remoteSources || !$youtubeSources) {
         $youtubeSources = $config['youtubeChannels'] ?? [];
         $facebookSources = $config['facebookPages'] ?? [];
     }
@@ -304,15 +306,19 @@ try {
         if (empty($source['active'])) continue;
         $source['channelId'] = $source['channelId'] ?? $source['channelOrPageId'] ?? '';
         $source['id'] = $source['id'] ?? 'youtube-' . $source['channelId'];
-        foreach (youtubeVideos($source) as $video) {
-            $isHidden = !empty($videoControls[$video['documentId']]);
-            $video['active'] = !$isHidden;
-            $video['hidden'] = $isHidden;
-            upsertFirestore($projectId, $token, 'videoItems', $video['documentId'], $video);
-            $count++;
+        try {
+            foreach (youtubeVideos($source) as $video) {
+                $isHidden = !empty($videoControls[$video['documentId']]);
+                $video['active'] = !$isHidden;
+                $video['hidden'] = $isHidden;
+                upsertFirestore($projectId, $token, 'videoItems', $video['documentId'], $video);
+                $count++;
+            }
+            $live = youtubeLive($source, (string) ($config['youtubeApiKey'] ?? ''));
+            if ($live) upsertFirestore($projectId, $token, 'liveStreams', 'youtube-' . preg_replace('/[^A-Za-z0-9_-]/', '_', $source['id']), $live + ['updatedAt' => gmdate('c')]);
+        } catch (Throwable $sourceError) {
+            fwrite(STDERR, 'YouTube source failed ' . ($source['id'] ?? $source['channelId'] ?? 'unknown') . ': ' . $sourceError->getMessage() . "\n");
         }
-        $live = youtubeLive($source, (string) ($config['youtubeApiKey'] ?? ''));
-        if ($live) upsertFirestore($projectId, $token, 'liveStreams', 'youtube-' . preg_replace('/[^A-Za-z0-9_-]/', '_', $source['id']), $live + ['updatedAt' => gmdate('c')]);
     }
     foreach (($config['youtubeLinks'] ?? []) as $link) {
         $video = youtubeLink((string) $link);

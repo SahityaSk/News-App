@@ -51,6 +51,25 @@ service cloud.firestore {
       allow create, update, delete: if editor();
     }
 
+    match /sponsors/{id} {
+      allow read: if resource.data.active == true;
+      allow create: if editor()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.logo is string
+        && request.resource.data.logo.size() > 0
+        && request.resource.data.logo.size() <= 1000;
+      allow update: if editor()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.logo is string
+        && request.resource.data.logo.size() > 0
+        && request.resource.data.logo.size() <= 1000;
+      allow delete: if editor();
+    }
+
     match /videoControls/{videoId} {
       allow read, write: if editor();
     }
@@ -83,6 +102,32 @@ service cloud.firestore {
       allow create: if request.resource.data.email is string
         && request.resource.data.email.size() <= 254;
       allow read, update, delete: if superadmin();
+    }
+
+    match /jobApplications/{id} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'position', 'name', 'phone', 'email', 'district', 'portfolioUrl', 'pitch',
+          'status', 'source', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.status == 'received'
+        && request.resource.data.position is string
+        && request.resource.data.position.size() > 0
+        && request.resource.data.position.size() <= 160
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.district is string
+        && request.resource.data.district.size() <= 120
+        && request.resource.data.portfolioUrl is string
+        && request.resource.data.portfolioUrl.size() <= 500
+        && request.resource.data.pitch is string
+        && request.resource.data.pitch.size() <= 2000
+        && request.resource.data.source == 'public-careers';
+      allow read, update, delete: if editor();
     }
 
     match /publicStats/{id} {

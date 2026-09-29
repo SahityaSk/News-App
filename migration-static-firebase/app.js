@@ -16,7 +16,7 @@ const getStoredLanguage = () => {
   catch { return 'BN'; }
 };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
-const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
+const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
@@ -48,6 +48,10 @@ const translations = {
     watchAllVideos: 'Watch all videos',
     subscribersLabel: 'Subs', careersLabel: 'Careers', hiringLabel: 'Hiring',
     subscribersTitle: 'View Subscribers & Subscribe', careersTitle: 'Careers & Job Opportunities',
+    careersBadge: 'WE ARE HIRING', careersHeading: 'Join Team YUGANTAR News', careersIntro: 'Build your journalism career with West Bengal’s growing digital news network.', featuredPositions: 'Featured Open Positions',
+    jobReporter: 'District News Reporter (All 23 Districts)', jobReporterMeta: 'Field Reporting • Full-Time / Freelance • All WB Districts', jobVideo: 'Video Journalist & Anchor', jobVideoMeta: 'Media Studio • Full-Time • Kolkata / Howrah', jobEditor: 'Content Editor (Bengali / English / Hindi)', jobEditorMeta: 'Desk • Full-Time / Remote • Kolkata HQ', jobMarketing: 'Digital Marketing & Growth Specialist', jobMarketingMeta: 'Growth Team • Full-Time • Remote / Hybrid', applyNow: 'Apply Now',
+    applicationHeading: 'Submit Candidate Application', applicationIntro: 'Fill out your details below and our recruitment desk will review your application.', jobPositionLabel: 'Applying For Position *', jobNameLabel: 'Candidate Full Name *', jobPhoneLabel: 'Mobile Number *', jobEmailLabel: 'Email Address *', jobDistrictLabel: 'District / Location *', jobPortfolioLabel: 'Portfolio / Resume Link (Optional)', jobPitchLabel: 'Why do you want to join YUGANTAR? (Short Note)', jobSubmit: '🚀 Submit Application', jobSuccess: '✅ Application received. Reference: {id}. Our recruitment desk will contact shortlisted candidates.', jobError: 'Application could not be submitted right now. Please try again.', jobUnavailable: 'The application service is temporarily unavailable.',
+    jobOptionReporter: 'District News Reporter (Field)', jobOptionVideo: 'Video Journalist & Anchor', jobOptionEditor: 'Content Editor', jobOptionMarketing: 'Digital Marketing Specialist', jobOptionDeveloper: 'Web & Mobile Developer', jobOptionOther: 'Other / Open Application', jobNamePlaceholder: 'e.g. Sourav Mukherjee', jobPhonePlaceholder: '+91 9830012345', jobEmailPlaceholder: 'sourav@example.com', jobDistrictPlaceholder: 'e.g. Midnapore / Kolkata', jobPortfolioPlaceholder: 'https://drive.google.com/... or LinkedIn profile', jobPitchPlaceholder: 'Tell us briefly about your journalism experience, skills or background…',
     youtubeSubscriberCount: 'YouTube subscribers',
     opinionKicker: 'OPINION',
     newsletterKicker: 'NEWSLETTER',
@@ -108,6 +112,10 @@ const translations = {
     watchAllVideos: 'সমস্ত ভিডিও দেখুন',
     subscribersLabel: 'সাবস্ক্রাইবার', careersLabel: 'ক্যারিয়ার', hiringLabel: 'নিয়োগ চলছে',
     subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ',
+    careersBadge: 'নিয়োগ চলছে', careersHeading: 'যুগান্তর নিউজ টিমে যোগ দিন', careersIntro: 'পশ্চিমবঙ্গের দ্রুত বিকাশমান ডিজিটাল নিউজ নেটওয়ার্কে আপনার সাংবাদিকতা ক্যারিয়ার গড়ুন।', featuredPositions: 'প্রধান চাকরির সুযোগ',
+    jobReporter: 'জেলা সংবাদ প্রতিবেদক (সমস্ত ২৩ জেলা)', jobReporterMeta: 'মাঠ সাংবাদিকতা • ফুল-টাইম / ফ্রিল্যান্স • পশ্চিমবঙ্গের সব জেলা', jobVideo: 'ভিডিও সাংবাদিক ও অ্যাঙ্কর', jobVideoMeta: 'মিডিয়া স্টুডিও • ফুল-টাইম • কলকাতা / হাওড়া', jobEditor: 'কনটেন্ট এডিটর (বাংলা / ইংরেজি / হিন্দি)', jobEditorMeta: 'ডেস্ক • ফুল-টাইম / রিমোট • কলকাতা সদর দপ্তর', jobMarketing: 'ডিজিটাল মার্কেটিং ও গ্রোথ বিশেষজ্ঞ', jobMarketingMeta: 'গ্রোথ টিম • ফুল-টাইম • রিমোট / হাইব্রিড', applyNow: 'আবেদন করুন',
+    applicationHeading: 'চাকরির আবেদন জমা দিন', applicationIntro: 'আপনার তথ্য পূরণ করুন। আমাদের নিয়োগ ডেস্ক আপনার আবেদন পর্যালোচনা করবে।', jobPositionLabel: 'যে পদের জন্য আবেদন করছেন *', jobNameLabel: 'প্রার্থীর পুরো নাম *', jobPhoneLabel: 'মোবাইল নম্বর *', jobEmailLabel: 'ইমেইল ঠিকানা *', jobDistrictLabel: 'জেলা / অবস্থান *', jobPortfolioLabel: 'পোর্টফোলিও / রিজিউমে লিংক (ঐচ্ছিক)', jobPitchLabel: 'আপনি যুগান্তরে যোগ দিতে চান কেন? (সংক্ষিপ্ত নোট)', jobSubmit: '🚀 আবেদন জমা দিন', jobSuccess: '✅ আবেদন গ্রহণ করা হয়েছে। রেফারেন্স: {id}। বাছাই করা প্রার্থীদের নিয়োগ ডেস্ক যোগাযোগ করবে।', jobError: 'এই মুহূর্তে আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।', jobUnavailable: 'আবেদন পরিষেবা সাময়িকভাবে উপলব্ধ নয়।',
+    jobOptionReporter: 'জেলা সংবাদ প্রতিবেদক (মাঠ)', jobOptionVideo: 'ভিডিও সাংবাদিক ও অ্যাঙ্কর', jobOptionEditor: 'কনটেন্ট এডিটর', jobOptionMarketing: 'ডিজিটাল মার্কেটিং বিশেষজ্ঞ', jobOptionDeveloper: 'ওয়েব ও মোবাইল ডেভেলপার', jobOptionOther: 'অন্যান্য / সাধারণ আবেদন', jobNamePlaceholder: 'যেমন: সৌরভ মুখার্জি', jobPhonePlaceholder: '+৯১ ৯৮৩০০১২৩৪৫', jobEmailPlaceholder: 'sourav@example.com', jobDistrictPlaceholder: 'যেমন: মেদিনীপুর / কলকাতা', jobPortfolioPlaceholder: 'https://drive.google.com/... অথবা LinkedIn প্রোফাইল', jobPitchPlaceholder: 'আপনার সাংবাদিকতা অভিজ্ঞতা, দক্ষতা বা পরিচয় সংক্ষেপে লিখুন…',
     youtubeSubscriberCount: 'ইউটিউব সাবস্ক্রাইবার',
     opinionKicker: 'জনমত',
     newsletterKicker: 'নিউজলেটার',
@@ -165,6 +173,10 @@ const translations = {
     watchAllVideos: 'सभी वीडियो देखें',
     subscribersLabel: 'सब्सक्राइबर', careersLabel: 'करियर', hiringLabel: 'भर्ती जारी',
     subscribersTitle: 'सब्सक्राइबर और सदस्यता', careersTitle: 'करियर और नौकरी के अवसर',
+    careersBadge: 'भर्ती जारी', careersHeading: 'युगांतर न्यूज टीम से जुड़ें', careersIntro: 'पश्चिम बंगाल के तेजी से बढ़ते डिजिटल न्यूज नेटवर्क में अपना पत्रकारिता करियर बनाएं।', featuredPositions: 'प्रमुख नौकरी के अवसर',
+    jobReporter: 'जिला समाचार रिपोर्टर (सभी 23 जिले)', jobReporterMeta: 'फील्ड रिपोर्टिंग • फुल-टाइम / फ्रीलांस • सभी पश्चिम बंगाल जिले', jobVideo: 'वीडियो पत्रकार और एंकर', jobVideoMeta: 'मीडिया स्टूडियो • फुल-टाइम • कोलकाता / हावड़ा', jobEditor: 'कंटेंट एडिटर (बंगाली / अंग्रेजी / हिंदी)', jobEditorMeta: 'डेस्क • फुल-टाइम / रिमोट • कोलकाता मुख्यालय', jobMarketing: 'डिजिटल मार्केटिंग और ग्रोथ विशेषज्ञ', jobMarketingMeta: 'ग्रोथ टीम • फुल-टाइम • रिमोट / हाइब्रिड', applyNow: 'आवेदन करें',
+    applicationHeading: 'उम्मीदवार का आवेदन जमा करें', applicationIntro: 'अपनी जानकारी भरें। हमारी भर्ती डेस्क आपके आवेदन की समीक्षा करेगी।', jobPositionLabel: 'किस पद के लिए आवेदन है *', jobNameLabel: 'उम्मीदवार का पूरा नाम *', jobPhoneLabel: 'मोबाइल नंबर *', jobEmailLabel: 'ईमेल पता *', jobDistrictLabel: 'जिला / स्थान *', jobPortfolioLabel: 'पोर्टफोलियो / रिज्यूमे लिंक (वैकल्पिक)', jobPitchLabel: 'आप युगांतर से क्यों जुड़ना चाहते हैं? (संक्षिप्त नोट)', jobSubmit: '🚀 आवेदन जमा करें', jobSuccess: '✅ आवेदन प्राप्त हुआ। संदर्भ: {id}। चयनित उम्मीदवारों से भर्ती डेस्क संपर्क करेगी।', jobError: 'अभी आवेदन जमा नहीं हो सका। कृपया फिर कोशिश करें।', jobUnavailable: 'आवेदन सेवा अस्थायी रूप से उपलब्ध नहीं है।',
+    jobOptionReporter: 'जिला समाचार रिपोर्टर (फील्ड)', jobOptionVideo: 'वीडियो पत्रकार और एंकर', jobOptionEditor: 'कंटेंट एडिटर', jobOptionMarketing: 'डिजिटल मार्केटिंग विशेषज्ञ', jobOptionDeveloper: 'वेब और मोबाइल डेवलपर', jobOptionOther: 'अन्य / खुला आवेदन', jobNamePlaceholder: 'जैसे: सौरव मुखर्जी', jobPhonePlaceholder: '+91 9830012345', jobEmailPlaceholder: 'sourav@example.com', jobDistrictPlaceholder: 'जैसे: मिदनापुर / कोलकाता', jobPortfolioPlaceholder: 'https://drive.google.com/... या LinkedIn प्रोफ़ाइल', jobPitchPlaceholder: 'अपने पत्रकारिता अनुभव, कौशल या पृष्ठभूमि के बारे में संक्षेप में बताएं…',
     youtubeSubscriberCount: 'YouTube सब्सक्राइबर',
     opinionKicker: 'ओपिनियन',
     newsletterKicker: 'न्यूज़लेटर',
@@ -205,7 +217,8 @@ translations.HI.districtSearchNoResults = 'कोई मिलता-जुल�
 function updateStaticLanguage(lang = state.language) {
   const dict = translations[lang] || translations.EN;
   document.documentElement.lang = lang === 'BN' ? 'bn' : (lang === 'HI' ? 'hi' : 'en');
-  $('subscribers-btn')?.setAttribute('title', dict.subscribersTitle);
+  $('subscribers-btn')?.setAttribute('title', dict.youtubeSubscriberCount);
+  $('subscribers-btn')?.setAttribute('aria-label', dict.youtubeSubscriberCount);
   $('jobs-btn')?.setAttribute('title', dict.careersTitle);
   $('jobs-btn')?.setAttribute('aria-label', `${dict.careersLabel} ${dict.hiringLabel}`);
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -599,6 +612,14 @@ function startRealtimeListeners() {
     const items = snapshot.docs.map(item => item.data());
     $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : (translations[state.language] || translations.EN).noTicker;
   }, () => { $('ticker-items').textContent = (translations[state.language] || translations.EN).tickerUnavailable; });
+  onSnapshot(query(collection(db, 'sponsors'), where('active', '==', true)), snapshot => {
+    state.sponsors = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
+    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+  }, error => {
+    console.warn('Sponsor data unavailable; using local sponsor fallback:', error);
+    state.sponsors = SPONSORS;
+    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+  });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
     renderLiveStream(snapshot.docs[0]?.data() || null);
   }, error => {
@@ -743,7 +764,6 @@ function bindUi() {
 }
 
 function setupHeaderModals() {
-  const subBtn = $('subscribers-btn');
   const subDialog = $('subscribers-dialog');
   const closeSubDialog = $('close-subscribers-dialog');
   const subForm = $('subscriber-form');
@@ -754,10 +774,6 @@ function setupHeaderModals() {
   const closeJobsDialog = $('close-jobs-dialog');
   const jobForm = $('job-application-form');
   const jobMsg = $('job-success-msg');
-
-  subBtn?.addEventListener('click', () => {
-    subDialog?.showModal();
-  });
 
   closeSubDialog?.addEventListener('click', () => {
     subDialog?.close();
@@ -791,21 +807,41 @@ function setupHeaderModals() {
     });
   });
 
-  jobForm?.addEventListener('submit', e => {
+  jobForm?.addEventListener('submit', async e => {
     e.preventDefault();
-    if (jobMsg) jobMsg.classList.remove('hidden');
-    setTimeout(() => {
-      jobMsg?.classList.add('hidden');
+    const dict = translations[state.language] || translations.EN;
+    if (!db) { setStatus(jobMsg, dict.jobUnavailable, true); return; }
+    const name = $('job-name')?.value.trim();
+    const phone = $('job-phone')?.value.trim();
+    const email = $('job-email')?.value.trim().toLowerCase();
+    const district = $('job-district')?.value.trim();
+    const portfolioUrl = safeUrl($('job-portfolio')?.value.trim());
+    const pitch = $('job-pitch')?.value.trim();
+    const position = $('job-position')?.value;
+    if (!name || !phone || !email || !district || !position) { setStatus(jobMsg, dict.jobError, true); return; }
+    const submitButton = jobForm.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+    try {
+      const application = await addDoc(collection(db, 'jobApplications'), {
+        position, name, phone, email, district, portfolioUrl, pitch,
+        status: 'received', source: 'public-careers', createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      setStatus(jobMsg, dict.jobSuccess.replace('{id}', application.id.slice(0, 8).toUpperCase()));
       jobForm.reset();
-      jobsDialog?.close();
-    }, 2500);
+      window.setTimeout(() => { jobMsg?.classList.add('hidden'); jobsDialog?.close(); }, 4500);
+    } catch (error) {
+      console.error('Job application submission failed:', error);
+      setStatus(jobMsg, dict.jobError, true);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
   });
 }
 
 function renderSponsors(category = 'all') {
   const container = $('sponsors-animated-box');
   if (!container) return;
-  const filtered = category === 'all' ? SPONSORS : SPONSORS.filter(s => s.category === category);
+  const filtered = category === 'all' ? state.sponsors : state.sponsors.filter(s => s.category === category);
   const dict = translations[state.language] || translations.EN;
   
   if (!filtered || !filtered.length) {
@@ -878,7 +914,7 @@ async function loadFeaturedPodcasts() {
 }
 
 function openSponsorModal(sponsorId) {
-  const sponsor = SPONSORS.find(s => s.id === sponsorId);
+  const sponsor = state.sponsors.find(s => s.id === sponsorId);
   const content = $('sponsor-modal-content');
   if (!content) return;
   

@@ -19,6 +19,10 @@ let hiddenVideoCache = [];
 let tickerCache = [];
 let pollCache = [];
 let pollVoteCounts = new Map();
+let jobApplicationCache = [];
+let applicationSearchQuery = '';
+let sponsorCache = [];
+let editingSponsorId = '';
 let activeAuth;
 
 const sunIconSvg = `<svg class="theme-icon-svg sun-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
@@ -134,7 +138,11 @@ const DEFAULT_DEMO_ARTICLES = [
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
+    const applicationsSnapshot = currentRole === 'reporter' ? { docs: [] } : await getDocs(collection(db, 'jobApplications'));
+    const sponsorsSnapshot = currentRole === 'reporter' ? { docs: [] } : await getDocs(collection(db, 'sponsors'));
     const [articlesSnapshot, tickersSnapshot, videosSnapshot, controlsSnapshot] = await Promise.all([getDocs(collection(db, 'articles')), getDocs(collection(db, 'tickers')), getDocs(collection(db, 'videoItems')), getDocs(collection(db, 'videoControls'))]);
+    jobApplicationCache = applicationsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    sponsorCache = sponsorsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
     if (articleCache.length < 8) articleCache = [...articleCache, ...DEFAULT_DEMO_ARTICLES.filter(d => !articleCache.some(a => a.id === d.id))];
     const hiddenIds = new Set(controlsSnapshot.docs.filter(item => item.data().hidden === true).map(item => item.id));
@@ -148,13 +156,82 @@ async function loadAdminData() {
     $('stat-drafts').textContent = articleCache.filter(item => item.status === 'draft').length;
     $('stat-videos').textContent = videoCache.length;
     $('stat-tickers').textContent = tickerCache.length;
+    $('stat-applications').textContent = jobApplicationCache.length;
     const pollSnapshot = await getDocs(collection(db, 'polls'));
     pollVoteCounts = new Map();
     pollCache = await Promise.all(pollSnapshot.docs.map(async item => { const votes = await getDocs(collection(db, 'polls', item.id, 'votes')).catch(() => ({ size: 0 })); pollVoteCounts.set(item.id, votes.size || 0); return { id: item.id, ...item.data() }; }));
     pollCache.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-    renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPollList();
+    renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPollList(); renderJobApplications(); renderSponsors();
     $('last-refresh').textContent = `Updated ${new Date().toLocaleTimeString()}`; status('admin-data-status', 'Data refreshed.');
   } catch (error) { console.error('Admin data load failed:', error); status('admin-data-status', 'Could not load editorial data. Check Firestore rules.', true); }
+}
+
+function renderJobApplications() {
+  const target = $('job-application-list');
+  if (!target) return;
+  const filtered = applicationSearchQuery
+    ? jobApplicationCache.filter(item => `${item.name || ''} ${item.email || ''} ${item.position || ''} ${item.district || ''}`.toLowerCase().includes(applicationSearchQuery))
+    : jobApplicationCache;
+  if (!filtered.length) { target.innerHTML = '<div class="empty-state">No job applications found.</div>'; return; }
+  const statuses = ['received', 'shortlisted', 'interview', 'selected', 'rejected', 'withdrawn'];
+  target.innerHTML = filtered.map(item => `<div class="admin-list-item"><div><strong>${escapeHtml(item.name || 'Unnamed candidate')}</strong><small>${escapeHtml(item.position || 'Open application')} · ${escapeHtml(item.district || 'Location not provided')} · ${escapeHtml(dateText(item.createdAt))}</small><p class="muted" style="margin:6px 0 0;">${escapeHtml(item.email || '')} · ${escapeHtml(item.phone || '')}</p>${item.pitch ? `<p class="muted" style="margin:4px 0 0;">${escapeHtml(item.pitch)}</p>` : ''}${readUrl(item.portfolioUrl) ? `<a href="${escapeHtml(readUrl(item.portfolioUrl))}" target="_blank" rel="noreferrer">View portfolio / resume link</a>` : ''}</div><div class="item-actions"><select data-application-status="${escapeHtml(item.id)}" aria-label="Application status for ${escapeHtml(item.name || 'candidate')}">${statuses.map(value => `<option value="${value}" ${item.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select></div></div>`).join('');
+  target.querySelectorAll('[data-application-status]').forEach(select => select.addEventListener('change', () => updateApplicationStatus(select.dataset.applicationStatus, select.value)));
+}
+
+async function updateApplicationStatus(id, nextStatus) {
+  if (!['received', 'shortlisted', 'interview', 'selected', 'rejected', 'withdrawn'].includes(nextStatus)) return;
+  try {
+    await updateDoc(doc(db, 'jobApplications', id), { status: nextStatus, updatedAt: serverTimestamp(), updatedBy: activeAuth.currentUser.uid });
+    const item = jobApplicationCache.find(application => application.id === id);
+    if (item) item.status = nextStatus;
+    status('admin-data-status', 'Application status updated.');
+  } catch (error) {
+    status('admin-data-status', error.message, true);
+    await loadAdminData();
+  }
+}
+
+function resetSponsorForm() {
+  $('sponsor-form')?.reset();
+  editingSponsorId = '';
+  $('sponsor-active').checked = true;
+  $('sponsor-priority').value = '1';
+  $('sponsor-submit').textContent = 'Save sponsor';
+  $('sponsor-reset').classList.add('hidden');
+}
+
+function renderSponsors() {
+  const target = $('sponsor-list');
+  if (!target) return;
+  if (!sponsorCache.length) { target.innerHTML = '<div class="empty-state">No sponsor records found.</div>'; return; }
+  target.innerHTML = sponsorCache.map(item => `<div class="admin-list-item"><div style="display:flex;align-items:center;gap:10px;"><img src="${escapeHtml(readUrl(item.logo))}" alt="" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:#fff;" onerror="this.style.display='none'"><div><strong>${escapeHtml(item.name || 'Unnamed sponsor')}</strong><small>${escapeHtml(item.category || 'partner')} · ${item.active === false ? 'hidden' : 'active'}</small></div></div><div class="item-actions"><button class="text-button" type="button" data-edit-sponsor="${escapeHtml(item.id)}">Edit</button><button class="text-button danger" type="button" data-delete-sponsor="${escapeHtml(item.id)}">Delete</button></div></div>`).join('');
+  target.querySelectorAll('[data-edit-sponsor]').forEach(button => button.addEventListener('click', () => editSponsor(button.dataset.editSponsor)));
+  target.querySelectorAll('[data-delete-sponsor]').forEach(button => button.addEventListener('click', () => deleteSponsor(button.dataset.deleteSponsor)));
+}
+
+function editSponsor(id) {
+  const sponsor = sponsorCache.find(item => item.id === id);
+  if (!sponsor) return;
+  editingSponsorId = id;
+  $('sponsor-name').value = sponsor.name || '';
+  $('sponsor-tagline').value = sponsor.tagline || '';
+  $('sponsor-logo').value = sponsor.logo || '';
+  $('sponsor-website').value = sponsor.website || '';
+  $('sponsor-description').value = sponsor.description || '';
+  $('sponsor-category').value = sponsor.category || 'gold';
+  $('sponsor-priority').value = sponsor.priority ?? 1;
+  $('sponsor-banner').value = sponsor.bannerBg || '';
+  $('sponsor-active').checked = sponsor.active !== false;
+  $('sponsor-submit').textContent = 'Save sponsor changes';
+  $('sponsor-reset').classList.remove('hidden');
+  document.querySelector('[data-admin-tab="sponsors"]')?.click();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteSponsor(id) {
+  const sponsor = sponsorCache.find(item => item.id === id);
+  if (!sponsor || !window.confirm(`Delete sponsor “${sponsor.name || 'this sponsor'}”? This cannot be undone.`)) return;
+  try { await deleteDoc(doc(db, 'sponsors', id)); status('sponsor-status', 'Sponsor deleted.'); await loadAdminData(); } catch (error) { status('sponsor-status', error.message, true); }
 }
 
 function editArticle(id) {
@@ -263,10 +340,11 @@ async function deletePoll(id) {
 
 function bindForms(auth) {
   activeAuth = auth;
-  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm;
+  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm;
   $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
   $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
   $('search-hidden-videos')?.addEventListener('input', (e) => { hiddenVideoSearchQuery = e.target.value.trim().toLowerCase(); renderHiddenVideos(); });
+  $('search-applications')?.addEventListener('input', (e) => { applicationSearchQuery = e.target.value.trim().toLowerCase(); renderJobApplications(); });
   document.querySelectorAll('[data-admin-tab]').forEach(button => button.addEventListener('click', () => { const name = button.dataset.adminTab; document.querySelectorAll('[data-admin-tab]').forEach(item => item.classList.toggle('active', item === button)); document.querySelectorAll('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === name)); }));
   $('article-form').onsubmit = async event => { event.preventDefault(); try { const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };
@@ -275,6 +353,7 @@ function bindForms(auth) {
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };
   $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };
   $('source-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'externalSources', `${$('source-provider').value}-${$('source-id').value.trim()}`), { provider: $('source-provider').value, name: $('source-name').value.trim(), channelOrPageId: $('source-id').value.trim(), liveUrl: readUrl($('source-live-url').value), active: true, updatedAt: serverTimestamp() }); $('source-form').reset(); status('source-status', 'Source saved. Keep tokens in the private worker config.'); } catch (error) { status('source-status', error.message, true); } };
+  $('sponsor-form').onsubmit = async event => { event.preventDefault(); try { const data = { name: $('sponsor-name').value.trim(), tagline: $('sponsor-tagline').value.trim(), logo: readUrl($('sponsor-logo').value), website: readUrl($('sponsor-website').value), description: $('sponsor-description').value.trim(), category: $('sponsor-category').value, priority: Number($('sponsor-priority').value) || 1, bannerBg: $('sponsor-banner').value.trim() || 'linear-gradient(135deg, #091526, #d92535)', active: $('sponsor-active').checked, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingSponsorId) { await updateDoc(doc(db, 'sponsors', editingSponsorId), data); status('sponsor-status', 'Sponsor changes saved.'); } else { await addDoc(collection(db, 'sponsors'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('sponsor-status', 'Sponsor added.'); } resetSponsorForm(); await loadAdminData(); } catch (error) { status('sponsor-status', error.message, true); } };
   if (currentRole === 'reporter') { $('article-status-select').value = 'draft'; $('article-status-select').disabled = true; }
 }
 
