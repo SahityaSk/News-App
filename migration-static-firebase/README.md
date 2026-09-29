@@ -53,8 +53,16 @@ migration-static-firebase/
 │   ├── sync.php                        Private PHP feed synchronizer
 │   ├── worker-config.example.php       Safe worker configuration template
 │   └── README.md                       Worker-specific notes
+├── assets/
+│   └── west-bengal-districts.geojson   Bundled 23-district map boundaries
 └── README.md                           This handoff guide
 ```
+
+### Interactive West Bengal map
+
+The homepage uses Leaflet with the local `assets/west-bengal-districts.geojson` file. The boundaries come from the Government of India's BharatMap district service and are bundled locally so the map does not depend on a live GIS request after deployment. Each polygon carries the matching application district ID; clicking a district opens its existing district-news page. The GeoJSON is simplified for browser performance while retaining all 23 district features.
+
+Leaflet is loaded from its public CDN, so the deployed site needs normal internet access in the visitor's browser. If the CDN is unavailable, the district search/list remains available as a fallback.
 
 Do not upload the repository, `node_modules`, `.git`, service-account JSON, `.env` files, or `worker-config.php` into `public_html`.
 

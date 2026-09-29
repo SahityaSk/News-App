@@ -5,7 +5,7 @@ import {
   serverTimestamp, addDoc, setDoc, updateDoc, writeBatch, where
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
-import { WB_DISTRICTS, WB_REGIONS, WB_MAP_VIEWBOX } from './wb-map-data.js';
+import { WB_DISTRICTS, WB_REGIONS } from './wb-map-data.js';
 import { SPONSORS } from './sponsors-data.js';
 
 const $ = id => document.getElementById(id);
@@ -789,8 +789,25 @@ function openSponsorModal(sponsorId) {
 }
 
 let selectedRegion = 'all';
+let wbGeoJsonPromise;
 
-function renderWestBengalMap(filterRegion = 'all') {
+function districtMetaFromFeature(feature) {
+  const sourceName = String(feature?.properties?.dtname || feature?.properties?.d_pan_name || '').trim().toLowerCase();
+  const normalized = sourceName.replace(/pashchim/g, 'paschim').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return WB_DISTRICTS.find(d => d.nameEn.toLowerCase().replace(/pashchim/g, 'paschim').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === normalized) || null;
+}
+
+async function loadWestBengalGeoJson() {
+  if (!wbGeoJsonPromise) {
+    wbGeoJsonPromise = fetch('./assets/west-bengal-districts.geojson').then(response => {
+      if (!response.ok) throw new Error(`Map data request failed: ${response.status}`);
+      return response.json();
+    });
+  }
+  return wbGeoJsonPromise;
+}
+
+async function renderWestBengalMap(filterRegion = 'all') {
   const container = $('wb-interactive-map-container');
   if (!container) return;
 
@@ -800,69 +817,11 @@ function renderWestBengalMap(filterRegion = 'all') {
     </button>
   `).join('');
 
-  const clipDefs = `
-    <defs>
-      <clipPath id="clip-paschim-medinipur">
-        <polygon points="200,840 342,840 332,975 200,975" />
-      </clipPath>
-      <clipPath id="clip-purba-medinipur">
-        <polygon points="342,840 430,840 430,975 332,975" />
-      </clipPath>
-      <clipPath id="clip-north-24-parganas">
-        <polygon points="470,780 640,780 640,918 470,918" />
-      </clipPath>
-      <clipPath id="clip-south-24-parganas">
-        <polygon points="470,918 640,918 640,1030 470,1030" />
-      </clipPath>
-    </defs>
-  `;
-
-  // Order urban / overlapping districts so Kolkata, Howrah, Hooghly sit on top and remain 100% clickable
-  const sortedDistricts = [...WB_DISTRICTS].sort((a, b) => {
-    const topOrder = { 'hooghly': 1, 'howrah': 2, 'kolkata': 3 };
-    return (topOrder[a.id] || 0) - (topOrder[b.id] || 0);
-  });
-
-  const svgPaths = sortedDistricts.map(d => {
-    const isMatchedRegion = filterRegion === 'all' || d.region === filterRegion;
-    const pathFill = isMatchedRegion ? d.color : 'rgba(203, 213, 225, 0.4)';
-    const pathOpacity = isMatchedRegion ? '1' : '0.4';
-    const lines = d.labelLines || [d.shortName || d.nameEn];
-    const startY = d.labelPos.y - (lines.length > 1 ? (lines.length - 1) * 7 : 0);
-    const tspans = lines.map((line, idx) => `<tspan x="${d.labelPos.x}" dy="${idx === 0 ? 0 : 14}">${escapeHtml(line)}</tspan>`).join('');
-
-    let clipAttr = '';
-    if (d.id === 'paschim-medinipur') clipAttr = ' clip-path="url(#clip-paschim-medinipur)"';
-    else if (d.id === 'purba-medinipur') clipAttr = ' clip-path="url(#clip-purba-medinipur)"';
-    else if (d.id === 'north-24-parganas') clipAttr = ' clip-path="url(#clip-north-24-parganas)"';
-    else if (d.id === 'south-24-parganas') clipAttr = ' clip-path="url(#clip-south-24-parganas)"';
-
-    return `
-      <g class="wb-district-group">
-        <path d="${d.svgPath}"${clipAttr} fill="${pathFill}" stroke="#334155" stroke-width="1.2" opacity="${pathOpacity}" class="wb-district-path" data-district-id="${d.id}" data-district-name="${escapeHtml(d.nameEn)}" data-district-bn="${escapeHtml(d.nameBn)}" data-district-region="${escapeHtml(d.region)}" data-district-hq="${escapeHtml(d.hq)}">
-          <title>${d.nameEn} (${d.nameBn}) - HQ: ${d.hq} (${d.region})</title>
-        </path>
-        <text x="${d.labelPos.x}" y="${startY}" fill="#0f172a" font-size="12.5" font-weight="700" pointer-events="none" text-anchor="middle" opacity="${pathOpacity}" style="font-family: system-ui, -apple-system, sans-serif; text-shadow: 0 0 3px #ffffff, 0 0 3px #ffffff;">${tspans}</text>
-      </g>
-    `;
-  }).join('');
-
   container.innerHTML = `
     <div class="wb-map-region-filter">
       ${regionPills}
     </div>
-    <div class="wb-map-svg-wrapper">
-      <svg viewBox="${WB_MAP_VIEWBOX}" width="100%" class="wb-svg-main">
-        ${clipDefs}
-        <g>${svgPaths}</g>
-      </svg>
-      <div id="wb-district-tooltip" class="wb-district-tooltip hidden">
-        <strong id="tooltip-title">Kolkata</strong>
-        <span id="tooltip-bn">কলকাতা</span>
-        <small id="tooltip-meta">HQ: Kolkata · South Bengal</small>
-        <div class="tooltip-action">Click to open District News →</div>
-      </div>
-    </div>
+    <div id="wb-leaflet-map" class="wb-leaflet-map" aria-label="Clickable West Bengal district map"></div>
   `;
 
   container.querySelectorAll('[data-region-id]').forEach(btn => {
@@ -873,28 +832,49 @@ function renderWestBengalMap(filterRegion = 'all') {
     });
   });
 
-  const tooltip = $('wb-district-tooltip');
-  const titleEl = $('tooltip-title');
-  const bnEl = $('tooltip-bn');
-  const metaEl = $('tooltip-meta');
+  if (!window.L) {
+    container.querySelector('.wb-leaflet-map').innerHTML = '<div class="empty-state">Interactive map library could not be loaded. Use the district list below.</div>';
+    return;
+  }
 
-  container.querySelectorAll('[data-district-id]').forEach(path => {
-    path.addEventListener('mouseenter', e => {
-      if (titleEl) titleEl.textContent = path.dataset.districtName;
-      if (bnEl) bnEl.textContent = path.dataset.districtBn;
-      if (metaEl) metaEl.textContent = `HQ: ${path.dataset.districtHq} · ${path.dataset.districtRegion}`;
-      if (tooltip) tooltip.classList.remove('hidden');
+  try {
+    const geoJson = await loadWestBengalGeoJson();
+    const map = window.L.map('wb-leaflet-map', {
+      zoomControl: true,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      attributionControl: true
     });
-
-    path.addEventListener('mouseleave', () => {
-      if (tooltip) tooltip.classList.add('hidden');
-    });
-
-    path.addEventListener('click', () => {
-      const distId = path.dataset.districtId;
-      window.location.href = `./district.html?district=${distId}`;
-    });
-  });
+    map.attributionControl.addAttribution('District boundaries: BharatMap / Government of India');
+    const layer = window.L.geoJSON(geoJson, {
+      style: feature => {
+        const district = districtMetaFromFeature(feature);
+        const active = district && (filterRegion === 'all' || district.region === filterRegion);
+        return {
+          color: '#334155',
+          weight: 1,
+          fillColor: district?.color || '#94a3b8',
+          fillOpacity: active ? 0.86 : 0.22,
+          opacity: active ? 1 : 0.55
+        };
+      },
+      onEachFeature: (feature, featureLayer) => {
+        const district = districtMetaFromFeature(feature);
+        if (!district) return;
+        featureLayer.bindTooltip(`${district.nameEn} (${district.nameBn})<br><small>HQ: ${district.hq}</small>`, { sticky: true, direction: 'top' });
+        featureLayer.on({
+          mouseover: event => event.target.setStyle({ weight: 2.5, color: '#ffffff', fillColor: '#d92535', fillOpacity: 1 }),
+          mouseout: event => layer.resetStyle(event.target),
+          click: () => { window.location.href = `./district.html?district=${district.id}`; }
+        });
+      }
+    }).addTo(map);
+    map.fitBounds(layer.getBounds(), { padding: [8, 8] });
+    window.setTimeout(() => map.invalidateSize(), 0);
+  } catch (error) {
+    console.error('West Bengal GeoJSON map failed:', error);
+    container.querySelector('.wb-leaflet-map').innerHTML = '<div class="empty-state">Map data could not be loaded. Use the district list below.</div>';
+  }
 }
 
 function renderDistrictList(filter = '', regionFilter = 'all') {

@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const officialSvg = fs.readFileSync('c:/Local Disk D/News/migration-static-firebase/westbengal_official.svg', 'utf8');
+const officialSvg = fs.readFileSync('westbengal_official.svg', 'utf8');
 
 // Extract specific path d attributes by path id
 function getPathD(pathId) {
@@ -13,6 +13,10 @@ function getPathD(pathId) {
     }
   }
   return '';
+}
+
+function getPathsD(pathIds) {
+  return pathIds.map(getPathD).filter(Boolean).join(' ');
 }
 
 // Map each district ID to its corresponding SVG path(s)
@@ -33,13 +37,13 @@ const pathMapping = {
   'purulia': { pathId: 'path27', labelPos: { x: 130, y: 819 } },
   'bankura': { pathId: 'path25', labelPos: { x: 280, y: 830 } },
   'jhargram': { pathId: 'path38', labelPos: { x: 233, y: 984 } },
-  'paschim-medinipur': { pathId: 'path34', labelPos: { x: 275, y: 915 } },
-  'purba-medinipur': { pathId: 'path34', labelPos: { x: 360, y: 925 } },
+  'paschim-medinipur': { pathIds: ['path36'], labelPos: { x: 275, y: 915 } },
+  'purba-medinipur': { pathIds: ['path40', 'path33'], labelPos: { x: 360, y: 925 } },
   'hooghly': { pathId: 'path30', labelPos: { x: 425, y: 865 } },
   'howrah': { pathId: 'path32', labelPos: { x: 446, y: 945 } },
   'kolkata': { pathId: 'path20', labelPos: { x: 489, y: 935 } },
-  'north-24-parganas': { pathId: 'path47', labelPos: { x: 555, y: 885 } },
-  'south-24-parganas': { pathId: 'path47', labelPos: { x: 540, y: 975 } }
+  'north-24-parganas': { pathIds: ['path47'], labelPos: { x: 555, y: 885 } },
+  'south-24-parganas': { pathIds: ['path37', 'path39', 'path41', 'path43', 'path45', 'path48', 'path50'], labelPos: { x: 540, y: 975 } }
 };
 
 const shortNames = {
@@ -326,7 +330,7 @@ const districtsMeta = [
 
 const processedDistricts = districtsMeta.map(d => {
   const mapInfo = pathMapping[d.id];
-  const dPath = getPathD(mapInfo.pathId);
+  const dPath = mapInfo.pathIds ? getPathsD(mapInfo.pathIds) : getPathD(mapInfo.pathId);
   return {
     ...d,
     shortName: shortNames[d.id] || d.nameEn,
@@ -350,5 +354,5 @@ export const WB_MAP_VIEWBOX = "0 0 768 1158.72";
 export const WB_DISTRICTS = ${JSON.stringify(processedDistricts, null, 2)};
 `;
 
-fs.writeFileSync('c:/Local Disk D/News/migration-static-firebase/wb-map-data.js', fileContent, 'utf8');
+fs.writeFileSync('wb-map-data.js', fileContent, 'utf8');
 console.log('Successfully written official authentic SVG map data to wb-map-data.js!');

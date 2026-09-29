@@ -1,5 +1,5 @@
 const fs = require('fs');
-const svgContent = fs.readFileSync('c:/Local Disk D/News/migration-static-firebase/westbengal_official.svg', 'utf8');
+const svgContent = fs.readFileSync('westbengal_official.svg', 'utf8');
 
 const pathRegex = /<path\s+[^>]*id="(path36|path40|path33|path37|path39|path41|path43|path45|path48|path50)"[^>]*\/?>/gi;
 let match;
