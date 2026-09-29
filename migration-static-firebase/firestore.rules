@@ -53,7 +53,21 @@ service cloud.firestore {
 
     match /sponsors/{id} {
       allow read: if resource.data.active == true;
-      allow create, update, delete: if editor();
+      allow create: if editor()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.logo is string
+        && request.resource.data.logo.size() > 0
+        && request.resource.data.logo.size() <= 1000;
+      allow update: if editor()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.logo is string
+        && request.resource.data.logo.size() > 0
+        && request.resource.data.logo.size() <= 1000;
+      allow delete: if editor();
     }
 
     match /videoControls/{videoId} {
