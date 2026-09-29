@@ -1,0 +1,15 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "chat": {
+      "messages": {
+        "$messageId": {
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && newData.child('uid').val() == auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 500",
+          ".validate": "newData.hasChildren(['uid', 'text', 'createdAt'])"
+        }
+      }
+    }
+  }
+}

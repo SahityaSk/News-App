@@ -1,0 +1,140 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return signedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : ''; }
+    function staff() { return role() in ['superadmin', 'editor', 'reporter']; }
+    function editor() { return role() in ['superadmin', 'editor']; }
+    function superadmin() { return role() == 'superadmin'; }
+    function validVoteUpdate(pollId) {
+      let vote = getAfter(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid));
+      return vote.data.uid == request.auth.uid
+        && vote.data.optionId is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCounts', 'updatedAt'])
+        && request.resource.data.voteCounts['option-1'] == resource.data.voteCounts['option-1'] + (vote.data.optionId == 'option-1' ? 1 : 0)
+        && request.resource.data.voteCounts['option-2'] == resource.data.voteCounts['option-2'] + (vote.data.optionId == 'option-2' ? 1 : 0)
+        && request.resource.data.voteCounts['option-3'] == resource.data.voteCounts['option-3'] + (vote.data.optionId == 'option-3' ? 1 : 0)
+        && request.resource.data.voteCounts['option-4'] == resource.data.voteCounts['option-4'] + (vote.data.optionId == 'option-4' ? 1 : 0);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || superadmin());
+      allow write: if superadmin();
+    }
+
+    match /articles/{id} {
+      allow read: if resource.data.status == 'published' || staff();
+      allow create: if editor() || (role() == 'reporter' && request.resource.data.status == 'draft');
+      allow update: if editor() || (role() == 'reporter'
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'draft');
+      allow delete: if editor();
+    }
+
+    match /tickers/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /liveStreams/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /videoItems/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /podcasts/{id} {
+      allow read: if resource.data.status == 'published';
+      allow create, update, delete: if editor();
+    }
+
+    match /sponsors/{id} {
+      // Public visitors may only see active sponsors; editors need to read
+      // inactive sponsors as well so the admin panel can edit or restore them.
+      allow read: if editor() || resource.data.active == true;
+      allow create: if editor()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.logo is string
+        && request.resource.data.logo.size() > 0
+        && request.resource.data.logo.size() <= 1000;
+      allow update: if editor()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.logo is string
+        && request.resource.data.logo.size() > 0
+        && request.resource.data.logo.size() <= 1000;
+      allow delete: if editor();
+    }
+
+    match /videoControls/{videoId} {
+      allow read, write: if editor();
+    }
+
+    match /reels/{id} {
+      allow read: if resource.data.active == true || staff();
+      allow create, update, delete: if editor();
+    }
+
+    match /externalSources/{id} {
+      allow read, write: if superadmin();
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create, delete: if editor();
+      allow update: if editor() || (signedIn() && validVoteUpdate(pollId));
+      match /votes/{uid} {
+        allow create: if signedIn() && request.auth.uid == uid
+          && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(uid))
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.optionId is string
+          && request.resource.data.optionId.size() <= 80;
+        allow read: if editor();
+        allow update, delete: if editor();
+      }
+    }
+
+    match /subscribers/{id} {
+      allow create: if request.resource.data.email is string
+        && request.resource.data.email.size() <= 254;
+      allow read, update, delete: if superadmin();
+    }
+
+    match /jobApplications/{id} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'position', 'name', 'phone', 'email', 'district', 'portfolioUrl', 'pitch',
+          'status', 'source', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.status == 'received'
+        && request.resource.data.position is string
+        && request.resource.data.position.size() > 0
+        && request.resource.data.position.size() <= 160
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.district is string
+        && request.resource.data.district.size() <= 120
+        && request.resource.data.portfolioUrl is string
+        && request.resource.data.portfolioUrl.size() <= 500
+        && request.resource.data.pitch is string
+        && request.resource.data.pitch.size() <= 2000
+        && request.resource.data.source == 'public-careers';
+      allow read, update, delete: if editor();
+    }
+
+    match /publicStats/{id} {
+      allow get: if id == 'subscribers';
+      allow list, create, update, delete: if false;
+    }
+  }
+}
