@@ -16,14 +16,14 @@ const getStoredLanguage = () => {
   catch { return 'BN'; }
 };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
-const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
+const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, tickers: [], tickerState: 'loading', saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
 const translations = {
   EN: {
     utilityLive: 'LIVE NEWS NETWORK',
-    syncStatus: 'LIVE DATA',
+    syncStatus: 'LIVE DATA', tickerConnecting: 'Connecting to live updates…',
     brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     catAll: 'Latest',
     catNational: 'National',
@@ -87,7 +87,7 @@ const translations = {
   BN: {
     podcastKicker: 'যুগান্তর অডিও', podcastTitle: 'বিশেষ পডকাস্ট', podcastLoading: 'বিশেষ পর্ব লোড হচ্ছে…', podcastEmpty: 'এখনও কোনো বিশেষ পডকাস্ট নেই। শিগগিরই আবার দেখুন।', podcastPlay: 'পর্বটি শুনুন', podcastUnavailable: 'বিশেষ পডকাস্ট এই মুহূর্তে পাওয়া যাচ্ছে না।',
     utilityLive: 'লাইভ নিউজ নেটওয়ার্ক',
-    syncStatus: 'লাইভ ডাটা',
+    syncStatus: 'লাইভ ডাটা', tickerConnecting: 'লাইভ আপডেটের সঙ্গে সংযোগ করা হচ্ছে…',
     brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     catAll: 'সর্বশেষ',
     catNational: 'জাতীয়',
@@ -148,7 +148,7 @@ const translations = {
   },
   HI: {
     utilityLive: 'लाइव न्यूज नेटवर्क',
-    syncStatus: 'लाइव डेटा',
+    syncStatus: 'लाइव डेटा', tickerConnecting: 'लाइव अपडेट से जुड़ रहे हैं…',
     brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     catAll: 'नवीनतम',
     catNational: 'राष्ट्रीय',
@@ -237,8 +237,19 @@ function updateStaticLanguage(lang = state.language) {
     const key = el.dataset.i18nPlaceholder;
     if (dict[key]) el.placeholder = dict[key];
   });
+  renderTicker();
   renderSubscriberCount();
   renderLiveStream();
+}
+
+function renderTicker() {
+  const target = $('ticker-items');
+  if (!target) return;
+  const dict = translations[state.language] || translations.EN;
+  if (state.tickerState === 'loading') target.textContent = dict.tickerConnecting;
+  else if (state.tickerState === 'error') target.textContent = dict.tickerUnavailable;
+  else if (!state.tickers.length) target.textContent = dict.noTicker;
+  else target.innerHTML = state.tickers.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ');
 }
 
 function renderSubscriberCount() {
@@ -609,9 +620,10 @@ function startRealtimeListeners() {
     renderSubscriberCount();
   });
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
-    const items = snapshot.docs.map(item => item.data());
-    $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : (translations[state.language] || translations.EN).noTicker;
-  }, () => { $('ticker-items').textContent = (translations[state.language] || translations.EN).tickerUnavailable; });
+    state.tickers = snapshot.docs.map(item => item.data());
+    state.tickerState = 'ready';
+    renderTicker();
+  }, () => { state.tickerState = 'error'; renderTicker(); });
   onSnapshot(query(collection(db, 'sponsors'), where('active', '==', true)), snapshot => {
     state.sponsors = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
