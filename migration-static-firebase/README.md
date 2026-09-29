@@ -433,6 +433,7 @@ Only published documents marked `featured: true` (or legacy `highlighted: true`)
 - `polls`: `question`, `options`, `active`, and optional vote totals.
 - `polls/{pollId}/votes/{uid}`: one vote document per authenticated identity.
 - `subscribers`: `email`, `createdAt`, `active`; public users can create but cannot read.
+- `publicStats/subscribers`: YouTube channel subscriber count only; clients can read this document, while writes remain server-only. The scheduled worker refreshes it from YouTube Data API using the private `youtubeApiKey` and configured channel handle/ID (or the first active YouTube channel ID).
 - `externalSources`: source definitions for the worker; superadmin-only browser access.
 - `users`: one document per Firebase Authentication UID with a `role` string.
 

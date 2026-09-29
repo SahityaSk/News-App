@@ -5,7 +5,9 @@ return [
     'serviceAccountPath' => '/home/USERNAME/private/firebase-service-account.json',
     // Metadata/link-only feeds reviewed for conservative aggregation.
     'allowExternalNews' => true,
-    'youtubeApiKey' => '', // Optional; keep private. Needed for automatic live discovery.
+    'youtubeApiKey' => '', // Keep private. Needed for live discovery and the subscriber counter.
+    'subscriberCountChannelId' => '', // Optional explicit channel ID.
+    'subscriberCountChannelHandle' => '', // Optional public handle (for example, @channel); takes precedence over ID.
     'graphApiVersion' => 'v23.0',
     // Store headlines, short descriptions, dates, and source links only.
     'rssSources' => [

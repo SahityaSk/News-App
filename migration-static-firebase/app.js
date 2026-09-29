@@ -16,7 +16,7 @@ const getStoredLanguage = () => {
   catch { return 'BN'; }
 };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
-const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], saved: readSaved(), poll: null };
+const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
@@ -46,6 +46,9 @@ const translations = {
     socialKicker: 'OFFICIAL SOCIAL',
     socialTitle: 'From YUGANTAR channels',
     watchAllVideos: 'Watch all videos',
+    subscribersLabel: 'Subs', careersLabel: 'Careers', hiringLabel: 'Hiring',
+    subscribersTitle: 'View Subscribers & Subscribe', careersTitle: 'Careers & Job Opportunities',
+    youtubeSubscriberCount: 'YouTube subscribers',
     opinionKicker: 'OPINION',
     newsletterKicker: 'NEWSLETTER',
     newsletterTitle: 'Get the daily bulletin',
@@ -103,6 +106,9 @@ const translations = {
     socialKicker: 'অফিসিয়াল সোশ্যাল',
     socialTitle: 'যুগান্তর চ্যানেল থেকে',
     watchAllVideos: 'সমস্ত ভিডিও দেখুন',
+    subscribersLabel: 'সাবস্ক্রাইবার', careersLabel: 'ক্যারিয়ার', hiringLabel: 'নিয়োগ চলছে',
+    subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ',
+    youtubeSubscriberCount: 'ইউটিউব সাবস্ক্রাইবার',
     opinionKicker: 'জনমত',
     newsletterKicker: 'নিউজলেটার',
     newsletterTitle: 'দৈনিক বুলেটিন পান',
@@ -157,6 +163,9 @@ const translations = {
     socialKicker: 'आधिकारिक सोशल',
     socialTitle: 'युगांतर चैनल से',
     watchAllVideos: 'सभी वीडियो देखें',
+    subscribersLabel: 'सब्सक्राइबर', careersLabel: 'करियर', hiringLabel: 'भर्ती जारी',
+    subscribersTitle: 'सब्सक्राइबर और सदस्यता', careersTitle: 'करियर और नौकरी के अवसर',
+    youtubeSubscriberCount: 'YouTube सब्सक्राइबर',
     opinionKicker: 'ओपिनियन',
     newsletterKicker: 'न्यूज़लेटर',
     newsletterTitle: 'दैनिक बुलेटिन प्राप्त करें',
@@ -189,9 +198,16 @@ const translations = {
   }
 };
 
+translations.EN.districtSearchNoResults = 'No matching districts found.';
+translations.BN.districtSearchNoResults = 'মিলেছে এমন কোনো জেলা নেই।';
+translations.HI.districtSearchNoResults = 'कोई मिलता-जुलता जिला नहीं मिला।';
+
 function updateStaticLanguage(lang = state.language) {
   const dict = translations[lang] || translations.EN;
   document.documentElement.lang = lang === 'BN' ? 'bn' : (lang === 'HI' ? 'hi' : 'en');
+  $('subscribers-btn')?.setAttribute('title', dict.subscribersTitle);
+  $('jobs-btn')?.setAttribute('title', dict.careersTitle);
+  $('jobs-btn')?.setAttribute('aria-label', `${dict.careersLabel} ${dict.hiringLabel}`);
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (dict[key]) {
@@ -208,6 +224,21 @@ function updateStaticLanguage(lang = state.language) {
     const key = el.dataset.i18nPlaceholder;
     if (dict[key]) el.placeholder = dict[key];
   });
+  renderSubscriberCount();
+  renderLiveStream();
+}
+
+function renderSubscriberCount() {
+  const count = state.subscriberCount;
+  const locale = state.language === 'BN' ? 'bn-BD' : (state.language === 'HI' ? 'hi-IN' : 'en-US');
+  const header = $('header-sub-count');
+  const modal = $('modal-sub-count');
+  if (header) header.textContent = Number.isSafeInteger(count) && count >= 0
+    ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(count)
+    : '—';
+  if (modal) modal.textContent = Number.isSafeInteger(count) && count >= 0
+    ? new Intl.NumberFormat(locale).format(count)
+    : '—';
 }
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -554,22 +585,52 @@ async function loadArticles() {
 }
 
 function startRealtimeListeners() {
+  onSnapshot(doc(db, 'publicStats', 'subscribers'), snapshot => {
+    const summary = snapshot.exists() ? snapshot.data() : null;
+    const count = summary?.source === 'youtube' ? Number(summary.count) : NaN;
+    state.subscriberCount = Number.isSafeInteger(count) && count >= 0 ? count : null;
+    renderSubscriberCount();
+  }, error => {
+    console.warn('Subscriber count unavailable:', error);
+    state.subscriberCount = null;
+    renderSubscriberCount();
+  });
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
     const items = snapshot.docs.map(item => item.data());
     $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : (translations[state.language] || translations.EN).noTicker;
   }, () => { $('ticker-items').textContent = (translations[state.language] || translations.EN).tickerUnavailable; });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
-    const stream = snapshot.docs[0]?.data();
-    const liveText = translations[state.language] || translations.EN;
-    $('live-title').textContent = stream?.title || liveText.liveTvTitle;
-    $('live-meta').textContent = stream?.provider ? `${stream.provider} · ${dateText(stream.updatedAt)}` : liveText.liveTvMeta;
-    const youtubeVideoId = youtubeId(stream?.videoUrl);
-    const streamUrl = safeUrl(stream?.videoUrl);
-    $('live-player').innerHTML = youtubeVideoId ? youtubeEmbed(youtubeVideoId) : (stream?.provider === 'facebook' && streamUrl ? facebookEmbed(streamUrl) : (streamUrl ? `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">${escapeHtml(liveText.liveTvAction)}</a>` : liveText.liveUnavailable));
-    if (window.FB) window.FB.XFBML.parse($('live-player'));
-    const action = $('live-action');
-    if (action && streamUrl) { action.href = streamUrl; action.classList.remove('hidden'); } else if (action) action.classList.add('hidden');
+    renderLiveStream(snapshot.docs[0]?.data() || null);
+  }, error => {
+    console.warn('Live stream update unavailable:', error);
+    renderLiveStream(null);
   });
+}
+
+function renderLiveStream(stream = state.liveStream) {
+  state.liveStream = stream || null;
+  const liveText = translations[state.language] || translations.EN;
+  const title = $('live-title');
+  const meta = $('live-meta');
+  const player = $('live-player');
+  if (!title || !meta || !player) return;
+
+  const streamTitle = text(state.liveStream?.title);
+  const streamUrl = safeUrl(state.liveStream?.videoUrl);
+  const youtubeVideoId = youtubeId(state.liveStream?.videoUrl);
+  title.textContent = streamTitle || liveText.liveTvTitle;
+  meta.textContent = state.liveStream?.provider
+    ? `${state.liveStream.provider} · ${dateText(state.liveStream.updatedAt)}`
+    : liveText.liveTvMeta;
+  if (youtubeVideoId) player.innerHTML = youtubeEmbed(youtubeVideoId);
+  else if (state.liveStream?.provider === 'facebook' && streamUrl) player.innerHTML = facebookEmbed(streamUrl);
+  else if (streamUrl) player.innerHTML = `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">${escapeHtml(liveText.liveTvAction)}</a>`;
+  else player.textContent = liveText.liveUnavailable;
+
+  if (window.FB) window.FB.XFBML.parse(player);
+  const action = $('live-action');
+  if (action && streamUrl) { action.href = streamUrl; action.classList.remove('hidden'); }
+  else if (action) action.classList.add('hidden');
 }
 
 async function loadVideosAndPoll() {
@@ -694,22 +755,6 @@ function setupHeaderModals() {
   const jobForm = $('job-application-form');
   const jobMsg = $('job-success-msg');
 
-  let subCount = 254820;
-  try {
-    const storedCount = localStorage.getItem('yugantar_sub_count');
-    if (storedCount) subCount = parseInt(storedCount, 10);
-  } catch {}
-
-  const updateSubDisplay = () => {
-    const formattedK = (subCount / 1000).toFixed(1) + 'K';
-    const headerEl = $('header-sub-count');
-    const modalEl = $('modal-sub-count');
-    if (headerEl) headerEl.textContent = formattedK;
-    if (modalEl) modalEl.textContent = subCount.toLocaleString();
-  };
-
-  updateSubDisplay();
-
   subBtn?.addEventListener('click', () => {
     subDialog?.showModal();
   });
@@ -720,9 +765,6 @@ function setupHeaderModals() {
 
   subForm?.addEventListener('submit', e => {
     e.preventDefault();
-    subCount += 1;
-    try { localStorage.setItem('yugantar_sub_count', String(subCount)); } catch {}
-    updateSubDisplay();
     if (subMsg) subMsg.classList.remove('hidden');
     setTimeout(() => {
       subMsg?.classList.add('hidden');
@@ -966,18 +1008,25 @@ function renderDistrictList(filter = '', regionFilter = 'all') {
   if (!listTarget) return;
 
   const term = filter.trim().toLowerCase();
+  if (!term) {
+    listTarget.innerHTML = '';
+    listTarget.hidden = true;
+    return;
+  }
+  listTarget.hidden = false;
   const filtered = WB_DISTRICTS.filter(d => {
-    const matchesTerm = !term || d.nameEn.toLowerCase().includes(term) || d.nameBn.includes(term) || d.region.toLowerCase().includes(term);
+    const matchesTerm = d.nameEn.toLowerCase().includes(term) || d.nameBn.includes(term) || d.nameHi.toLowerCase().includes(term) || d.region.toLowerCase().includes(term);
     const matchesRegion = regionFilter === 'all' || d.region === regionFilter;
     return matchesTerm && matchesRegion;
   });
 
-  listTarget.innerHTML = filtered.map(d => `
+  const dict = translations[state.language] || translations.EN;
+  listTarget.innerHTML = filtered.length ? filtered.map(d => `
     <button class="district-chip" data-district-id="${d.id}" title="Click for ${d.nameEn} district news">
       <span>${escapeHtml(state.language === 'BN' ? d.nameBn : (state.language === 'HI' ? d.nameHi : d.nameEn))}</span>
       <span style="font-size:0.65rem; opacity:0.75;">›</span>
     </button>
-  `).join('');
+  `).join('') : `<p class="district-search-empty">${escapeHtml(dict.districtSearchNoResults)}</p>`;
 
   listTarget.querySelectorAll('[data-district-id]').forEach(chip => {
     chip.addEventListener('click', () => {

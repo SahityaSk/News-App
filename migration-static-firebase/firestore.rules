@@ -84,5 +84,10 @@ service cloud.firestore {
         && request.resource.data.email.size() <= 254;
       allow read, update, delete: if superadmin();
     }
+
+    match /publicStats/{id} {
+      allow get: if id == 'subscribers';
+      allow list, create, update, delete: if false;
+    }
   }
 }

@@ -26,7 +26,10 @@ function httpRequest(string $url, array $headers = [], ?string $body = null, str
     $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
     $error = curl_error($curl);
     curl_close($curl);
-    if ($response === false || $status >= 400) throw new RuntimeException("HTTP {$status} from {$url}: {$error}");
+    if ($response === false || $status >= 400) {
+        $safeUrl = preg_replace('/\?.*$/', '', $url);
+        throw new RuntimeException("HTTP {$status} from {$safeUrl}: {$error}");
+    }
     return [$status, (string) $response];
 }
 
@@ -92,6 +95,27 @@ function listFirestoreCollection(string $projectId, string $token, string $colle
         $result[] = $item;
     }
     return $result;
+}
+
+function youtubeSubscriberCount(string $channelId, string $channelHandle, string $apiKey): array {
+    if (!$apiKey) throw new RuntimeException('YouTube API key is not configured');
+    $lookup = [];
+    if ($channelHandle !== '') {
+        $lookup['forHandle'] = ltrim($channelHandle, '@');
+    } elseif ($channelId !== '' && !str_contains($channelId, 'REPLACE')) {
+        $lookup['id'] = $channelId;
+    } else {
+        throw new RuntimeException('YouTube subscriber-count channel ID or handle is not configured');
+    }
+    $url = 'https://www.googleapis.com/youtube/v3/channels?' . http_build_query(['part' => 'statistics'] + $lookup + ['key' => $apiKey]);
+    [, $body] = httpRequest($url, ['Accept: application/json']);
+    $json = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+    $item = $json['items'][0] ?? null;
+    $statistics = $item['statistics'] ?? null;
+    if (!is_array($statistics) || !isset($statistics['subscriberCount'])) {
+        throw new RuntimeException('YouTube did not return a public subscriber count for the configured channel');
+    }
+    return ['count' => (int) $statistics['subscriberCount'], 'channelId' => (string) ($item['id'] ?? $channelId)];
 }
 
 function publicImageUrl(string $value): string {
@@ -307,6 +331,28 @@ try {
         $pageToken = (string) ($config['facebookPageAccessTokens'][$source['id']] ?? '');
         foreach (facebookPosts($source, $pageToken, (string) ($config['graphApiVersion'] ?? 'v23.0')) as $post) { upsertFirestore($projectId, $token, 'videoItems', $post['documentId'], $post); $count++; }
         foreach (($config['facebookPostLinks'] ?? []) as $link) { $post = facebookPostLink((string) $link, $pageToken, (string) ($config['graphApiVersion'] ?? 'v23.0')); if ($post) { upsertFirestore($projectId, $token, 'videoItems', $post['documentId'], $post); $count++; } }
+    }
+    try {
+        $subscriberChannelId = (string) ($config['subscriberCountChannelId'] ?? '');
+        $subscriberChannelHandle = (string) ($config['subscriberCountChannelHandle'] ?? '');
+        if (!$subscriberChannelId && !$subscriberChannelHandle) {
+            foreach (($config['youtubeChannels'] ?? []) as $youtubeChannel) {
+                if (!empty($youtubeChannel['active']) && !empty($youtubeChannel['channelId'])) {
+                    $subscriberChannelId = (string) $youtubeChannel['channelId'];
+                    break;
+                }
+            }
+        }
+        $youtubeSubscriberData = youtubeSubscriberCount($subscriberChannelId, $subscriberChannelHandle, (string) ($config['youtubeApiKey'] ?? ''));
+        upsertFirestore($projectId, $token, 'publicStats', 'subscribers', [
+            'count' => $youtubeSubscriberData['count'],
+            'source' => 'youtube',
+            'channelId' => $youtubeSubscriberData['channelId'],
+            'updatedAt' => gmdate('c')
+        ]);
+        fwrite(STDOUT, "YouTube subscriber count refreshed: {$youtubeSubscriberData['count']}.\n");
+    } catch (Throwable $statsError) {
+        fwrite(STDERR, 'YouTube subscriber count refresh failed: ' . $statsError->getMessage() . "\n");
     }
     fwrite(STDOUT, "Sync complete: {$count} external items processed.\n");
 } catch (Throwable $error) {

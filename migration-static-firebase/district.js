@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { collection, getDocs, getFirestore, limit, orderBy, query, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { collection, doc, getDocs, getFirestore, limit, onSnapshot, orderBy, query, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS, WB_MAP_VIEWBOX } from './wb-map-data.js';
 
@@ -20,7 +20,8 @@ const state = {
   search: '',
   articles: [],
   firestoreArticles: [],
-  saved: readSaved()
+  saved: readSaved(),
+  subscriberCount: null
 };
 
 let db;
@@ -28,7 +29,7 @@ let db;
 const districtUi = {
   BN: {
     utilityLive: 'বাংলার জেলা ডেস্ক', syncStatus: 'জেলা সংবাদ সরাসরি', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
-    allNews: '← সব খবর', languageLabel: 'ভাষা', homeLabel: 'যুগান্তর নিউজ হোম', savedLabel: 'সেভ করা খবর খুলুন', subscribers: 'গ্রাহক', subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careers: 'ক্যারিয়ার', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ', hiring: 'নিয়োগ চলছে',
+    allNews: '← সব খবর', languageLabel: 'ভাষা', homeLabel: 'যুগান্তর নিউজ হোম', savedLabel: 'সেভ করা খবর খুলুন', subscribers: 'সাবস্ক্রাইবার', subscriberCountLabel: 'ইউটিউব সাবস্ক্রাইবার', subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careers: 'ক্যারিয়ার', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ', hiring: 'নিয়োগ চলছে',
     navAll: 'সব জেলার খবর', navInfrastructure: 'পরিকাঠামো', navCulture: 'সংস্কৃতি ও পর্যটন', navEconomy: 'অর্থনীতি ও কৃষি', navHealth: 'শিক্ষা ও স্বাস্থ্য', navEnvironment: 'পরিবেশ',
     liveDesk: 'লাইভ ডেস্ক', switchDistrict: 'জেলা বদলান:', districtHq: 'জেলা সদর', regionZone: 'অঞ্চল', activeStories: 'প্রকাশিত খবর', localStatus: 'স্থানীয় সংবাদ', verifiedFeed: '● যাচাইকৃত সংবাদ',
     districtTicker: 'জেলার ব্রেকিং খবর', localDesk: 'স্থানীয় সংবাদ ডেস্ক', latestDistrict: 'জেলার সর্বশেষ খবর', searchStories: 'জেলার খবর খুঁজুন', searchPlaceholder: 'এই জেলার খবর খুঁজুন…',
@@ -39,7 +40,7 @@ const districtUi = {
   },
   EN: {
     utilityLive: 'BENGAL DISTRICTS DESK', syncStatus: 'DISTRICT DATA LIVE', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
-    allNews: '← All News', languageLabel: 'Language', homeLabel: 'YUGANTAR News home', savedLabel: 'Open saved articles', subscribers: 'Subs', subscribersTitle: 'View Subscribers & Subscribe', careers: 'Careers', careersTitle: 'Careers & Job Opportunities', hiring: 'Hiring',
+    allNews: '← All News', languageLabel: 'Language', homeLabel: 'YUGANTAR News home', savedLabel: 'Open saved articles', subscribers: 'Subs', subscriberCountLabel: 'YouTube subscribers', subscribersTitle: 'View Subscribers & Subscribe', careers: 'Careers', careersTitle: 'Careers & Job Opportunities', hiring: 'Hiring',
     navAll: 'All District News', navInfrastructure: 'Infrastructure', navCulture: 'Culture & Tourism', navEconomy: 'Economy & Agri', navHealth: 'Health & Education', navEnvironment: 'Environment',
     liveDesk: 'LIVE DESK', switchDistrict: 'Switch District:', districtHq: 'District HQ', regionZone: 'Region Zone', activeStories: 'Active Stories', localStatus: 'Local Status', verifiedFeed: '● Verified Feed',
     districtTicker: 'DISTRICT TICKER', localDesk: 'LOCAL DESK REPORTING', latestDistrict: 'Latest District Coverage', searchStories: 'Search district stories', searchPlaceholder: 'Search in this district…',
@@ -50,7 +51,7 @@ const districtUi = {
   },
   HI: {
     utilityLive: 'बंगाल जिला डेस्क', syncStatus: 'जिला समाचार लाइव', brandSlogan: 'नিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
-    allNews: '← सभी समाचार', languageLabel: 'भाषा', homeLabel: 'युगांतर समाचार होम', savedLabel: 'सेव किए गए समाचार खोलें', subscribers: 'सब्सक्राइबर', subscribersTitle: 'सब्सक्राइबर और सदस्यता', careers: 'करियर', careersTitle: 'करियर और नौकरी के अवसर', hiring: 'भर्ती जारी',
+    allNews: '← सभी समाचार', languageLabel: 'भाषा', homeLabel: 'युगांतर समाचार होम', savedLabel: 'सेव किए गए समाचार खोलें', subscribers: 'सब्सक्राइबर', subscriberCountLabel: 'YouTube सब्सक्राइबर', subscribersTitle: 'सब्सक्राइबर और सदस्यता', careers: 'करियर', careersTitle: 'करियर और नौकरी के अवसर', hiring: 'भर्ती जारी',
     navAll: 'सभी जिलों की खबरें', navInfrastructure: 'बुनियादी ढांचा', navCulture: 'संस्कृति और पर्यटन', navEconomy: 'अर्थव्यवस्था और कृषि', navHealth: 'शिक्षा और स्वास्थ्य', navEnvironment: 'पर्यावरण',
     liveDesk: 'लाइव डेस्क', switchDistrict: 'जिला बदलें:', districtHq: 'जिला मुख्यालय', regionZone: 'क्षेत्र', activeStories: 'प्रकाशित खबरें', localStatus: 'स्थानीय समाचार', verifiedFeed: '● सत्यापित फ़ीड',
     districtTicker: 'जिला ब्रेकिंग न्यूज़', localDesk: 'स्थानीय समाचार डेस्क', latestDistrict: 'जिले की ताज़ा खबरें', searchStories: 'जिले की खबरें खोजें', searchPlaceholder: 'इस जिले में खोजें…',
@@ -106,7 +107,21 @@ function translateDistrictUi() {
     const value = dict[element.dataset.districtPlaceholder];
     if (value) element.placeholder = value;
   });
+  renderSubscriberCount();
   document.title = dict.pageTitle;
+}
+
+function renderSubscriberCount() {
+  const count = state.subscriberCount;
+  const locale = state.language === 'BN' ? 'bn-BD' : (state.language === 'HI' ? 'hi-IN' : 'en-US');
+  const header = $('header-sub-count');
+  const modal = $('modal-sub-count');
+  if (header) header.textContent = Number.isSafeInteger(count) && count >= 0
+    ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(count)
+    : '—';
+  if (modal) modal.textContent = Number.isSafeInteger(count) && count >= 0
+    ? new Intl.NumberFormat(locale).format(count)
+    : '—';
 }
 
 function districtName(district) {
@@ -431,6 +446,16 @@ async function loadFirestoreData() {
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    onSnapshot(doc(db, 'publicStats', 'subscribers'), snapshot => {
+    const summary = snapshot.exists() ? snapshot.data() : null;
+    const count = summary?.source === 'youtube' ? Number(summary.count) : NaN;
+      state.subscriberCount = Number.isSafeInteger(count) && count >= 0 ? count : null;
+      renderSubscriberCount();
+    }, error => {
+      console.warn('Subscriber count unavailable:', error);
+      state.subscriberCount = null;
+      renderSubscriberCount();
+    });
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
     state.firestoreArticles = result.docs.map(item => ({ id: item.id, ...item.data() }));
   } catch (err) {
