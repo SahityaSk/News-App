@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="bn">
 
 <head>
   <meta charset="UTF-8">
@@ -28,14 +28,13 @@
     <div class="shell header-row">
       <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
         <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
-        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small data-i18n="brandSlogan">Truth • Speed • Unbiased
-            Coverage</small></span>
+        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small class="brand-slogan"><span data-i18n="brandSlogan">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span></small></span>
       </a>
       <div class="header-actions">
         <label class="sr-only" for="language">Language</label>
         <select id="language">
           <option value="EN">English</option>
-          <option value="BN">বাংলা</option>
+          <option value="BN" selected>বাংলা</option>
           <option value="HI">हिन्दी</option>
         </select>
         <button id="saved-toggle" class="icon-button" type="button" aria-label="Open saved articles"
@@ -45,12 +44,12 @@
         
         <button id="subscribers-btn" class="header-action-btn subscribers-btn" type="button" title="View Subscribers & Subscribe">
           <svg class="sub-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          <span class="sub-badge"><strong id="header-sub-count">254.8K</strong> Subs</span>
+          <span class="sub-badge"><strong id="header-sub-count">—</strong> <span data-i18n="subscribersLabel">Subs</span></span>
         </button>
 
         <button id="jobs-btn" class="header-action-btn jobs-btn" type="button" title="Careers & Job Opportunities">
           <svg class="briefcase-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-          <span class="jobs-label">Careers <span class="hiring-badge">Hiring</span></span>
+          <span class="jobs-label"><span data-i18n="careersLabel">Careers</span> <span class="hiring-badge" data-i18n="hiringLabel">Hiring</span></span>
         </button>
       </div>
     </div>
@@ -75,18 +74,29 @@
     <!-- 3-Column Layout: Extreme Left (Sponsors) | Center (Newsroom) | Extreme Right (West Bengal Map) -->
     <div class="main-layout-container">
 
-      <!-- EXTREME LEFT SIDEBAR: SPONSORS TAB & ANIMATED BANNERS -->
+      <!-- FEATURED PODCASTS AND SPONSOR PARTNERS -->
+      <div class="left-sidebar-stack">
+      <aside id="podcasts-sidebar" class="podcasts-sidebar panel" aria-labelledby="podcasts-title">
+        <div class="sidebar-header">
+          <span class="section-kicker" data-i18n="podcastKicker">YUGANTAR AUDIO</span>
+          <h2 id="podcasts-title" data-i18n="podcastTitle">Featured podcasts</h2>
+        </div>
+        <div id="featured-podcasts" class="featured-podcasts" aria-live="polite">
+          <p class="podcast-empty" data-i18n="podcastLoading">Loading featured episodes…</p>
+        </div>
+      </aside>
+
       <aside id="sponsors-sidebar" class="sponsors-sidebar panel">
         <div class="sidebar-header">
-          <span class="section-kicker">SPONSOR PARTNERS</span>
-          <h2>Official Sponsors</h2>
-          <span class="sponsor-live-badge"><i></i>SPOTLIGHT</span>
+          <span class="section-kicker" data-i18n="sponsorKicker">SPONSOR PARTNERS</span>
+          <h2 data-i18n="sponsorTitle">Official Sponsors</h2>
+          <span class="sponsor-live-badge"><i></i><span data-i18n="sponsorSpotlight">SPOTLIGHT</span></span>
         </div>
         <div class="sponsor-tabs">
-          <button class="sponsor-tab active" data-sponsor-cat="all">All</button>
-          <button class="sponsor-tab" data-sponsor-cat="platinum">Platinum</button>
-          <button class="sponsor-tab" data-sponsor-cat="gold">Gold</button>
-          <button class="sponsor-tab" data-sponsor-cat="tech">Tech</button>
+          <button class="sponsor-tab active" data-sponsor-cat="all" data-i18n="sponsorAll">All</button>
+          <button class="sponsor-tab" data-sponsor-cat="platinum" data-i18n="sponsorPlatinum">Platinum</button>
+          <button class="sponsor-tab" data-sponsor-cat="gold" data-i18n="sponsorGold">Gold</button>
+          <button class="sponsor-tab" data-sponsor-cat="tech" data-i18n="sponsorTech">Tech</button>
         </div>
 
         <div id="sponsors-animated-box" class="sponsors-animated-container">
@@ -94,9 +104,10 @@
         </div>
 
         <button id="become-sponsor-btn" class="button button-outline sponsor-join-btn" type="button">
-          🤝 Become a Partner
+          <span data-i18n="sponsorJoin">🤝 Become a Partner</span>
         </button>
       </aside>
+      </div>
 
       <!-- CENTER COLUMN: MAIN NEWSROOM -->
       <div class="main-news-column">
@@ -171,11 +182,11 @@
       <!-- EXTREME RIGHT SIDEBAR: WEST BENGAL ALL DISTRICTS INTERACTIVE MAP -->
       <aside id="wb-map-sidebar" class="wb-map-sidebar panel">
         <div class="sidebar-header">
-          <span class="section-kicker">WEST BENGAL MAP</span>
-          <h2>All 23 Districts</h2>
-          <span class="district-count-badge">Click District</span>
+          <span class="section-kicker" data-i18n="mapKicker">WEST BENGAL MAP</span>
+          <h2 data-i18n="mapTitle">All 23 Districts</h2>
+          <span class="district-count-badge" data-i18n="mapHint">Click District</span>
         </div>
-        <p class="sidebar-desc">Select any district on the interactive map to view specific news stories for that district.</p>
+        <p class="sidebar-desc" data-i18n="mapIntro">Select any district on the interactive map to view specific news stories for that district.</p>
 
         <!-- West Bengal Interactive Map GeoJSON Container -->
         <div id="wb-interactive-map-container" class="wb-map-box">
@@ -183,10 +194,10 @@
         </div>
 
         <div class="district-search-wrapper">
-          <input id="wb-district-search" type="search" placeholder="🔍 Search district (e.g. Kolkata)…">
+          <input id="wb-district-search" type="search" placeholder="🔍 Search district (e.g. Kolkata)…" data-i18n-placeholder="searchDistrict">
         </div>
 
-        <div id="wb-district-list" class="wb-district-list">
+        <div id="wb-district-list" class="wb-district-list" aria-live="polite" hidden>
           <!-- Rendered by JS -->
         </div>
       </aside>
@@ -276,12 +287,8 @@
       </div>
       <div class="sub-stats-grid">
         <div class="sub-stat-card">
-          <strong id="modal-sub-count">254,820</strong>
-          <small>Active Subscribers</small>
-        </div>
-        <div class="sub-stat-card">
-          <strong>1.2 Million</strong>
-          <small>Monthly Readers</small>
+          <strong id="modal-sub-count">—</strong>
+          <small data-i18n="youtubeSubscriberCount">YouTube subscribers</small>
         </div>
         <div class="sub-stat-card">
           <strong>23 Districts</strong>
