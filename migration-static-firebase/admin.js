@@ -19,6 +19,8 @@ let hiddenVideoCache = [];
 let tickerCache = [];
 let pollCache = [];
 let pollVoteCounts = new Map();
+let jobApplicationCache = [];
+let applicationSearchQuery = '';
 let activeAuth;
 
 const sunIconSvg = `<svg class="theme-icon-svg sun-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
@@ -134,7 +136,9 @@ const DEFAULT_DEMO_ARTICLES = [
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
+    const applicationsSnapshot = currentRole === 'reporter' ? { docs: [] } : await getDocs(collection(db, 'jobApplications'));
     const [articlesSnapshot, tickersSnapshot, videosSnapshot, controlsSnapshot] = await Promise.all([getDocs(collection(db, 'articles')), getDocs(collection(db, 'tickers')), getDocs(collection(db, 'videoItems')), getDocs(collection(db, 'videoControls'))]);
+    jobApplicationCache = applicationsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
     if (articleCache.length < 8) articleCache = [...articleCache, ...DEFAULT_DEMO_ARTICLES.filter(d => !articleCache.some(a => a.id === d.id))];
     const hiddenIds = new Set(controlsSnapshot.docs.filter(item => item.data().hidden === true).map(item => item.id));
@@ -148,13 +152,39 @@ async function loadAdminData() {
     $('stat-drafts').textContent = articleCache.filter(item => item.status === 'draft').length;
     $('stat-videos').textContent = videoCache.length;
     $('stat-tickers').textContent = tickerCache.length;
+    $('stat-applications').textContent = jobApplicationCache.length;
     const pollSnapshot = await getDocs(collection(db, 'polls'));
     pollVoteCounts = new Map();
     pollCache = await Promise.all(pollSnapshot.docs.map(async item => { const votes = await getDocs(collection(db, 'polls', item.id, 'votes')).catch(() => ({ size: 0 })); pollVoteCounts.set(item.id, votes.size || 0); return { id: item.id, ...item.data() }; }));
     pollCache.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-    renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPollList();
+    renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPollList(); renderJobApplications();
     $('last-refresh').textContent = `Updated ${new Date().toLocaleTimeString()}`; status('admin-data-status', 'Data refreshed.');
   } catch (error) { console.error('Admin data load failed:', error); status('admin-data-status', 'Could not load editorial data. Check Firestore rules.', true); }
+}
+
+function renderJobApplications() {
+  const target = $('job-application-list');
+  if (!target) return;
+  const filtered = applicationSearchQuery
+    ? jobApplicationCache.filter(item => `${item.name || ''} ${item.email || ''} ${item.position || ''} ${item.district || ''}`.toLowerCase().includes(applicationSearchQuery))
+    : jobApplicationCache;
+  if (!filtered.length) { target.innerHTML = '<div class="empty-state">No job applications found.</div>'; return; }
+  const statuses = ['received', 'shortlisted', 'interview', 'selected', 'rejected', 'withdrawn'];
+  target.innerHTML = filtered.map(item => `<div class="admin-list-item"><div><strong>${escapeHtml(item.name || 'Unnamed candidate')}</strong><small>${escapeHtml(item.position || 'Open application')} · ${escapeHtml(item.district || 'Location not provided')} · ${escapeHtml(dateText(item.createdAt))}</small><p class="muted" style="margin:6px 0 0;">${escapeHtml(item.email || '')} · ${escapeHtml(item.phone || '')}</p>${item.pitch ? `<p class="muted" style="margin:4px 0 0;">${escapeHtml(item.pitch)}</p>` : ''}${readUrl(item.portfolioUrl) ? `<a href="${escapeHtml(readUrl(item.portfolioUrl))}" target="_blank" rel="noreferrer">View portfolio / resume link</a>` : ''}</div><div class="item-actions"><select data-application-status="${escapeHtml(item.id)}" aria-label="Application status for ${escapeHtml(item.name || 'candidate')}">${statuses.map(value => `<option value="${value}" ${item.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select></div></div>`).join('');
+  target.querySelectorAll('[data-application-status]').forEach(select => select.addEventListener('change', () => updateApplicationStatus(select.dataset.applicationStatus, select.value)));
+}
+
+async function updateApplicationStatus(id, nextStatus) {
+  if (!['received', 'shortlisted', 'interview', 'selected', 'rejected', 'withdrawn'].includes(nextStatus)) return;
+  try {
+    await updateDoc(doc(db, 'jobApplications', id), { status: nextStatus, updatedAt: serverTimestamp(), updatedBy: activeAuth.currentUser.uid });
+    const item = jobApplicationCache.find(application => application.id === id);
+    if (item) item.status = nextStatus;
+    status('admin-data-status', 'Application status updated.');
+  } catch (error) {
+    status('admin-data-status', error.message, true);
+    await loadAdminData();
+  }
 }
 
 function editArticle(id) {
@@ -267,6 +297,7 @@ function bindForms(auth) {
   $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
   $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
   $('search-hidden-videos')?.addEventListener('input', (e) => { hiddenVideoSearchQuery = e.target.value.trim().toLowerCase(); renderHiddenVideos(); });
+  $('search-applications')?.addEventListener('input', (e) => { applicationSearchQuery = e.target.value.trim().toLowerCase(); renderJobApplications(); });
   document.querySelectorAll('[data-admin-tab]').forEach(button => button.addEventListener('click', () => { const name = button.dataset.adminTab; document.querySelectorAll('[data-admin-tab]').forEach(item => item.classList.toggle('active', item === button)); document.querySelectorAll('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === name)); }));
   $('article-form').onsubmit = async event => { event.preventDefault(); try { const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };

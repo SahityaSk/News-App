@@ -335,89 +335,89 @@
     <div class="dialog-card">
       <button id="close-jobs-dialog" class="dialog-close" type="button" aria-label="Close dialog">×</button>
       <div class="modal-header-hero jobs-hero">
-        <span class="tag tag-blue" style="color:#93c5fd;">WE ARE HIRING</span>
-        <h2>Join Team YUGANTAR News</h2>
-        <p>Build your journalism career with West Bengal's fastest growing digital news network.</p>
+        <span class="tag tag-blue" style="color:#93c5fd;" data-i18n="careersBadge">WE ARE HIRING</span>
+        <h2 data-i18n="careersHeading">Join Team YUGANTAR News</h2>
+        <p data-i18n="careersIntro">Build your journalism career with West Bengal's growing digital news network.</p>
       </div>
       
       <div class="open-positions-section">
-        <h3 style="font-size:1.05rem; margin-bottom:10px;">Featured Open Positions</h3>
+        <h3 style="font-size:1.05rem; margin-bottom:10px;" data-i18n="featuredPositions">Featured Open Positions</h3>
         <div class="jobs-list">
           <div class="job-opening-card">
             <div class="job-info">
-              <strong>District News Reporter (All 23 Districts)</strong>
-              <small>Field Reporting • Full-Time / Freelance • All WB Districts</small>
+              <strong data-i18n="jobReporter">District News Reporter (All 23 Districts)</strong>
+              <small data-i18n="jobReporterMeta">Field Reporting • Full-Time / Freelance • All WB Districts</small>
             </div>
-            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="District News Reporter (Field)">Apply Now</button>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="District News Reporter (Field)" data-i18n="applyNow">Apply Now</button>
           </div>
           <div class="job-opening-card">
             <div class="job-info">
-              <strong>Video Journalist & Anchor</strong>
-              <small>Media Studio • Full-Time • Kolkata / Howrah</small>
+              <strong data-i18n="jobVideo">Video Journalist &amp; Anchor</strong>
+              <small data-i18n="jobVideoMeta">Media Studio • Full-Time • Kolkata / Howrah</small>
             </div>
-            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Video Journalist & Anchor">Apply Now</button>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Video Journalist & Anchor" data-i18n="applyNow">Apply Now</button>
           </div>
           <div class="job-opening-card">
             <div class="job-info">
-              <strong>Content Editor (Bengali / English / Hindi)</strong>
-              <small>Desk Desk • Full-Time / Remote • Kolkata HQ</small>
+              <strong data-i18n="jobEditor">Content Editor (Bengali / English / Hindi)</strong>
+              <small data-i18n="jobEditorMeta">Desk • Full-Time / Remote • Kolkata HQ</small>
             </div>
-            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Content Editor">Apply Now</button>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Content Editor (Bengali/English/Hindi)" data-i18n="applyNow">Apply Now</button>
           </div>
           <div class="job-opening-card">
             <div class="job-info">
-              <strong>Digital Marketing & Growth Specialist</strong>
-              <small>Growth Team • Full-Time • Remote / Hybrid</small>
+              <strong data-i18n="jobMarketing">Digital Marketing &amp; Growth Specialist</strong>
+              <small data-i18n="jobMarketingMeta">Growth Team • Full-Time • Remote / Hybrid</small>
             </div>
-            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Digital Marketing Specialist">Apply Now</button>
+            <button class="button button-sm apply-btn-trigger" type="button" data-job-title="Digital Marketing Specialist" data-i18n="applyNow">Apply Now</button>
           </div>
         </div>
       </div>
 
       <form id="job-application-form" class="modal-form" style="margin-top:22px; padding-top:16px; border-top:1px solid var(--line);">
-        <h3 style="font-size:1.1rem; margin-bottom:6px;">Submit Candidate Application</h3>
-        <p class="muted" style="margin-bottom:14px;">Fill out your details below and our editorial desk will review your application.</p>
+        <h3 style="font-size:1.1rem; margin-bottom:6px;" data-i18n="applicationHeading">Submit Candidate Application</h3>
+        <p class="muted" style="margin-bottom:14px;" data-i18n="applicationIntro">Fill out your details below and our recruitment desk will review your application.</p>
         <div class="form-group">
-          <label for="job-position">Applying For Position *</label>
+          <label for="job-position" data-i18n="jobPositionLabel">Applying For Position *</label>
           <select id="job-position" required>
-            <option value="District News Reporter (Field)">District News Reporter (Field)</option>
-            <option value="Video Journalist & Anchor">Video Journalist & Anchor</option>
-            <option value="Content Editor (Bengali/English/Hindi)">Content Editor</option>
-            <option value="Digital Marketing Specialist">Digital Marketing Specialist</option>
-            <option value="Web & Mobile Developer">Web & Mobile Developer</option>
-            <option value="Other / Open Application">Other / Open Application</option>
+            <option value="District News Reporter (Field)" data-i18n="jobOptionReporter">District News Reporter (Field)</option>
+            <option value="Video Journalist & Anchor" data-i18n="jobOptionVideo">Video Journalist &amp; Anchor</option>
+            <option value="Content Editor (Bengali/English/Hindi)" data-i18n="jobOptionEditor">Content Editor</option>
+            <option value="Digital Marketing Specialist" data-i18n="jobOptionMarketing">Digital Marketing Specialist</option>
+            <option value="Web & Mobile Developer" data-i18n="jobOptionDeveloper">Web &amp; Mobile Developer</option>
+            <option value="Other / Open Application" data-i18n="jobOptionOther">Other / Open Application</option>
           </select>
         </div>
         <div class="form-group-row">
           <div class="form-group">
-            <label for="job-name">Candidate Full Name *</label>
-            <input type="text" id="job-name" required placeholder="e.g. Sourav Mukherjee">
+            <label for="job-name" data-i18n="jobNameLabel">Candidate Full Name *</label>
+            <input type="text" id="job-name" required placeholder="e.g. Sourav Mukherjee" data-i18n-placeholder="jobNamePlaceholder">
           </div>
           <div class="form-group">
-            <label for="job-phone">Mobile Number *</label>
-            <input type="tel" id="job-phone" required placeholder="+91 9830012345">
+            <label for="job-phone" data-i18n="jobPhoneLabel">Mobile Number *</label>
+            <input type="tel" id="job-phone" required placeholder="+91 9830012345" data-i18n-placeholder="jobPhonePlaceholder">
           </div>
         </div>
         <div class="form-group-row">
           <div class="form-group">
-            <label for="job-email">Email Address *</label>
-            <input type="email" id="job-email" required placeholder="sourav@example.com">
+            <label for="job-email" data-i18n="jobEmailLabel">Email Address *</label>
+            <input type="email" id="job-email" required placeholder="sourav@example.com" data-i18n-placeholder="jobEmailPlaceholder">
           </div>
           <div class="form-group">
-            <label for="job-district">District / Location *</label>
-            <input type="text" id="job-district" required placeholder="e.g. Midnapore / Kolkata">
+            <label for="job-district" data-i18n="jobDistrictLabel">District / Location *</label>
+            <input type="text" id="job-district" required placeholder="e.g. Midnapore / Kolkata" data-i18n-placeholder="jobDistrictPlaceholder">
           </div>
         </div>
         <div class="form-group">
-          <label for="job-portfolio">Portfolio / Resume Link (Optional)</label>
-          <input type="url" id="job-portfolio" placeholder="https://drive.google.com/... or LinkedIn profile">
+          <label for="job-portfolio" data-i18n="jobPortfolioLabel">Portfolio / Resume Link (Optional)</label>
+          <input type="url" id="job-portfolio" placeholder="https://drive.google.com/... or LinkedIn profile" data-i18n-placeholder="jobPortfolioPlaceholder">
         </div>
         <div class="form-group">
-          <label for="job-pitch">Why do you want to join YUGANTAR? (Short Note)</label>
-          <textarea id="job-pitch" rows="3" placeholder="Tell us briefly about your journalism experience, skills or background..."></textarea>
+          <label for="job-pitch" data-i18n="jobPitchLabel">Why do you want to join YUGANTAR? (Short Note)</label>
+          <textarea id="job-pitch" rows="3" placeholder="Tell us briefly about your journalism experience, skills or background..." data-i18n-placeholder="jobPitchPlaceholder"></textarea>
         </div>
-        <button class="button button-block" type="submit" style="margin-top:10px;">🚀 Submit Application</button>
-        <div id="job-success-msg" class="status success hidden" style="margin-top:12px;">✅ Application received! Our recruitment desk will contact short-listed candidates shortly.</div>
+        <button class="button button-block" type="submit" style="margin-top:10px;" data-i18n="jobSubmit">🚀 Submit Application</button>
+        <div id="job-success-msg" class="status success hidden" style="margin-top:12px;" aria-live="polite"></div>
       </form>
     </div>
   </dialog>
