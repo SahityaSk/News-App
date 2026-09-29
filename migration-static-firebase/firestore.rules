@@ -51,6 +51,11 @@ service cloud.firestore {
       allow create, update, delete: if editor();
     }
 
+    match /sponsors/{id} {
+      allow read: if resource.data.active == true;
+      allow create, update, delete: if editor();
+    }
+
     match /videoControls/{videoId} {
       allow read, write: if editor();
     }

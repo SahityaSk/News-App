@@ -16,7 +16,7 @@ const getStoredLanguage = () => {
   catch { return 'BN'; }
 };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
-const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
+const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
@@ -612,6 +612,14 @@ function startRealtimeListeners() {
     const items = snapshot.docs.map(item => item.data());
     $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : (translations[state.language] || translations.EN).noTicker;
   }, () => { $('ticker-items').textContent = (translations[state.language] || translations.EN).tickerUnavailable; });
+  onSnapshot(query(collection(db, 'sponsors'), where('active', '==', true)), snapshot => {
+    state.sponsors = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
+    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+  }, error => {
+    console.warn('Sponsor data unavailable; using local sponsor fallback:', error);
+    state.sponsors = SPONSORS;
+    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+  });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
     renderLiveStream(snapshot.docs[0]?.data() || null);
   }, error => {
@@ -833,7 +841,7 @@ function setupHeaderModals() {
 function renderSponsors(category = 'all') {
   const container = $('sponsors-animated-box');
   if (!container) return;
-  const filtered = category === 'all' ? SPONSORS : SPONSORS.filter(s => s.category === category);
+  const filtered = category === 'all' ? state.sponsors : state.sponsors.filter(s => s.category === category);
   const dict = translations[state.language] || translations.EN;
   
   if (!filtered || !filtered.length) {
@@ -906,7 +914,7 @@ async function loadFeaturedPodcasts() {
 }
 
 function openSponsorModal(sponsorId) {
-  const sponsor = SPONSORS.find(s => s.id === sponsorId);
+  const sponsor = state.sponsors.find(s => s.id === sponsorId);
   const content = $('sponsor-modal-content');
   if (!content) return;
   
