@@ -136,9 +136,11 @@ async function loadAdminData() {
   try {
     const [articlesSnapshot, tickersSnapshot, videosSnapshot, controlsSnapshot] = await Promise.all([getDocs(collection(db, 'articles')), getDocs(collection(db, 'tickers')), getDocs(collection(db, 'videoItems')), getDocs(collection(db, 'videoControls'))]);
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
+    if (articleCache.length < 8) articleCache = [...articleCache, ...DEFAULT_DEMO_ARTICLES.filter(d => !articleCache.some(a => a.id === d.id))];
     const hiddenIds = new Set(controlsSnapshot.docs.filter(item => item.data().hidden === true).map(item => item.id));
     const allVideos = videosSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
     videoCache = allVideos.filter(item => item.active !== false && !hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
+    if (videoCache.length < 8) videoCache = [...videoCache, ...DEFAULT_DEMO_VIDEOS.filter(d => !videoCache.some(v => v.id === d.id))];
     hiddenVideoCache = allVideos.filter(item => item.active === false || hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
     const tickers = tickerCache = tickersSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.active !== false);
     tickerCache.sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));

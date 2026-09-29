@@ -8,32 +8,6 @@ export const WB_REGIONS = [
   { id: 'Coastal Delta', name: 'Coastal Delta', color: '#14b8a6' }
 ];
 
-// Keep district filtering centralized so the public district page never
-// substitutes sample stories when the newsroom has no matching records.
-export function getDistrictNews(districtId, articles = [], count = 10) {
-  const normalize = value => String(value || '').trim().toLowerCase().replace(/[ _]+/g, '-');
-  const normalizedId = normalize(districtId);
-  if (!normalizedId || !Array.isArray(articles)) return [];
-
-  const matchesDistrict = article => {
-    const values = [
-      article?.districtId,
-      article?.district,
-      ...(Array.isArray(article?.districtIds) ? article.districtIds : []),
-      ...(Array.isArray(article?.districts) ? article.districts : [])
-    ].filter(Boolean).map(normalize);
-    return values.includes(normalizedId);
-  };
-
-  return articles
-    .filter(article => article?.status === 'published' && matchesDistrict(article))
-    .sort((a, b) => {
-      const dateValue = value => value?.toMillis?.() || Date.parse(value || '') || 0;
-      return dateValue(b.publishedAt) - dateValue(a.publishedAt);
-    })
-    .slice(0, count);
-}
-
 export const WB_MAP_VIEWBOX = "0 0 768 1158.72";
 
 export const WB_DISTRICTS = [

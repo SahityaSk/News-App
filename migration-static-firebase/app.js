@@ -58,7 +58,7 @@ const translations = {
     readingListKicker: 'YOUR READING LIST',
     savedTitle: 'Saved articles',
     footerAbout: 'Delivering unbiased 24x7 breaking news, real-time video streaming, in-depth editorials, and financial intelligence globally.',
-    footerMotto: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
+    footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
     footerLiveLink: '● YUGANTAR LIVE 24/7',
     footerOfficialDesk: 'Official desk',
     footerNewsSections: 'News sections',
@@ -118,7 +118,7 @@ const translations = {
     readingListKicker: 'আপনার পঠন তালিকা',
     savedTitle: 'সেভ করা খবর',
     footerAbout: 'বিশ্বজুড়ে ২৪x৭ নিরপেক্ষ ব্রেকিং নিউজ, রিয়েল-টাইম ভিডিও স্ট্রিমিং এবং বিস্তারিত সম্পাদকীয় পরিবেশন।',
-    footerMotto: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
+    footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
     footerLiveLink: '● যুগান্তর লাইভ ২৪/৭',
     footerOfficialDesk: 'অফিসিয়াল ডেস্ক',
     footerNewsSections: 'সংবাদ বিভাগ',
@@ -175,7 +175,7 @@ const translations = {
     readingListKicker: 'आपकी रीडिंग लिस्ट',
     savedTitle: 'सेव किए गए समाचार',
     footerAbout: 'दुनिया भर में 24x7 निष्पक्ष ब्रेकिंग न्यूज़, लाइव वीडियो स्ट्रीमिंग और विस्तृत संपादकीय।',
-    footerMotto: 'निष्पक्ष खबर, निर्भीक पत्रकारिता | बंगाल, देश और दुनिया की खबर | सच के साथ, जनता के पास।',
+    footerMotto: '“निरपेक्ष खबर, निर्भीक पत्रकारिता।”',
     footerLiveLink: '● युगांतर लाइव 24/7',
     footerOfficialDesk: 'आधिकारिक डेस्क',
     footerNewsSections: 'समाचार अनुभाग',
@@ -513,7 +513,13 @@ const DEFAULT_DEMO_VIDEOS = [
 ];
 
 function renderVideos(snapshot) {
-  const itemsToRender = Array.isArray(snapshot) ? snapshot.slice(0, 6) : [];
+  let itemsToRender = Array.isArray(snapshot) && snapshot.length > 0 ? snapshot : [];
+  if (itemsToRender.length < 6) {
+    const existing = new Set(itemsToRender.map(item => item.id || item.videoUrl));
+    const fill = DEFAULT_DEMO_VIDEOS.filter(item => !existing.has(item.id) && !existing.has(item.videoUrl));
+    itemsToRender = [...itemsToRender, ...fill];
+  }
+  itemsToRender = itemsToRender.slice(0, 6);
   const videos = itemsToRender.map(item => {
     const id = youtubeId(item.videoUrl || item.embedUrl);
     const thumbnail = item.thumbnail || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
@@ -569,10 +575,10 @@ async function loadArticles() {
   try {
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
     const docs = result.docs.map(item => ({ id: item.id, ...item.data() }));
-    state.articles = docs;
+    state.articles = docs.length ? docs : DEFAULT_DEMO_ARTICLES;
   } catch (error) {
-    console.warn('Articles query failed; showing an empty newsroom state:', error);
-    state.articles = [];
+    console.warn('Articles query failed, loading default newsroom articles:', error);
+    state.articles = DEFAULT_DEMO_ARTICLES;
   } finally {
     renderArticles(); renderHero(); renderHeadlineStrip();
   }
@@ -1034,8 +1040,8 @@ updateClock();
 setInterval(updateClock, 1000);
 if (!firebaseConfigured) {
   showSetupMessage();
-  state.articles = [];
   renderFeaturedPodcasts([]);
+  state.articles = DEFAULT_DEMO_ARTICLES;
   renderArticles();
   renderHero();
   renderHeadlineStrip();
@@ -1051,8 +1057,8 @@ if (!firebaseConfigured) {
     loadArticles();
     loadVideosAndPoll();
   } catch (e) {
-    console.warn('Firebase init error; showing empty production states:', e);
-    state.articles = [];
+    console.warn('Firebase init error, using fallback feeds:', e);
+    state.articles = DEFAULT_DEMO_ARTICLES;
     renderArticles();
     renderHero();
     renderHeadlineStrip();

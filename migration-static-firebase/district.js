@@ -459,7 +459,7 @@ async function loadFirestoreData() {
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
     state.firestoreArticles = result.docs.map(item => ({ id: item.id, ...item.data() }));
   } catch (err) {
-    console.warn('Firestore load failed for district page; showing an empty district state:', err);
+    console.warn('Firestore load failed for district page, using local district news:', err);
   } finally {
     loadDistrictArticles();
   }
