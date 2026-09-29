@@ -217,7 +217,8 @@ translations.HI.districtSearchNoResults = 'कोई मिलता-जुल�
 function updateStaticLanguage(lang = state.language) {
   const dict = translations[lang] || translations.EN;
   document.documentElement.lang = lang === 'BN' ? 'bn' : (lang === 'HI' ? 'hi' : 'en');
-  $('subscribers-btn')?.setAttribute('title', dict.subscribersTitle);
+  $('subscribers-btn')?.setAttribute('title', dict.youtubeSubscriberCount);
+  $('subscribers-btn')?.setAttribute('aria-label', dict.youtubeSubscriberCount);
   $('jobs-btn')?.setAttribute('title', dict.careersTitle);
   $('jobs-btn')?.setAttribute('aria-label', `${dict.careersLabel} ${dict.hiringLabel}`);
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -755,7 +756,6 @@ function bindUi() {
 }
 
 function setupHeaderModals() {
-  const subBtn = $('subscribers-btn');
   const subDialog = $('subscribers-dialog');
   const closeSubDialog = $('close-subscribers-dialog');
   const subForm = $('subscriber-form');
@@ -766,10 +766,6 @@ function setupHeaderModals() {
   const closeJobsDialog = $('close-jobs-dialog');
   const jobForm = $('job-application-form');
   const jobMsg = $('job-success-msg');
-
-  subBtn?.addEventListener('click', () => {
-    subDialog?.showModal();
-  });
 
   closeSubDialog?.addEventListener('click', () => {
     subDialog?.close();
