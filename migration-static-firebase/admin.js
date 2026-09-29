@@ -48,10 +48,14 @@ async function roleFor(user) { const profile = await getDoc(doc(db, 'users', use
 function articlePayload(auth) {
   const requestedStatus = $('article-status-select').value;
   const articleStatus = currentRole === 'reporter' ? 'draft' : requestedStatus;
+  const category = $('article-category').value;
+  if (articleStatus === 'published' && category !== 'world' && (! $('article-title-bn').value.trim() || ! $('article-summary-bn').value.trim() || ! $('article-content-bn').value.trim())) {
+    throw new Error('Add the Bengali headline, summary, and story before publishing this article.');
+  }
   return {
     title: languageObject($('article-title-en').value, $('article-title-bn').value, $('article-title-hi').value),
-    summary: languageObject($('article-summary-en').value, '', ''), content: languageObject($('article-content-en').value, '', ''),
-    category: $('article-category').value, author: $('article-author').value.trim(), sourceAgency: $('article-source-agency').value.trim(), sourceUrl: readUrl($('article-source-url').value), image: readUrl($('article-image').value), sourceLanguage: 'EN', status: articleStatus, hero: $('article-hero').checked, trending: false, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid
+    summary: languageObject($('article-summary-en').value, $('article-summary-bn').value, ''), content: languageObject($('article-content-en').value, $('article-content-bn').value, ''),
+    category, author: $('article-author').value.trim(), sourceAgency: $('article-source-agency').value.trim(), sourceUrl: readUrl($('article-source-url').value), image: readUrl($('article-image').value), sourceLanguage: 'EN', status: articleStatus, hero: $('article-hero').checked, trending: false, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid
   };
 }
 
@@ -153,8 +157,11 @@ async function loadAdminData() {
 
 function editArticle(id) {
   const article = articleCache.find(item => item.id === id); if (!article) return;
-  const title = article.title || {}; const summary = article.summary || {}; const content = article.content || {};
-  editingArticleId = id; $('article-title-en').value = title.EN || ''; $('article-title-bn').value = title.BN || ''; $('article-title-hi').value = title.HI || ''; $('article-summary-en').value = summary.EN || ''; $('article-content-en').value = content.EN || '';
+  const sourceLanguage = article.sourceLanguage || 'EN';
+  const title = typeof article.title === 'string' ? { [sourceLanguage]: article.title } : (article.title || {});
+  const summary = typeof article.summary === 'string' ? { [sourceLanguage]: article.summary } : (article.summary || {});
+  const content = typeof article.content === 'string' ? { [sourceLanguage]: article.content } : (article.content || {});
+  editingArticleId = id; $('article-title-en').value = title.EN || ''; $('article-title-bn').value = title.BN || ''; $('article-title-hi').value = title.HI || ''; $('article-summary-en').value = summary.EN || ''; $('article-summary-bn').value = summary.BN || ''; $('article-content-en').value = content.EN || ''; $('article-content-bn').value = content.BN || '';
   $('article-category').value = article.category || 'national'; $('article-author').value = article.author || ''; $('article-source-agency').value = article.sourceAgency || 'YUGANTAR'; $('article-image').value = article.image || ''; $('article-source-url').value = article.sourceUrl || ''; $('article-hero').checked = Boolean(article.hero); $('article-status-select').value = article.status || 'draft'; $('article-submit').textContent = 'Save article changes'; $('article-reset').classList.remove('hidden'); updateImagePreview();
   document.querySelector('[data-admin-tab="publish"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }

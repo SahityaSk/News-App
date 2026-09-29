@@ -46,6 +46,11 @@ service cloud.firestore {
       allow create, update, delete: if editor();
     }
 
+    match /podcasts/{id} {
+      allow read: if resource.data.status == 'published';
+      allow create, update, delete: if editor();
+    }
+
     match /videoControls/{videoId} {
       allow read, write: if editor();
     }
@@ -78,6 +83,11 @@ service cloud.firestore {
       allow create: if request.resource.data.email is string
         && request.resource.data.email.size() <= 254;
       allow read, update, delete: if superadmin();
+    }
+
+    match /publicStats/{id} {
+      allow get: if id == 'subscribers';
+      allow list, create, update, delete: if false;
     }
   }
 }
