@@ -11,9 +11,12 @@ import { SPONSORS } from './sponsors-data.js';
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
 const savedLanguageKey = 'yugantar_language';
-const getStoredLanguage = () => { try { return localStorage.getItem(savedLanguageKey) || 'EN'; } catch { return 'EN'; } };
+const getStoredLanguage = () => {
+  try { return ['BN', 'EN', 'HI'].includes(localStorage.getItem(savedLanguageKey)) ? localStorage.getItem(savedLanguageKey) : 'BN'; }
+  catch { return 'BN'; }
+};
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
-const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], saved: readSaved(), poll: null };
+const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], saved: readSaved(), poll: null };
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
@@ -21,7 +24,7 @@ const translations = {
   EN: {
     utilityLive: 'LIVE NEWS NETWORK',
     syncStatus: 'LIVE DATA',
-    brandSlogan: 'Truth • Speed • Unbiased Coverage',
+    brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     catAll: 'Latest',
     catNational: 'National',
     catWorld: 'World',
@@ -70,12 +73,15 @@ const translations = {
     emptySaved: 'Your saved reading list is empty.',
     saveArticle: '☆ Save article',
     savedArticle: '★ Saved',
-    viewSource: 'View original source'
+    viewSource: 'View original source',
+    podcastKicker: 'YUGANTAR AUDIO', podcastTitle: 'Featured podcasts', podcastLoading: 'Loading featured episodes…', podcastEmpty: 'No featured episodes yet. Check back soon.', podcastPlay: 'Listen to episode', podcastUnavailable: 'Featured podcasts are temporarily unavailable.',
+    sponsorKicker: 'SPONSOR PARTNERS', sponsorTitle: 'Official Sponsors', sponsorSpotlight: 'SPOTLIGHT', sponsorAll: 'All', sponsorPlatinum: 'Platinum', sponsorGold: 'Gold', sponsorTech: 'Tech', sponsorEmpty: 'No Active Sponsors', sponsorEmptyHelp: 'Sponsor partner banners will automatically display here once assigned.', sponsorJoin: '🤝 Become a Partner', mapKicker: 'WEST BENGAL MAP', mapTitle: 'All 23 Districts', mapHint: 'Click District', mapIntro: 'Select any district on the interactive map to view specific news stories for that district.', searchDistrict: '🔍 Search district (e.g. Kolkata)…', liveUnavailable: 'No live stream configured.', noTicker: 'No active breaking updates.', tickerUnavailable: 'Breaking updates are temporarily unavailable.', noPoll: 'No active poll', pollSoon: 'Check back soon for new audience polls.', pollSubmitting: 'Submitting vote…', pollRecorded: 'Vote recorded. Your selection is highlighted.', pollUnavailable: 'Voting is temporarily unavailable.', categoryLabelNational: 'National', categoryLabelWorld: 'World', categoryLabelBusiness: 'Business', categoryLabelSports: 'Sports', categoryLabelTech: 'Tech', categoryLabelEntertainment: 'Entertainment', categoryLabelScience: 'Science', categoryLabelGeneral: 'General', mapUnavailable: 'Interactive map library could not be loaded. Use the district list below.', mapDataUnavailable: 'Map data could not be loaded. Use the district list below.'
   },
   BN: {
+    podcastKicker: 'যুগান্তর অডিও', podcastTitle: 'বিশেষ পডকাস্ট', podcastLoading: 'বিশেষ পর্ব লোড হচ্ছে…', podcastEmpty: 'এখনও কোনো বিশেষ পডকাস্ট নেই। শিগগিরই আবার দেখুন।', podcastPlay: 'পর্বটি শুনুন', podcastUnavailable: 'বিশেষ পডকাস্ট এই মুহূর্তে পাওয়া যাচ্ছে না।',
     utilityLive: 'লাইভ নিউজ নেটওয়ার্ক',
     syncStatus: 'লাইভ ডাটা',
-    brandSlogan: 'সত্য • দ্রুততা • নিরপেক্ষ সংবাদ',
+    brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     catAll: 'সর্বশেষ',
     catNational: 'জাতীয়',
     catWorld: 'আন্তর্জাতিক',
@@ -120,16 +126,16 @@ const translations = {
     footerSecSports: 'খেলাধুলা',
     footerCopyright: '© ২০২৬ যুগান্তর নিউজ নেটওয়ার্ক। সর্বস্বত্ব সংরক্ষিত।',
     footerFactCheck: '✦ সত্যতা যাচাইকৃত নিউজ রুম',
-    emptyArticles: 'এই বিভাগে কোনো খবর প্রকাশিত হয়নি।',
+    emptyArticles: 'এই বিভাগে এখনো বাংলা অনুবাদসহ কোনো খবর প্রকাশিত হয়নি।',
     emptySaved: 'আপনার সেভ করা খবরের তালিকা খালি।',
     saveArticle: '☆ সেভ করুন',
     savedArticle: '★ সেভ করা হয়েছে',
-    viewSource: 'মূল উৎস দেখুন'
+    viewSource: 'মূল উৎস দেখুন', sponsorKicker: 'স্পনসর পার্টনার', sponsorTitle: 'অফিসিয়াল স্পনসর', sponsorSpotlight: 'বিশেষ নজরে', sponsorAll: 'সব', sponsorPlatinum: 'প্ল্যাটিনাম', sponsorGold: 'গোল্ড', sponsorTech: 'প্রযুক্তি', sponsorEmpty: 'এই মুহূর্তে কোনো স্পনসর নেই', sponsorEmptyHelp: 'স্পনসর পার্টনার যুক্ত হলে তাঁদের ব্যানার এখানে দেখা যাবে।', sponsorJoin: '🤝 পার্টনার হোন', mapKicker: 'পশ্চিমবঙ্গের মানচিত্র', mapTitle: '২৩টি জেলা', mapHint: 'জেলা নির্বাচন করুন', mapIntro: 'জেলার খবর দেখতে মানচিত্র থেকে একটি জেলা নির্বাচন করুন।', searchDistrict: '🔍 জেলা খুঁজুন (যেমন কলকাতা)…', liveUnavailable: 'কোনো লাইভ স্ট্রিম সেট করা নেই।', noTicker: 'এই মুহূর্তে কোনো ব্রেকিং আপডেট নেই।', tickerUnavailable: 'ব্রেকিং আপডেট সাময়িকভাবে পাওয়া যাচ্ছে না।', noPoll: 'এই মুহূর্তে কোনো সক্রিয় জনমত নেই', pollSoon: 'নতুন জনমত দেখার জন্য পরে আবার আসুন।', pollSubmitting: 'আপনার ভোট জমা হচ্ছে…', pollRecorded: 'আপনার ভোট নথিভুক্ত হয়েছে। আপনার পছন্দটি চিহ্নিত করা হয়েছে।', pollUnavailable: 'এই মুহূর্তে ভোট দেওয়া যাচ্ছে না।', categoryLabelNational: 'জাতীয়', categoryLabelWorld: 'বিশ্ব', categoryLabelBusiness: 'ব্যবসা', categoryLabelSports: 'খেলাধুলা', categoryLabelTech: 'প্রযুক্তি', categoryLabelEntertainment: 'বিনোদন', categoryLabelScience: 'বিজ্ঞান', categoryLabelGeneral: 'সাধারণ', mapUnavailable: 'মানচিত্র লোড করা যায়নি। নিচের জেলা তালিকা ব্যবহার করুন।', mapDataUnavailable: 'মানচিত্রের তথ্য লোড করা যায়নি। নিচের জেলা তালিকা ব্যবহার করুন।'
   },
   HI: {
     utilityLive: 'लाइव न्यूज नेटवर्क',
     syncStatus: 'लाइव डेटा',
-    brandSlogan: 'सत्य • गति • निष्पक्ष समाचार',
+    brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     catAll: 'नवीनतम',
     catNational: 'राष्ट्रीय',
     catWorld: 'दुनिया',
@@ -178,12 +184,14 @@ const translations = {
     emptySaved: 'आपकी सेव की गई सूची खाली है।',
     saveArticle: '☆ सेव करें',
     savedArticle: '★ सेव किया गया',
-    viewSource: 'मूल स्रोत देखें'
+    viewSource: 'मूल स्रोत देखें', podcastKicker: 'युगांतर ऑडियो', podcastTitle: 'चुनिंदा पॉडकास्ट', podcastLoading: 'चुनिंदा एपिसोड लोड हो रहे हैं…', podcastEmpty: 'अभी कोई चुनिंदा पॉडकास्ट नहीं है। जल्द फिर देखें।', podcastPlay: 'एपिसोड सुनें', podcastUnavailable: 'चुनिंदा पॉडकास्ट अभी उपलब्ध नहीं हैं।',
+    sponsorKicker: 'प्रायोजक भागीदार', sponsorTitle: 'आधिकारिक प्रायोजक', sponsorAll: 'सभी', sponsorPlatinum: 'प्लैटिनम', sponsorGold: 'गोल्ड', sponsorTech: 'टेक', sponsorEmpty: 'कोई सक्रिय प्रायोजक नहीं', sponsorEmptyHelp: 'प्रायोजक साझेदार जुड़ने पर उनके बैनर यहां दिखेंगे।', sponsorJoin: '🤝 भागीदार बनें', mapKicker: 'पश्चिम बंगाल का नक्शा', mapTitle: 'सभी 23 जिले', mapHint: 'जिला चुनें', mapIntro: 'जिले की खबरें देखने के लिए नक्शे पर एक जिला चुनें।', searchDistrict: '🔍 जिला खोजें…', liveUnavailable: 'कोई लाइव स्ट्रीम सेट नहीं है।', noTicker: 'अभी कोई ब्रेकिंग अपडेट नहीं है।', tickerUnavailable: 'ब्रेकिंग अपडेट अस्थायी रूप से उपलब्ध नहीं हैं।', noPoll: 'कोई सक्रिय पोल नहीं', pollSoon: 'नए पोल के लिए बाद में फिर देखें।', pollSubmitting: 'आपका वोट जमा हो रहा है…', pollRecorded: 'वोट दर्ज हो गया। आपका चयन हाइलाइट किया गया है।', pollUnavailable: 'अभी वोट करना संभव नहीं है।', categoryLabelNational: 'राष्ट्रीय', categoryLabelWorld: 'दुनिया', categoryLabelBusiness: 'व्यापार', categoryLabelSports: 'खेल', categoryLabelTech: 'टेक', categoryLabelEntertainment: 'मनोरंजन', categoryLabelScience: 'विज्ञान', categoryLabelGeneral: 'सामान्य', mapUnavailable: 'नक्शा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।', mapDataUnavailable: 'नक्शे का डेटा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।'
   }
 };
 
 function updateStaticLanguage(lang = state.language) {
   const dict = translations[lang] || translations.EN;
+  document.documentElement.lang = lang === 'BN' ? 'bn' : (lang === 'HI' ? 'hi' : 'en');
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (dict[key]) {
@@ -223,9 +231,27 @@ const bindImageFallbacks = root => root.querySelectorAll('img[data-image-fallbac
   }, { once: true });
 });
 const text = (value, language = state.language) => typeof value === 'string' ? value : (value?.[language] || value?.EN || value?.BN || value?.HI || '');
+const categoryText = category => {
+  const keys = { national: 'categoryLabelNational', world: 'categoryLabelWorld', business: 'categoryLabelBusiness', sports: 'categoryLabelSports', tech: 'categoryLabelTech', entertainment: 'categoryLabelEntertainment', science: 'categoryLabelScience', general: 'categoryLabelGeneral' };
+  return (translations[state.language] || translations.EN)[keys[String(category || '').toLowerCase()]] || category || 'NEWS';
+};
+const articleText = (article, field) => {
+  const value = article?.[field];
+  if (state.language === 'BN' && String(article?.category || '').toLowerCase() === 'world') {
+    return typeof value === 'string' ? value : (value?.EN || value?.BN || value?.HI || '');
+  }
+  if (state.language === 'BN') return typeof value === 'string' ? (article?.sourceLanguage === 'BN' ? value : '') : (value?.BN || '');
+  return text(value);
+};
+const articleAvailableInLanguage = article => {
+  if (state.language !== 'BN' || String(article?.category || '').toLowerCase() === 'world') return true;
+  const hasBengali = value => typeof value === 'string' ? article?.sourceLanguage === 'BN' && Boolean(value.trim()) : Boolean(value?.BN?.trim());
+  return hasBengali(article?.title) && hasBengali(article?.summary);
+};
 const dateText = value => {
   const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
-  return date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : 'Recently';
+  const locale = state.language === 'BN' ? 'bn-BD' : (state.language === 'HI' ? 'hi-IN' : 'en-US');
+  return date && !Number.isNaN(date.getTime()) ? date.toLocaleString(locale) : (state.language === 'BN' ? 'সম্প্রতি' : 'Recently');
 };
 const setStatus = (element, message, error = false) => { if (element) { element.textContent = message; element.className = `status${error ? ' error' : ''}`; } };
 const isSaved = id => state.saved.some(article => article.id === id);
@@ -261,7 +287,7 @@ function renderSaved() {
   if (!target) return;
   const dict = translations[state.language] || translations.EN;
   if (!state.saved.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptySaved)}</div>`; return; }
-  target.innerHTML = state.saved.map(article => `<div class="saved-item"><button class="saved-open" data-open-saved="${escapeHtml(article.id)}" type="button"><strong>${escapeHtml(text(article.title))}</strong><small>${escapeHtml(article.sourceAgency || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></button><button class="saved-remove" data-remove-saved="${escapeHtml(article.id)}" type="button" aria-label="Remove saved article">×</button></div>`).join('');
+  target.innerHTML = state.saved.map(article => `<div class="saved-item"><button class="saved-open" data-open-saved="${escapeHtml(article.id)}" type="button"><strong>${escapeHtml(articleText(article, 'title'))}</strong><small>${escapeHtml(article.sourceAgency || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></button><button class="saved-remove" data-remove-saved="${escapeHtml(article.id)}" type="button" aria-label="Remove saved article">×</button></div>`).join('');
   target.querySelectorAll('[data-open-saved]').forEach(button => button.addEventListener('click', () => { $('saved-dialog').close(); openArticle(button.dataset.openSaved); }));
   target.querySelectorAll('[data-remove-saved]').forEach(button => button.addEventListener('click', () => {
     state.saved = state.saved.filter(item => item.id !== button.dataset.removeSaved);
@@ -287,15 +313,15 @@ function renderArticles() {
   const target = $('articles');
   const term = state.search.trim().toLowerCase();
   const dict = translations[state.language] || translations.EN;
-  const articles = state.articles.filter(article => !legacyWireNames.has(article.sourceAgency) && article.sourceType !== 'wire').filter(article => {
+  const articles = state.articles.filter(article => articleAvailableInLanguage(article) && !legacyWireNames.has(article.sourceAgency) && article.sourceType !== 'wire').filter(article => {
     const categoryMatch = state.category === 'all' || article.category === state.category;
-    const searchable = `${text(article.title)} ${text(article.summary)} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
+    const searchable = `${articleText(article, 'title')} ${articleText(article, 'summary')} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
     return categoryMatch && (!term || searchable.includes(term));
   });
   if (!articles.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptyArticles)}</div>`; return; }
   target.innerHTML = articles.map(article => `<article class="article-card" data-article-id="${escapeHtml(article.id)}">
-    ${imageMarkup(article.image, text(article.title), 'YUGANTAR')}
-    <div class="article-body"><span class="tag">${escapeHtml(article.category || 'NEWS')}</span><h3>${escapeHtml(text(article.title))}</h3><p>${escapeHtml(text(article.summary))}</p><small>${escapeHtml(article.sourceAgency || article.author || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></div>
+    ${imageMarkup(article.image, articleText(article, 'title'), 'YUGANTAR')}
+    <div class="article-body"><span class="tag">${escapeHtml(categoryText(article.category))}</span><h3>${escapeHtml(articleText(article, 'title'))}</h3><p>${escapeHtml(articleText(article, 'summary'))}</p><small>${escapeHtml(article.sourceAgency || article.author || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></div>
     <button class="save-article" data-save-id="${escapeHtml(article.id)}" type="button" aria-label="${isSaved(article.id) ? 'Remove from saved articles' : 'Save article'}" title="${isSaved(article.id) ? 'Remove from saved articles' : 'Save article'}">${isSaved(article.id) ? '★' : '☆'}</button>
   </article>`).join('');
   target.querySelectorAll('[data-article-id]').forEach(card => card.addEventListener('click', () => openArticle(card.dataset.articleId)));
@@ -308,18 +334,19 @@ function openArticle(id) {
   if (!article) return;
   const sourceUrl = safeUrl(article.sourceUrl);
   const dict = translations[state.language] || translations.EN;
-  $('article-detail').innerHTML = `<span class="tag">${escapeHtml(article.category || 'NEWS')}</span><h1>${escapeHtml(text(article.title))}</h1><p class="muted">${escapeHtml(article.author || 'YUGANTAR Editorial')} · ${escapeHtml(dateText(article.publishedAt))}</p>${imageMarkup(article.image, text(article.title), 'YUGANTAR')}<div class="article-actions"><button class="button" data-dialog-save="${escapeHtml(article.id)}" type="button">${isSaved(article.id) ? dict.savedArticle : dict.saveArticle}</button>${sourceUrl ? `<a class="button button-outline" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(dict.viewSource)}</a>` : ''}</div><p class="lead">${escapeHtml(text(article.summary))}</p><div class="article-copy">${escapeHtml(text(article.content) || text(article.summary)).replace(/\n/g, '<br>')}</div>`;
+  $('article-detail').innerHTML = `<span class="tag">${escapeHtml(categoryText(article.category))}</span><h1>${escapeHtml(articleText(article, 'title'))}</h1><p class="muted">${escapeHtml(article.author || 'YUGANTAR Editorial')} · ${escapeHtml(dateText(article.publishedAt))}</p>${imageMarkup(article.image, articleText(article, 'title'), 'YUGANTAR')}<div class="article-actions"><button class="button" data-dialog-save="${escapeHtml(article.id)}" type="button">${isSaved(article.id) ? dict.savedArticle : dict.saveArticle}</button>${sourceUrl ? `<a class="button button-outline" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(dict.viewSource)}</a>` : ''}</div><p class="lead">${escapeHtml(articleText(article, 'summary'))}</p><div class="article-copy">${escapeHtml(articleText(article, 'content') || articleText(article, 'summary')).replace(/\n/g, '<br>')}</div>`;
   $('article-detail').querySelector('[data-dialog-save]')?.addEventListener('click', () => toggleSaved(article.id));
   bindImageFallbacks($('article-detail'));
   $('article-dialog').showModal();
 }
 
 function renderHero() {
-  const hero = state.articles.find(article => article.hero) || state.articles[0];
+  const availableArticles = state.articles.filter(articleAvailableInLanguage);
+  const hero = availableArticles.find(article => article.hero) || availableArticles[0];
   const target = $('hero-card');
-  if (!hero) { target.className = 'hero-card empty-state'; target.textContent = 'No featured story has been published yet.'; return; }
+  if (!hero) { target.className = 'hero-card empty-state'; target.textContent = (translations[state.language] || translations.EN).emptyArticles; return; }
   target.className = 'hero-card';
-  target.innerHTML = `${imageMarkup(hero.image, text(hero.title), 'FEATURED')}<div class="hero-copy"><span class="tag">${escapeHtml(hero.breaking ? 'BREAKING' : 'FEATURED')}</span><h1>${escapeHtml(text(hero.title))}</h1><p>${escapeHtml(text(hero.summary))}</p><button class="button" data-hero-id="${escapeHtml(hero.id)}">Read full story</button></div>`;
+  target.innerHTML = `${imageMarkup(hero.image, articleText(hero, 'title'), 'FEATURED')}<div class="hero-copy"><span class="tag">${escapeHtml(hero.breaking ? 'BREAKING' : 'FEATURED')}</span><h1>${escapeHtml(articleText(hero, 'title'))}</h1><p>${escapeHtml(articleText(hero, 'summary'))}</p><button class="button" data-hero-id="${escapeHtml(hero.id)}">Read full story</button></div>`;
   target.querySelector('[data-hero-id]')?.addEventListener('click', () => openArticle(hero.id));
   bindImageFallbacks(target);
 }
@@ -327,8 +354,8 @@ function renderHero() {
 function renderHeadlineStrip() {
   const target = $('headline-strip');
   if (!target) return;
-  const items = state.articles.slice(0, 5);
-  target.innerHTML = items.length ? items.map((article, index) => `<button class="headline-item" data-headline-id="${escapeHtml(article.id)}" type="button"><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(text(article.title))}</strong></button>`).join('') : '<span class="muted">No newsroom developments yet.</span>';
+  const items = state.articles.filter(articleAvailableInLanguage).slice(0, 5);
+  target.innerHTML = items.length ? items.map((article, index) => `<button class="headline-item" data-headline-id="${escapeHtml(article.id)}" type="button"><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(articleText(article, 'title'))}</strong></button>`).join('') : `<span class="muted">${escapeHtml((translations[state.language] || translations.EN).emptyArticles)}</span>`;
   target.querySelectorAll('[data-headline-id]').forEach(button => button.addEventListener('click', () => openArticle(button.dataset.headlineId)));
 }
 
@@ -478,9 +505,10 @@ function renderVideos(snapshot) {
 function renderPoll(poll) {
   state.poll = poll;
   const pollPanelEl = document.querySelector('.poll-panel') || $('poll-question')?.closest('.panel');
+  const dict = translations[state.language] || translations.EN;
   if (!poll) { 
-    $('poll-question').textContent = 'No active poll'; 
-    $('poll-options').innerHTML = '<p class="muted" style="margin: 6px 0 0; font-size: 0.82rem;">Check back soon for new audience polls.</p>';
+    $('poll-question').textContent = dict.noPoll;
+    $('poll-options').innerHTML = `<p class="muted" style="margin: 6px 0 0; font-size: 0.82rem;">${escapeHtml(dict.pollSoon)}</p>`;
     if (pollPanelEl) pollPanelEl.classList.add('no-poll');
     return; 
   }
@@ -500,15 +528,15 @@ function renderPoll(poll) {
 
 async function votePoll(optionId) {
   if (!state.poll) return;
-  setStatus($('poll-status'), 'Submitting vote…');
+  setStatus($('poll-status'), (translations[state.language] || translations.EN).pollSubmitting);
   try {
     const anonymous = await signInAnonymously(getAuth());
     const pollRef = doc(db, 'polls', state.poll.id); const counts = { ...(state.poll.voteCounts || {}) }; counts[optionId] = Number(counts[optionId] || 0) + 1;
     const batch = writeBatch(db); batch.set(doc(db, 'polls', state.poll.id, 'votes', anonymous.user.uid), { uid: anonymous.user.uid, optionId, createdAt: serverTimestamp() }); batch.update(pollRef, { voteCounts: counts, updatedAt: serverTimestamp() }); await batch.commit();
-    state.poll.voteCounts = counts; state.poll.userOption = optionId; renderPoll(state.poll); setStatus($('poll-status'), 'Vote recorded. Your selection is highlighted.');
+    state.poll.voteCounts = counts; state.poll.userOption = optionId; renderPoll(state.poll); setStatus($('poll-status'), (translations[state.language] || translations.EN).pollRecorded);
   } catch (error) {
     if (error.code === 'already-exists' || error.code === 'permission-denied') setStatus($('poll-status'), 'This identity has already voted, or the poll is no longer active.', true);
-    else setStatus($('poll-status'), 'Voting is temporarily unavailable.', true);
+    else setStatus($('poll-status'), (translations[state.language] || translations.EN).pollUnavailable, true);
   }
 }
 
@@ -528,15 +556,16 @@ async function loadArticles() {
 function startRealtimeListeners() {
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
     const items = snapshot.docs.map(item => item.data());
-    $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : 'No active breaking updates.';
-  }, () => { $('ticker-items').textContent = 'California Supreme Court orders Riverside County Sheriff Bianco to return 650,000 seized ballots • South-East Asia Travel News & Guides • Summit Discussion: Solera, BYD, and CITS Chart EV Mobility Future.'; });
+    $('ticker-items').innerHTML = items.length ? items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ') : (translations[state.language] || translations.EN).noTicker;
+  }, () => { $('ticker-items').textContent = (translations[state.language] || translations.EN).tickerUnavailable; });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
     const stream = snapshot.docs[0]?.data();
-    $('live-title').textContent = stream?.title || 'Live channel';
-    $('live-meta').textContent = stream?.provider ? `${stream.provider} · Updated ${dateText(stream.updatedAt)}` : 'The editorial desk can change the stream URL without redeploying the frontend.';
+    const liveText = translations[state.language] || translations.EN;
+    $('live-title').textContent = stream?.title || liveText.liveTvTitle;
+    $('live-meta').textContent = stream?.provider ? `${stream.provider} · ${dateText(stream.updatedAt)}` : liveText.liveTvMeta;
     const youtubeVideoId = youtubeId(stream?.videoUrl);
     const streamUrl = safeUrl(stream?.videoUrl);
-    $('live-player').innerHTML = youtubeVideoId ? youtubeEmbed(youtubeVideoId) : (stream?.provider === 'facebook' && streamUrl ? facebookEmbed(streamUrl) : (streamUrl ? `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">Open live stream</a>` : 'No live stream configured.'));
+    $('live-player').innerHTML = youtubeVideoId ? youtubeEmbed(youtubeVideoId) : (stream?.provider === 'facebook' && streamUrl ? facebookEmbed(streamUrl) : (streamUrl ? `<a class="button" href="${escapeHtml(streamUrl)}" target="_blank" rel="noreferrer">${escapeHtml(liveText.liveTvAction)}</a>` : liveText.liveUnavailable));
     if (window.FB) window.FB.XFBML.parse($('live-player'));
     const action = $('live-action');
     if (action && streamUrl) { action.href = streamUrl; action.classList.remove('hidden'); } else if (action) action.classList.add('hidden');
@@ -586,10 +615,26 @@ function bindUi() {
     state.language = event.target.value;
     try { localStorage.setItem(savedLanguageKey, state.language); } catch {}
     updateStaticLanguage(state.language);
+    renderFeaturedPodcasts();
+    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+    renderWestBengalMap(selectedRegion);
+    renderDistrictList($('wb-district-search')?.value || '', selectedRegion);
     renderArticles();
     renderHero();
     renderHeadlineStrip();
     renderSaved();
+    if (state.poll) renderPoll(state.poll);
+  });
+  window.addEventListener('storage', event => {
+    if (event.key !== savedLanguageKey || !['BN', 'EN', 'HI'].includes(event.newValue)) return;
+    state.language = event.newValue;
+    if (langSelect) langSelect.value = state.language;
+    updateStaticLanguage(state.language);
+    renderFeaturedPodcasts();
+    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+    renderWestBengalMap(selectedRegion);
+    renderDistrictList($('wb-district-search')?.value || '', selectedRegion);
+    renderArticles(); renderHero(); renderHeadlineStrip(); renderSaved();
     if (state.poll) renderPoll(state.poll);
   });
   $('search').addEventListener('input', event => { state.search = event.target.value; renderArticles(); });
@@ -719,13 +764,14 @@ function renderSponsors(category = 'all') {
   const container = $('sponsors-animated-box');
   if (!container) return;
   const filtered = category === 'all' ? SPONSORS : SPONSORS.filter(s => s.category === category);
+  const dict = translations[state.language] || translations.EN;
   
   if (!filtered || !filtered.length) {
     container.innerHTML = `
       <div class="sponsor-empty-card">
         <span class="empty-icon">📢</span>
-        <strong>No Active Sponsors</strong>
-        <p>Sponsor partner banners will automatically display here once assigned.</p>
+        <strong>${escapeHtml(dict.sponsorEmpty)}</strong>
+        <p>${escapeHtml(dict.sponsorEmptyHelp)}</p>
       </div>
     `;
     return;
@@ -749,6 +795,44 @@ function renderSponsors(category = 'all') {
   container.querySelectorAll('[data-sponsor-id]').forEach(card => {
     card.addEventListener('click', () => openSponsorModal(card.dataset.sponsorId));
   });
+}
+
+function renderFeaturedPodcasts(items = state.podcasts) {
+  const target = $('featured-podcasts');
+  if (!target) return;
+  const dict = translations[state.language] || translations.EN;
+  if (!items.length) {
+    target.innerHTML = `<p class="podcast-empty">${escapeHtml(dict.podcastEmpty)}</p>`;
+    return;
+  }
+  target.innerHTML = items.slice(0, 3).map(episode => {
+    const title = text(episode.title);
+    const description = text(episode.summary || episode.description);
+    const audioUrl = safeUrl(episode.audioUrl || episode.episodeUrl || episode.mediaUrl);
+    const imageUrl = safeUrl(episode.coverImage || episode.image);
+    return `<article class="podcast-episode">${imageUrl ? `<img class="podcast-cover" src="${escapeHtml(imageUrl)}" alt="">` : '<span class="podcast-cover podcast-cover-fallback" aria-hidden="true">🎙️</span>'}<div class="podcast-episode-copy"><h3>${escapeHtml(title || dict.podcastTitle)}</h3>${description ? `<p>${escapeHtml(description)}</p>` : ''}${audioUrl ? `<audio controls preload="none" aria-label="${escapeHtml(dict.podcastPlay)}: ${escapeHtml(title)}"><source src="${escapeHtml(audioUrl)}"></audio>` : ''}</div></article>`;
+  }).join('');
+}
+
+async function loadFeaturedPodcasts() {
+  if (!db) {
+    renderFeaturedPodcasts([]);
+    return;
+  }
+  try {
+    const snapshot = await getDocs(query(collection(db, 'podcasts'), where('status', '==', 'published'), limit(30)));
+    state.podcasts = snapshot.docs
+      .map(item => ({ id: item.id, ...item.data() }))
+      .filter(episode => episode.featured === true || episode.highlighted === true)
+      .sort((a, b) => {
+        const date = value => value?.toDate ? value.toDate().getTime() : new Date(value || 0).getTime();
+        return date(b.publishedAt) - date(a.publishedAt);
+      });
+    renderFeaturedPodcasts();
+  } catch (error) {
+    console.warn('Featured podcasts could not be loaded:', error);
+    renderFeaturedPodcasts([]);
+  }
 }
 
 function openSponsorModal(sponsorId) {
@@ -811,9 +895,10 @@ async function renderWestBengalMap(filterRegion = 'all') {
   const container = $('wb-interactive-map-container');
   if (!container) return;
 
+  const regionNamesBn = { all: 'সব জেলা', 'North Bengal': 'উত্তরবঙ্গ', 'Central Bengal': 'মধ্যবঙ্গ', 'Western Rarh': 'পশ্চিম রাঢ়', 'South Bengal': 'দক্ষিণবঙ্গ', 'Coastal Delta': 'উপকূলীয় বদ্বীপ' };
   const regionPills = WB_REGIONS.map(r => `
     <button class="region-pill ${r.id === filterRegion ? 'active' : ''}" data-region-id="${r.id}">
-      ${r.name}
+      ${escapeHtml(state.language === 'BN' ? (regionNamesBn[r.id] || r.name) : r.name)}
     </button>
   `).join('');
 
@@ -833,7 +918,7 @@ async function renderWestBengalMap(filterRegion = 'all') {
   });
 
   if (!window.L) {
-    container.querySelector('.wb-leaflet-map').innerHTML = '<div class="empty-state">Interactive map library could not be loaded. Use the district list below.</div>';
+    container.querySelector('.wb-leaflet-map').innerHTML = `<div class="empty-state">${escapeHtml((translations[state.language] || translations.EN).mapUnavailable)}</div>`;
     return;
   }
 
@@ -843,9 +928,8 @@ async function renderWestBengalMap(filterRegion = 'all') {
       zoomControl: true,
       scrollWheelZoom: false,
       doubleClickZoom: false,
-      attributionControl: true
+      attributionControl: false
     });
-    map.attributionControl.addAttribution('District boundaries: BharatMap / Government of India');
     const layer = window.L.geoJSON(geoJson, {
       style: feature => {
         const district = districtMetaFromFeature(feature);
@@ -873,7 +957,7 @@ async function renderWestBengalMap(filterRegion = 'all') {
     window.setTimeout(() => map.invalidateSize(), 0);
   } catch (error) {
     console.error('West Bengal GeoJSON map failed:', error);
-    container.querySelector('.wb-leaflet-map').innerHTML = '<div class="empty-state">Map data could not be loaded. Use the district list below.</div>';
+    container.querySelector('.wb-leaflet-map').innerHTML = `<div class="empty-state">${escapeHtml((translations[state.language] || translations.EN).mapDataUnavailable)}</div>`;
   }
 }
 
@@ -890,7 +974,7 @@ function renderDistrictList(filter = '', regionFilter = 'all') {
 
   listTarget.innerHTML = filtered.map(d => `
     <button class="district-chip" data-district-id="${d.id}" title="Click for ${d.nameEn} district news">
-      <span>${d.nameEn}</span>
+      <span>${escapeHtml(state.language === 'BN' ? d.nameBn : (state.language === 'HI' ? d.nameHi : d.nameEn))}</span>
       <span style="font-size:0.65rem; opacity:0.75;">›</span>
     </button>
   `).join('');
@@ -907,6 +991,7 @@ updateClock();
 setInterval(updateClock, 1000);
 if (!firebaseConfigured) {
   showSetupMessage();
+  renderFeaturedPodcasts([]);
   state.articles = DEFAULT_DEMO_ARTICLES;
   renderArticles();
   renderHero();
@@ -917,7 +1002,8 @@ if (!firebaseConfigured) {
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    $('sync-status').textContent = 'LIVE DATA';
+  $('sync-status').textContent = (translations[state.language] || translations.EN).syncStatus;
+    loadFeaturedPodcasts();
     startRealtimeListeners();
     loadArticles();
     loadVideosAndPoll();

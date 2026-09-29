@@ -408,6 +408,24 @@ Public pages read only `status == "published"`. Drafts remain staff-only through
 }
 ```
 
+### `podcasts`
+
+The homepage podcast card shows up to three recent, featured episodes from this collection. Publish episode documents with:
+
+```js
+{
+  title: { BN: "বাংলা শিরোনাম", EN: "English title", HI: "हिंदी शीर्षक" },
+  summary: { BN: "পর্বের পরিচিতি", EN: "Episode summary", HI: "एपिसोड परिचय" },
+  audioUrl: "https://.../episode.mp3",
+  coverImage: "https://.../cover.jpg",
+  status: "published",
+  featured: true,
+  publishedAt: Timestamp
+}
+```
+
+Only published documents marked `featured: true` (or legacy `highlighted: true`) appear publicly. Editors may create and manage episodes; public pages can read published episodes.
+
 ### Other collections
 
 - `tickers`: multilingual `title`, `category`, `priority`, `active`, `publishedAt`.

@@ -46,6 +46,11 @@ service cloud.firestore {
       allow create, update, delete: if editor();
     }
 
+    match /podcasts/{id} {
+      allow read: if resource.data.status == 'published';
+      allow create, update, delete: if editor();
+    }
+
     match /videoControls/{videoId} {
       allow read, write: if editor();
     }
