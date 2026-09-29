@@ -855,20 +855,32 @@ function renderSponsors(category = 'all') {
     return;
   }
 
-  container.innerHTML = filtered.map(sp => `
-    <div class="sponsor-card" style="--bannerBg: ${sp.bannerBg || 'linear-gradient(135deg, #091526, #d92535)'};" data-sponsor-id="${sp.id}" title="Click to view sponsor details">
-      <span class="sponsor-badge">${escapeHtml(sp.badge || 'PARTNER')}</span>
+  const background = value => {
+    const candidate = String(value || '').trim();
+    return /^(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|linear-gradient\([^;{}]{1,240}\)|radial-gradient\([^;{}]{1,240}\))$/i.test(candidate)
+      ? candidate
+      : 'linear-gradient(135deg, #091526, #d92535)';
+  };
+
+  container.innerHTML = filtered.map(sp => {
+    const name = String(sp.name || 'YUGANTAR Partner').trim();
+    const tagline = String(sp.tagline || 'Official partner').trim();
+    const logo = safeUrl(sp.logo);
+    return `
+    <article class="sponsor-card" style="--banner-bg: ${background(sp.bannerBg)};" data-sponsor-id="${escapeHtml(sp.id)}" title="Click to view sponsor details">
+      <span class="sponsor-badge">${escapeHtml(sp.badge || sp.category || 'PARTNER')}</span>
       <div class="sponsor-top-row">
         <div class="sponsor-logo-box">
-          ${sp.logo ? `<img src="${escapeHtml(sp.logo)}" alt="${escapeHtml(sp.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><span class="sponsor-logo-fallback" style="display:none;">${sp.fallbackIcon || '🏢'}</span>` : `<span class="sponsor-logo-fallback">${sp.fallbackIcon || '🏢'}</span>`}
+          ${logo ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';"><span class="sponsor-logo-fallback" style="display:none;">${sp.fallbackIcon || '🏢'}</span>` : `<span class="sponsor-logo-fallback">${sp.fallbackIcon || '🏢'}</span>`}
         </div>
         <div class="sponsor-info">
-          <strong>${escapeHtml(sp.name)}</strong>
-          <small>${escapeHtml(sp.tagline)}</small>
+          <strong>${escapeHtml(name)}</strong>
+          <small>${escapeHtml(tagline)}</small>
         </div>
       </div>
-    </div>
-  `).join('');
+    </article>
+  `;
+  }).join('');
 
   container.querySelectorAll('[data-sponsor-id]').forEach(card => {
     card.addEventListener('click', () => openSponsorModal(card.dataset.sponsorId));

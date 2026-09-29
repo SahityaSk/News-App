@@ -52,7 +52,9 @@ service cloud.firestore {
     }
 
     match /sponsors/{id} {
-      allow read: if resource.data.active == true;
+      // Public visitors may only see active sponsors; editors need to read
+      // inactive sponsors as well so the admin panel can edit or restore them.
+      allow read: if editor() || resource.data.active == true;
       allow create: if editor()
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
