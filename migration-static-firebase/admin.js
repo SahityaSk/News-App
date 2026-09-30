@@ -113,21 +113,6 @@ function renderSimpleList(targetId, items, type) {
   target.querySelectorAll('[data-delete-ticker]').forEach(button => button.addEventListener('click', () => deleteTicker(button.dataset.deleteTicker)));
 }
 
-const DEFAULT_DEMO_VIDEOS = [
-  { id: 'v-1', title: '🔴 SahiDon Is Live | PUBG MOBILE Kr | Noob Is Back 🤠', provider: 'youtube', publishedAt: '1/26/2021, 1:12:10 PM' },
-  { id: 'v-2', title: 'Thank You Guys For 600 SUBS & Support 🔥', provider: 'youtube', publishedAt: '8/31/2020, 7:39:50 PM' },
-  { id: 'v-3', title: 'Crafting Smithy 🛠️ & Metal Tools Unlocked! | ARK Survival', provider: 'youtube', publishedAt: '11/20/2020, 7:41:21 PM' },
-  { id: 'v-4', title: 'Watch me stream PUBG MOBILE on Omlet Arcade!', provider: 'youtube', publishedAt: '1/23/2021, 12:06:12 PM' },
-  { id: 'v-5', title: 'SahiDon Gaming Live Stream Highlights', provider: 'youtube', publishedAt: '1/21/2021, 9:52:51 AM' },
-  { id: 'v-6', title: '🔴 This Match Took Me From Ace To Conqueror 🏆', provider: 'youtube', publishedAt: '8/27/2020, 7:12:48 PM' },
-  { id: 'v-7', title: 'Playing TDM in PUBG Mobile (Insane Kills)', provider: 'youtube', publishedAt: '6/29/2019, 9:37:33 PM' },
-  { id: 'v-8', title: 'How To Tame A DODO Tutorial | ARK Mobile', provider: 'youtube', publishedAt: '10/31/2020, 7:43:49 PM' },
-  { id: 'v-9', title: 'YUGANTAR Exclusive: Global Tech & AI Revolution 2026', provider: 'youtube', publishedAt: '3/15/2026, 10:00:00 AM' },
-  { id: 'v-10', title: 'Special Report: Financial Markets & Interest Rate Analysis', provider: 'youtube', publishedAt: '3/14/2026, 2:30:00 PM' },
-  { id: 'v-11', title: 'Behind The Scenes: Investigative Journalism & AI Tools', provider: 'youtube', publishedAt: '3/12/2026, 4:00:00 PM' },
-  { id: 'v-12', title: 'Live Climate Summit & Renewable Energy Breakthroughs', provider: 'youtube', publishedAt: '3/10/2026, 11:20:00 AM' }
-];
-
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
@@ -153,7 +138,6 @@ async function loadAdminData() {
     const hiddenIds = new Set(controlsSnapshot.docs.filter(item => item.data().hidden === true).map(item => item.id));
     const allVideos = videosSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
     videoCache = allVideos.filter(item => item.active !== false && !hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
-    if (videoCache.length < 8) videoCache = [...videoCache, ...DEFAULT_DEMO_VIDEOS.filter(d => !videoCache.some(v => v.id === d.id))];
     hiddenVideoCache = allVideos.filter(item => item.active === false || hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
     const tickers = tickerCache = tickersSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.active !== false);
     tickerCache.sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));

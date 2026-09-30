@@ -6,7 +6,7 @@ return [
     // Metadata/link-only feeds reviewed for conservative aggregation.
     'allowExternalNews' => true,
     'youtubeApiKey' => '', // Keep private. Needed for live discovery and the subscriber counter.
-    'subscriberCountChannelId' => '', // Optional explicit channel ID.
+    'subscriberCountChannelId' => 'UC0w65H3lsOZiYJUzwqp0lBw', // Yugantar News channel.
     'subscriberCountChannelHandle' => '@Yugantar_News', // Public handle linked from the YUGANTAR News website; takes precedence over ID.
     'graphApiVersion' => 'v23.0',
     // Store headlines, short descriptions, dates, and source links only.
@@ -16,9 +16,9 @@ return [
     ],
     'youtubeChannels' => [
         [
-            'id' => 'client-youtube',
-            'name' => 'Client YouTube channel',
-            'channelId' => 'UC_REPLACE_WITH_CHANNEL_ID',
+            'id' => 'yugantar-youtube',
+            'name' => 'YUGANTAR News YouTube',
+            'channelId' => 'UC0w65H3lsOZiYJUzwqp0lBw',
             'active' => true
         ]
     ],
