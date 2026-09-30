@@ -11,12 +11,20 @@ import { SPONSORS } from './sponsors-data.js';
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
 const savedLanguageKey = 'yugantar_language';
+const DEMO_ARTICLE_IDS = new Set([
+  ...Array.from({ length: 6 }, (_, index) => `demo-art-${index + 1}`),
+  ...Array.from({ length: 10 }, (_, index) => `art-${index + 1}`),
+  ...Array.from({ length: 6 }, (_, index) => `art-art-${index + 1}`)
+]);
+const isDemoArticle = article => article?.isDemo === true || DEMO_ARTICLE_IDS.has(String(article?.id || ''));
 const getStoredLanguage = () => {
   try { return ['BN', 'EN', 'HI'].includes(localStorage.getItem(savedLanguageKey)) ? localStorage.getItem(savedLanguageKey) : 'BN'; }
   catch { return 'BN'; }
 };
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
 const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, tickers: [], tickerState: 'loading', saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
+let sponsorRotationTimer = null;
+let sponsorRotationPaused = false;
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
@@ -52,7 +60,8 @@ const translations = {
     jobReporter: 'District News Reporter (All 23 Districts)', jobReporterMeta: 'Field Reporting • Full-Time / Freelance • All WB Districts', jobVideo: 'Video Journalist & Anchor', jobVideoMeta: 'Media Studio • Full-Time • Kolkata / Howrah', jobEditor: 'Content Editor (Bengali / English / Hindi)', jobEditorMeta: 'Desk • Full-Time / Remote • Kolkata HQ', jobMarketing: 'Digital Marketing & Growth Specialist', jobMarketingMeta: 'Growth Team • Full-Time • Remote / Hybrid', applyNow: 'Apply Now',
     applicationHeading: 'Submit Candidate Application', applicationIntro: 'Fill out your details below and our recruitment desk will review your application.', jobPositionLabel: 'Applying For Position *', jobNameLabel: 'Candidate Full Name *', jobPhoneLabel: 'Mobile Number *', jobEmailLabel: 'Email Address *', jobDistrictLabel: 'District / Location *', jobPortfolioLabel: 'Portfolio / Resume Link (Optional)', jobPitchLabel: 'Why do you want to join YUGANTAR? (Short Note)', jobSubmit: '🚀 Submit Application', jobSuccess: '✅ Application received. Reference: {id}. Our recruitment desk will contact shortlisted candidates.', jobError: 'Application could not be submitted right now. Please try again.', jobUnavailable: 'The application service is temporarily unavailable.',
     jobOptionReporter: 'District News Reporter (Field)', jobOptionVideo: 'Video Journalist & Anchor', jobOptionEditor: 'Content Editor', jobOptionMarketing: 'Digital Marketing Specialist', jobOptionDeveloper: 'Web & Mobile Developer', jobOptionOther: 'Other / Open Application', jobNamePlaceholder: 'e.g. Sourav Mukherjee', jobPhonePlaceholder: '+91 9830012345', jobEmailPlaceholder: 'sourav@example.com', jobDistrictPlaceholder: 'e.g. Midnapore / Kolkata', jobPortfolioPlaceholder: 'https://drive.google.com/... or LinkedIn profile', jobPitchPlaceholder: 'Tell us briefly about your journalism experience, skills or background…',
-    youtubeSubscriberCount: 'YouTube subscribers',
+    youtubeSubscriberCount: 'Subscribers',
+    subscriberCountNote: 'YouTube rounds public subscriber counts above 1,000. The exact total is available in YouTube Studio.',
     opinionKicker: 'OPINION',
     newsletterKicker: 'NEWSLETTER',
     newsletterTitle: 'Get the daily bulletin',
@@ -81,11 +90,11 @@ const translations = {
     saveArticle: '☆ Save article',
     savedArticle: '★ Saved',
     viewSource: 'View original source',
-    podcastKicker: 'YUGANTAR AUDIO', podcastTitle: 'Featured podcasts', podcastLoading: 'Loading featured episodes…', podcastEmpty: 'No featured episodes yet. Check back soon.', podcastPlay: 'Listen to episode', podcastUnavailable: 'Featured podcasts are temporarily unavailable.',
+    podcastKicker: 'YUGANTAR AUDIO', podcastTitle: 'Featured podcasts', podcastLoading: 'Loading featured episodes…', podcastEmpty: 'No featured episodes yet. Check back soon.', podcastPlay: 'Listen to episode', podcastUnavailable: 'Featured podcasts are temporarily unavailable.', previousPodcast: 'Previous podcast', nextPodcast: 'Next podcast', previousSponsor: 'Previous sponsor', nextSponsor: 'Next sponsor', podcastNavigation: 'Podcast navigation', sponsorNavigation: 'Sponsor navigation',
     sponsorKicker: 'SPONSOR PARTNERS', sponsorTitle: 'Official Sponsors', sponsorSpotlight: 'SPOTLIGHT', sponsorAll: 'All', sponsorPlatinum: 'Platinum', sponsorGold: 'Gold', sponsorTech: 'Tech', sponsorEmpty: 'No Active Sponsors', sponsorEmptyHelp: 'Sponsor partner banners will automatically display here once assigned.', sponsorJoin: '🤝 Become a Partner', mapKicker: 'WEST BENGAL MAP', mapTitle: 'All 23 Districts', mapHint: 'Click District', mapIntro: 'Select any district on the interactive map to view specific news stories for that district.', searchDistrict: '🔍 Search district (e.g. Kolkata)…', liveUnavailable: 'No live stream configured.', noTicker: 'No active breaking updates.', tickerUnavailable: 'Breaking updates are temporarily unavailable.', noPoll: 'No active poll', pollSoon: 'Check back soon for new audience polls.', pollSubmitting: 'Submitting vote…', pollRecorded: 'Vote recorded. Your selection is highlighted.', pollUnavailable: 'Voting is temporarily unavailable.', categoryLabelNational: 'National', categoryLabelWorld: 'World', categoryLabelBusiness: 'Business', categoryLabelSports: 'Sports', categoryLabelTech: 'Tech', categoryLabelEntertainment: 'Entertainment', categoryLabelScience: 'Science', categoryLabelGeneral: 'General', mapUnavailable: 'Interactive map library could not be loaded. Use the district list below.', mapDataUnavailable: 'Map data could not be loaded. Use the district list below.'
   },
   BN: {
-    podcastKicker: 'যুগান্তর অডিও', podcastTitle: 'বিশেষ পডকাস্ট', podcastLoading: 'বিশেষ পর্ব লোড হচ্ছে…', podcastEmpty: 'এখনও কোনো বিশেষ পডকাস্ট নেই। শিগগিরই আবার দেখুন।', podcastPlay: 'পর্বটি শুনুন', podcastUnavailable: 'বিশেষ পডকাস্ট এই মুহূর্তে পাওয়া যাচ্ছে না।',
+    podcastKicker: 'যুগান্তর অডিও', podcastTitle: 'বিশেষ পডকাস্ট', podcastLoading: 'বিশেষ পর্ব লোড হচ্ছে…', podcastEmpty: 'এখনও কোনো বিশেষ পডকাস্ট নেই। শিগগিরই আবার দেখুন।', podcastPlay: 'পর্বটি শুনুন', podcastUnavailable: 'বিশেষ পডকাস্ট এই মুহূর্তে পাওয়া যাচ্ছে না।', previousPodcast: 'আগের পডকাস্ট', nextPodcast: 'পরের পডকাস্ট', previousSponsor: 'আগের স্পনসর', nextSponsor: 'পরের স্পনসর', podcastNavigation: 'পডকাস্ট নেভিগেশন', sponsorNavigation: 'স্পনসর নেভিগেশন',
     utilityLive: 'লাইভ নিউজ নেটওয়ার্ক',
     syncStatus: 'লাইভ ডাটা', tickerConnecting: 'লাইভ আপডেটের সঙ্গে সংযোগ করা হচ্ছে…',
     brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
@@ -116,7 +125,8 @@ const translations = {
     jobReporter: 'জেলা সংবাদ প্রতিবেদক (সমস্ত ২৩ জেলা)', jobReporterMeta: 'মাঠ সাংবাদিকতা • ফুল-টাইম / ফ্রিল্যান্স • পশ্চিমবঙ্গের সব জেলা', jobVideo: 'ভিডিও সাংবাদিক ও অ্যাঙ্কর', jobVideoMeta: 'মিডিয়া স্টুডিও • ফুল-টাইম • কলকাতা / হাওড়া', jobEditor: 'কনটেন্ট এডিটর (বাংলা / ইংরেজি / হিন্দি)', jobEditorMeta: 'ডেস্ক • ফুল-টাইম / রিমোট • কলকাতা সদর দপ্তর', jobMarketing: 'ডিজিটাল মার্কেটিং ও গ্রোথ বিশেষজ্ঞ', jobMarketingMeta: 'গ্রোথ টিম • ফুল-টাইম • রিমোট / হাইব্রিড', applyNow: 'আবেদন করুন',
     applicationHeading: 'চাকরির আবেদন জমা দিন', applicationIntro: 'আপনার তথ্য পূরণ করুন। আমাদের নিয়োগ ডেস্ক আপনার আবেদন পর্যালোচনা করবে।', jobPositionLabel: 'যে পদের জন্য আবেদন করছেন *', jobNameLabel: 'প্রার্থীর পুরো নাম *', jobPhoneLabel: 'মোবাইল নম্বর *', jobEmailLabel: 'ইমেইল ঠিকানা *', jobDistrictLabel: 'জেলা / অবস্থান *', jobPortfolioLabel: 'পোর্টফোলিও / রিজিউমে লিংক (ঐচ্ছিক)', jobPitchLabel: 'আপনি যুগান্তরে যোগ দিতে চান কেন? (সংক্ষিপ্ত নোট)', jobSubmit: '🚀 আবেদন জমা দিন', jobSuccess: '✅ আবেদন গ্রহণ করা হয়েছে। রেফারেন্স: {id}। বাছাই করা প্রার্থীদের নিয়োগ ডেস্ক যোগাযোগ করবে।', jobError: 'এই মুহূর্তে আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।', jobUnavailable: 'আবেদন পরিষেবা সাময়িকভাবে উপলব্ধ নয়।',
     jobOptionReporter: 'জেলা সংবাদ প্রতিবেদক (মাঠ)', jobOptionVideo: 'ভিডিও সাংবাদিক ও অ্যাঙ্কর', jobOptionEditor: 'কনটেন্ট এডিটর', jobOptionMarketing: 'ডিজিটাল মার্কেটিং বিশেষজ্ঞ', jobOptionDeveloper: 'ওয়েব ও মোবাইল ডেভেলপার', jobOptionOther: 'অন্যান্য / সাধারণ আবেদন', jobNamePlaceholder: 'যেমন: সৌরভ মুখার্জি', jobPhonePlaceholder: '+৯১ ৯৮৩০০১২৩৪৫', jobEmailPlaceholder: 'sourav@example.com', jobDistrictPlaceholder: 'যেমন: মেদিনীপুর / কলকাতা', jobPortfolioPlaceholder: 'https://drive.google.com/... অথবা LinkedIn প্রোফাইল', jobPitchPlaceholder: 'আপনার সাংবাদিকতা অভিজ্ঞতা, দক্ষতা বা পরিচয় সংক্ষেপে লিখুন…',
-    youtubeSubscriberCount: 'ইউটিউব সাবস্ক্রাইবার',
+    youtubeSubscriberCount: 'সাবস্ক্রাইবার',
+    subscriberCountNote: '১,০০০-এর বেশি হলে YouTube প্রকাশ্য সাবস্ক্রাইবার সংখ্যা সংক্ষিপ্ত করে দেখায়। সঠিক সংখ্যা YouTube Studio-তে পাওয়া যায়।',
     opinionKicker: 'জনমত',
     newsletterKicker: 'নিউজলেটার',
     newsletterTitle: 'দৈনিক বুলেটিন পান',
@@ -177,7 +187,8 @@ const translations = {
     jobReporter: 'जिला समाचार रिपोर्टर (सभी 23 जिले)', jobReporterMeta: 'फील्ड रिपोर्टिंग • फुल-टाइम / फ्रीलांस • सभी पश्चिम बंगाल जिले', jobVideo: 'वीडियो पत्रकार और एंकर', jobVideoMeta: 'मीडिया स्टूडियो • फुल-टाइम • कोलकाता / हावड़ा', jobEditor: 'कंटेंट एडिटर (बंगाली / अंग्रेजी / हिंदी)', jobEditorMeta: 'डेस्क • फुल-टाइम / रिमोट • कोलकाता मुख्यालय', jobMarketing: 'डिजिटल मार्केटिंग और ग्रोथ विशेषज्ञ', jobMarketingMeta: 'ग्रोथ टीम • फुल-टाइम • रिमोट / हाइब्रिड', applyNow: 'आवेदन करें',
     applicationHeading: 'उम्मीदवार का आवेदन जमा करें', applicationIntro: 'अपनी जानकारी भरें। हमारी भर्ती डेस्क आपके आवेदन की समीक्षा करेगी।', jobPositionLabel: 'किस पद के लिए आवेदन है *', jobNameLabel: 'उम्मीदवार का पूरा नाम *', jobPhoneLabel: 'मोबाइल नंबर *', jobEmailLabel: 'ईमेल पता *', jobDistrictLabel: 'जिला / स्थान *', jobPortfolioLabel: 'पोर्टफोलियो / रिज्यूमे लिंक (वैकल्पिक)', jobPitchLabel: 'आप युगांतर से क्यों जुड़ना चाहते हैं? (संक्षिप्त नोट)', jobSubmit: '🚀 आवेदन जमा करें', jobSuccess: '✅ आवेदन प्राप्त हुआ। संदर्भ: {id}। चयनित उम्मीदवारों से भर्ती डेस्क संपर्क करेगी।', jobError: 'अभी आवेदन जमा नहीं हो सका। कृपया फिर कोशिश करें।', jobUnavailable: 'आवेदन सेवा अस्थायी रूप से उपलब्ध नहीं है।',
     jobOptionReporter: 'जिला समाचार रिपोर्टर (फील्ड)', jobOptionVideo: 'वीडियो पत्रकार और एंकर', jobOptionEditor: 'कंटेंट एडिटर', jobOptionMarketing: 'डिजिटल मार्केटिंग विशेषज्ञ', jobOptionDeveloper: 'वेब और मोबाइल डेवलपर', jobOptionOther: 'अन्य / खुला आवेदन', jobNamePlaceholder: 'जैसे: सौरव मुखर्जी', jobPhonePlaceholder: '+91 9830012345', jobEmailPlaceholder: 'sourav@example.com', jobDistrictPlaceholder: 'जैसे: मिदनापुर / कोलकाता', jobPortfolioPlaceholder: 'https://drive.google.com/... या LinkedIn प्रोफ़ाइल', jobPitchPlaceholder: 'अपने पत्रकारिता अनुभव, कौशल या पृष्ठभूमि के बारे में संक्षेप में बताएं…',
-    youtubeSubscriberCount: 'YouTube सब्सक्राइबर',
+    youtubeSubscriberCount: 'सब्सक्राइबर',
+    subscriberCountNote: 'YouTube 1,000 से अधिक सार्वजनिक सब्सक्राइबर संख्या को संक्षिप्त करके दिखाता है। सही संख्या YouTube Studio में उपलब्ध है।',
     opinionKicker: 'ओपिनियन',
     newsletterKicker: 'न्यूज़लेटर',
     newsletterTitle: 'दैनिक बुलेटिन प्राप्त करें',
@@ -205,7 +216,7 @@ const translations = {
     emptySaved: 'आपकी सेव की गई सूची खाली है।',
     saveArticle: '☆ सेव करें',
     savedArticle: '★ सेव किया गया',
-    viewSource: 'मूल स्रोत देखें', podcastKicker: 'युगांतर ऑडियो', podcastTitle: 'चुनिंदा पॉडकास्ट', podcastLoading: 'चुनिंदा एपिसोड लोड हो रहे हैं…', podcastEmpty: 'अभी कोई चुनिंदा पॉडकास्ट नहीं है। जल्द फिर देखें।', podcastPlay: 'एपिसोड सुनें', podcastUnavailable: 'चुनिंदा पॉडकास्ट अभी उपलब्ध नहीं हैं।',
+    viewSource: 'मूल स्रोत देखें', podcastKicker: 'युगांतर ऑडियो', podcastTitle: 'चुनिंदा पॉडकास्ट', podcastLoading: 'चुनिंदा एपिसोड लोड हो रहे हैं…', podcastEmpty: 'अभी कोई चुनिंदा पॉडकास्ट नहीं है। जल्द फिर देखें।', podcastPlay: 'एपिसोड सुनें', podcastUnavailable: 'चुनिंदा पॉडकास्ट अभी उपलब्ध नहीं हैं।', previousPodcast: 'पिछला पॉडकास्ट', nextPodcast: 'अगला पॉडकास्ट', previousSponsor: 'पिछला प्रायोजक', nextSponsor: 'अगला प्रायोजक', podcastNavigation: 'पॉडकास्ट नेविगेशन', sponsorNavigation: 'प्रायोजक नेविगेशन',
     sponsorKicker: 'प्रायोजक भागीदार', sponsorTitle: 'आधिकारिक प्रायोजक', sponsorAll: 'सभी', sponsorPlatinum: 'प्लैटिनम', sponsorGold: 'गोल्ड', sponsorTech: 'टेक', sponsorEmpty: 'कोई सक्रिय प्रायोजक नहीं', sponsorEmptyHelp: 'प्रायोजक साझेदार जुड़ने पर उनके बैनर यहां दिखेंगे।', sponsorJoin: '🤝 भागीदार बनें', mapKicker: 'पश्चिम बंगाल का नक्शा', mapTitle: 'सभी 23 जिले', mapHint: 'जिला चुनें', mapIntro: 'जिले की खबरें देखने के लिए नक्शे पर एक जिला चुनें।', searchDistrict: '🔍 जिला खोजें…', liveUnavailable: 'कोई लाइव स्ट्रीम सेट नहीं है।', noTicker: 'अभी कोई ब्रेकिंग अपडेट नहीं है।', tickerUnavailable: 'ब्रेकिंग अपडेट अस्थायी रूप से उपलब्ध नहीं हैं।', noPoll: 'कोई सक्रिय पोल नहीं', pollSoon: 'नए पोल के लिए बाद में फिर देखें।', pollSubmitting: 'आपका वोट जमा हो रहा है…', pollRecorded: 'वोट दर्ज हो गया। आपका चयन हाइलाइट किया गया है।', pollUnavailable: 'अभी वोट करना संभव नहीं है।', categoryLabelNational: 'राष्ट्रीय', categoryLabelWorld: 'दुनिया', categoryLabelBusiness: 'व्यापार', categoryLabelSports: 'खेल', categoryLabelTech: 'टेक', categoryLabelEntertainment: 'मनोरंजन', categoryLabelScience: 'विज्ञान', categoryLabelGeneral: 'सामान्य', mapUnavailable: 'नक्शा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।', mapDataUnavailable: 'नक्शे का डेटा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।'
   }
 };
@@ -217,6 +228,9 @@ translations.HI.districtSearchNoResults = 'कोई मिलता-जुल�
 function updateStaticLanguage(lang = state.language) {
   const dict = translations[lang] || translations.EN;
   document.documentElement.lang = lang === 'BN' ? 'bn' : (lang === 'HI' ? 'hi' : 'en');
+  $('podcasts-sidebar')?.querySelector('.carousel-controls')?.setAttribute('aria-label', dict.podcastNavigation);
+  $('podcast-prev')?.setAttribute('aria-label', dict.previousPodcast);
+  $('podcast-next')?.setAttribute('aria-label', dict.nextPodcast);
   $('subscribers-btn')?.setAttribute('title', dict.youtubeSubscriberCount);
   $('subscribers-btn')?.setAttribute('aria-label', dict.youtubeSubscriberCount);
   $('jobs-btn')?.setAttribute('title', dict.careersTitle);
@@ -248,8 +262,44 @@ function renderTicker() {
   const dict = translations[state.language] || translations.EN;
   if (state.tickerState === 'loading') target.textContent = dict.tickerConnecting;
   else if (state.tickerState === 'error') target.textContent = dict.tickerUnavailable;
-  else if (!state.tickers.length) target.textContent = dict.noTicker;
-  else target.innerHTML = state.tickers.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join(' <b>•</b> ');
+  else {
+    const items = state.tickers.length ? state.tickers : [{ title: dict.noTicker }];
+    const headlines = items.map(item => `<span>${escapeHtml(text(item.title))}</span>`).join('<b aria-hidden="true">•</b>');
+    target.innerHTML = `<div class="ticker-track"><div class="ticker-group">${headlines}</div><div class="ticker-group" aria-hidden="true">${headlines}</div></div>`;
+  }
+}
+
+function syncCarouselControls(viewportId, itemSelector, positionId, previousId, nextId) {
+  const viewport = $(viewportId);
+  const position = $(positionId);
+  const previous = $(previousId);
+  const next = $(nextId);
+  if (!viewport || !position || !previous || !next) return;
+  const items = [...viewport.querySelectorAll(itemSelector)];
+  const index = items.length ? Math.min(items.length - 1, Math.round(viewport.scrollLeft / Math.max(1, viewport.clientWidth))) : 0;
+  position.textContent = items.length ? `${index + 1} / ${items.length}` : '0 / 0';
+  previous.disabled = index <= 0;
+  next.disabled = !items.length || index >= items.length - 1;
+}
+
+function bindSidebarCarousel(viewportId, itemSelector, positionId, previousId, nextId) {
+  const viewport = $(viewportId);
+  const previous = $(previousId);
+  const next = $(nextId);
+  if (!viewport || !previous || !next) return;
+  const update = () => syncCarouselControls(viewportId, itemSelector, positionId, previousId, nextId);
+  const move = direction => {
+    const items = viewport.querySelectorAll(itemSelector);
+    if (!items.length) return;
+    const index = Math.round(viewport.scrollLeft / Math.max(1, viewport.clientWidth));
+    const destination = Math.max(0, Math.min(items.length - 1, index + direction));
+    viewport.scrollTo({ left: destination * viewport.clientWidth, behavior: 'smooth' });
+  };
+  previous.addEventListener('click', () => move(-1));
+  next.addEventListener('click', () => move(1));
+  viewport.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
 }
 
 function renderSubscriberCount() {
@@ -258,7 +308,7 @@ function renderSubscriberCount() {
   const header = $('header-sub-count');
   const modal = $('modal-sub-count');
   if (header) header.textContent = Number.isSafeInteger(count) && count >= 0
-    ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(count)
+    ? new Intl.NumberFormat(locale).format(count)
     : '—';
   if (modal) modal.textContent = Number.isSafeInteger(count) && count >= 0
     ? new Intl.NumberFormat(locale).format(count)
@@ -336,6 +386,7 @@ function toggleSaved(id) {
 }
 
 function renderSaved() {
+  state.saved = state.saved.filter(article => !isDemoArticle(article));
   const count = $('saved-count');
   if (count) count.textContent = String(state.saved.length);
   const target = $('saved-list');
@@ -368,7 +419,7 @@ function renderArticles() {
   const target = $('articles');
   const term = state.search.trim().toLowerCase();
   const dict = translations[state.language] || translations.EN;
-  const articles = state.articles.filter(article => articleAvailableInLanguage(article) && !legacyWireNames.has(article.sourceAgency) && article.sourceType !== 'wire').filter(article => {
+  const articles = state.articles.filter(article => !isDemoArticle(article) && articleAvailableInLanguage(article) && !legacyWireNames.has(article.sourceAgency) && article.sourceType !== 'wire').filter(article => {
     const categoryMatch = state.category === 'all' || article.category === state.category;
     const searchable = `${articleText(article, 'title')} ${articleText(article, 'summary')} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
     return categoryMatch && (!term || searchable.includes(term));
@@ -396,9 +447,10 @@ function openArticle(id) {
 }
 
 function renderHero() {
-  const availableArticles = state.articles.filter(articleAvailableInLanguage);
+  const availableArticles = state.articles.filter(article => !isDemoArticle(article) && articleAvailableInLanguage(article));
   const hero = availableArticles.find(article => article.hero) || availableArticles[0];
   const target = $('hero-card');
+  if (!target) return;
   if (!hero) { target.className = 'hero-card empty-state'; target.textContent = (translations[state.language] || translations.EN).emptyArticles; return; }
   target.className = 'hero-card';
   target.innerHTML = `${imageMarkup(hero.image, articleText(hero, 'title'), 'FEATURED')}<div class="hero-copy"><span class="tag">${escapeHtml(hero.breaking ? 'BREAKING' : 'FEATURED')}</span><h1>${escapeHtml(articleText(hero, 'title'))}</h1><p>${escapeHtml(articleText(hero, 'summary'))}</p><button class="button" data-hero-id="${escapeHtml(hero.id)}">Read full story</button></div>`;
@@ -409,123 +461,10 @@ function renderHero() {
 function renderHeadlineStrip() {
   const target = $('headline-strip');
   if (!target) return;
-  const items = state.articles.filter(articleAvailableInLanguage).slice(0, 5);
+  const items = state.articles.filter(article => !isDemoArticle(article) && articleAvailableInLanguage(article)).slice(0, 5);
   target.innerHTML = items.length ? items.map((article, index) => `<button class="headline-item" data-headline-id="${escapeHtml(article.id)}" type="button"><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(articleText(article, 'title'))}</strong></button>`).join('') : `<span class="muted">${escapeHtml((translations[state.language] || translations.EN).emptyArticles)}</span>`;
   target.querySelectorAll('[data-headline-id]').forEach(button => button.addEventListener('click', () => openArticle(button.dataset.headlineId)));
 }
-
-const DEFAULT_DEMO_ARTICLES = [
-  {
-    id: 'demo-art-1',
-    hero: true,
-    breaking: true,
-    category: 'national',
-    title: {
-      EN: 'California Supreme Court orders Riverside County Sheriff Bianco to return 650,000 seized ballots',
-      BN: 'ক্যালিফোর্নিয়ার সুপ্রিম কোর্টের গুরুত্বপূর্ণ রায়: ৬,৫০,০০০ ব্যালাট অবিলম্বে ফেরতের নির্দেশ',
-      HI: 'कैलिफोर्निया सुप्रीम कोर्ट का बड़ा आदेश: 6,50,000 जब्त मतपत्र तुरंत वापस किए जाएं'
-    },
-    summary: {
-      EN: 'The state supreme court issued an emergency injunction ordering the immediate return of seized ballots in the county election oversight probe.',
-      BN: 'কাউন্টি নির্বাচন তদারকি তদন্তে রাজ্য সুপ্রিম কোর্ট বাজেয়াপ্ত ব্যালাট অবিলম্বে ফেরতের জরুরি নির্দেশ জারি করেছে।',
-      HI: 'राज्य के सर्वोच्च न्यायालय ने काउंटी चुनाव जांच में जब्त मतपत्रों की तत्काल वापसी का आदेश जारी किया।'
-    },
-    author: 'YUGANTAR Desk',
-    sourceAgency: 'YUGANTAR News',
-    image: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80',
-    publishedAt: new Date().toISOString()
-  },
-  {
-    id: 'demo-art-2',
-    category: 'world',
-    title: {
-      EN: 'South-East Asia Travel News, Guides, Ideas & Tips',
-      BN: 'দক্ষিণ-পূর্ব এশিয়া ভ্রমণ সংবাদ, গাইড ও গুরুত্বপূর্ণ টিপস',
-      HI: 'दक्षिण-पूर्व एशिया यात्रा समाचार, गाइड और प्रमुख टिप्स'
-    },
-    summary: {
-      EN: 'Comprehensive guide to exploring tropical heritage sites, island corridors, and cultural hubs across South-East Asia.',
-      BN: 'দক্ষিণ-পূর্ব এশিয়ার ঐতিহাসিক ঐতিহ্য, দ্বীপ করিডোর ও সাংস্কৃতিক কেন্দ্র ভ্রমণের পূর্ণাঙ্গ গাইড।',
-      HI: 'दक्षिण-पूर्व एशिया के ऐतिहासिक धरोहरों, द्वीप गलियारों और सांस्कृतिक केंद्रों का विस्तृत गाइड।'
-    },
-    author: 'Traveller Desk',
-    sourceAgency: 'YUGANTAR Global',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    publishedAt: new Date(Date.now() - 3600000 * 4).toISOString()
-  },
-  {
-    id: 'demo-art-3',
-    category: 'tech',
-    title: {
-      EN: 'Summit Discussion: Solera, BYD, and CITS Chart the Future of EV Mobility',
-      BN: 'সামিট আলোচনা: ইভি মোবিলিটি ও গ্রিন অটোমোটিভ প্রযুক্তির নতুন ভবিষ্যৎ',
-      HI: 'शिखर सम्मेलन: ईवी मोबिलिटी और ग्रीन ऑटोमोटिव तकनीक का नया भविष्य'
-    },
-    summary: {
-      EN: 'Industry leaders convene at global summit to outline next-generation electric mobility, battery grids, and autonomous fleet management.',
-      BN: 'গ্লোবাল সামিটে বৈদ্যুতিক গতিশীলতা, ব্যাটারি গ্রিড ও স্বায়ত্তশাসিত যান ব্যবস্থাপনার রূপরেখা তৈরি।',
-      HI: 'ग्लोबल समिट में इलेक्ट्रिक मोबिलिटी, बैटरी ग्रिड और स्वायत्त वाहन प्रबंधन की रूपरेखा तैयार।'
-    },
-    author: 'Tech Bureau',
-    sourceAgency: 'YUGANTAR Tech',
-    image: 'https://images.unsplash.com/photo-1558441719-aa3496743f88?auto=format&fit=crop&w=800&q=80',
-    publishedAt: new Date(Date.now() - 3600000 * 8).toISOString()
-  },
-  {
-    id: 'demo-art-4',
-    category: 'national',
-    title: {
-      EN: 'Boy dies in hospital after being shot in the face during altercation',
-      BN: 'বিবাদের জেরে গুলিবদ্ধ তরুণের হাসপাতালে মৃত্যু, এলাকায় তীব্র চাঞ্চল্য',
-      HI: 'विवाद के दौरान गोली लगने से अस्पताल में युवक की मौत, इलाके में तनाव'
-    },
-    summary: {
-      EN: 'Police launch full investigation into the fatal incident as local community demands strict safety enforcement and forensic analysis.',
-      BN: 'ঘাতক ঘটনার তদন্তে নেমেছে পুলিশ, এলাকায় নিরাপত্তা জোরদার ও ফরেনসিক দল মোতায়েন।',
-      HI: 'पुलिस ने घातक घटना की गहन जांच शुरू की, क्षेत्र में सुरक्षा बढ़ाई गई और फोरेंसिक जांच जारी।'
-    },
-    author: 'Crime Desk',
-    sourceAgency: 'YUGANTAR News',
-    image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80',
-    publishedAt: new Date(Date.now() - 3600000 * 12).toISOString()
-  },
-  {
-    id: 'demo-art-5',
-    category: 'sports',
-    title: {
-      EN: 'NAMI Walks Rome this weekend for Mental Health Awareness',
-      BN: 'মানসিক স্বাস্থ্য সচেতনতায় এই সপ্তাহান্তে বিশেষ হাঁটা কর্মসূচি',
-      HI: 'मानसिक स्वास्थ्य जागरूकता के लिए इस सप्ताहांत विशेष वॉक का आयोजन'
-    },
-    summary: {
-      EN: 'Thousands of participants gather to advocate for accessible healthcare, community wellness, and mental resilience programs.',
-      BN: 'সহলভ্য স্বাস্থ্যসেবা, সামাজিক কল্যাণ ও মানসিক সহনশীলতা গড়ে তুলতে হাজারো মানুষের অংশগ্রহণ।',
-      HI: 'सुलभ स्वास्थ्य सेवा, सामाजिक कल्याण और मानसिक मजबूती के लिए हजारों लोग एकजुट हुए।'
-    },
-    author: 'Health Desk',
-    sourceAgency: 'YUGANTAR Life',
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
-    publishedAt: new Date(Date.now() - 3600000 * 16).toISOString()
-  },
-  {
-    id: 'demo-art-6',
-    category: 'business',
-    title: {
-      EN: 'Global Stock Markets Rally as Central Banks Announce Economic Growth Measures',
-      BN: 'বিশ্ব শেয়ার বাজারে চাঙ্গা ভাব, কেন্দ্রীয় ব্যাংকের অর্থনৈতিক বৃদ্ধির নতুন বার্তা',
-      HI: 'वैश्विक शेयर बाजारों में तेजी, केंद्रीय बैंकों ने दिए आर्थिक विकास के संकेत'
-    },
-    summary: {
-      EN: 'Benchmark indices hit multi-month highs following positive manufacturing output data and lower inflation projections across key markets.',
-      BN: 'উৎপাদন বৃদ্ধি এবং মূল্যস্ফীতি কমার তথ্যের পর প্রধান অর্থনৈতিক সূচকগুলিতে ব্যাপক উন্নতি।',
-      HI: 'विनिर्माण डेटा में सुधार और मुद्रास्फीति में कमी के चलते शेयर बाजारों में रिकॉर्ड बढ़त।'
-    },
-    author: 'Finance Bureau',
-    sourceAgency: 'YUGANTAR Business',
-    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
-    publishedAt: new Date(Date.now() - 3600000 * 20).toISOString()
-  }
-];
 
 const DEFAULT_DEMO_VIDEOS = [
   { id: 'v-1', title: '🔴 SahiDon Is Live | PUBG MOBILE Kr | Noob Is Back 🤠', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade! Follow me for more: https://omlet.gg/d/profile/sahidongamingyt...', publishedAt: '1/26/2021, 1:12:10 PM' },
@@ -599,10 +538,10 @@ async function loadArticles() {
   try {
     const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
     const docs = result.docs.map(item => ({ id: item.id, ...item.data() }));
-    state.articles = docs.length ? docs : DEFAULT_DEMO_ARTICLES;
+    state.articles = docs.filter(article => !isDemoArticle(article));
   } catch (error) {
-    console.warn('Articles query failed, loading default newsroom articles:', error);
-    state.articles = DEFAULT_DEMO_ARTICLES;
+    console.warn('Articles query failed; showing an empty newsroom:', error);
+    state.articles = [];
   } finally {
     renderArticles(); renderHero(); renderHeadlineStrip();
   }
@@ -626,11 +565,11 @@ function startRealtimeListeners() {
   }, () => { state.tickerState = 'error'; renderTicker(); });
   onSnapshot(query(collection(db, 'sponsors'), where('active', '==', true)), snapshot => {
     state.sponsors = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
-    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+    renderSponsors();
   }, error => {
     console.warn('Sponsor data unavailable; using local sponsor fallback:', error);
     state.sponsors = SPONSORS;
-    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+    renderSponsors();
   });
   onSnapshot(query(collection(db, 'liveStreams'), where('active', '==', true), limit(1)), snapshot => {
     renderLiveStream(snapshot.docs[0]?.data() || null);
@@ -710,7 +649,7 @@ function bindUi() {
     try { localStorage.setItem(savedLanguageKey, state.language); } catch {}
     updateStaticLanguage(state.language);
     renderFeaturedPodcasts();
-    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+    renderSponsors();
     renderWestBengalMap(selectedRegion);
     renderDistrictList($('wb-district-search')?.value || '', selectedRegion);
     renderArticles();
@@ -725,7 +664,7 @@ function bindUi() {
     if (langSelect) langSelect.value = state.language;
     updateStaticLanguage(state.language);
     renderFeaturedPodcasts();
-    renderSponsors(document.querySelector('[data-sponsor-cat].active')?.dataset.sponsorCat || 'all');
+    renderSponsors();
     renderWestBengalMap(selectedRegion);
     renderDistrictList($('wb-district-search')?.value || '', selectedRegion);
     renderArticles(); renderHero(); renderHeadlineStrip(); renderSaved();
@@ -743,13 +682,17 @@ function bindUi() {
   $('close-sponsor-dialog')?.addEventListener('click', () => $('sponsor-dialog').close());
 
   // Sponsors Sidebar setup
-  renderSponsors('all');
-  document.querySelectorAll('[data-sponsor-cat]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-sponsor-cat]').forEach(b => b.classList.toggle('active', b === btn));
-      renderSponsors(btn.dataset.sponsorCat);
-    });
+  bindSidebarCarousel('featured-podcasts', '.podcast-episode', 'podcast-position', 'podcast-prev', 'podcast-next');
+  const sponsorViewport = $('sponsors-animated-box');
+  sponsorViewport?.addEventListener('mouseenter', () => {
+    sponsorRotationPaused = true;
+    window.clearInterval(sponsorRotationTimer);
   });
+  sponsorViewport?.addEventListener('mouseleave', () => {
+    sponsorRotationPaused = false;
+    startSponsorRotation();
+  });
+  renderSponsors();
 
   $('become-sponsor-btn')?.addEventListener('click', () => {
     openSponsorModal(SPONSORS[0].id);
@@ -850,10 +793,10 @@ function setupHeaderModals() {
   });
 }
 
-function renderSponsors(category = 'all') {
+function renderSponsors() {
   const container = $('sponsors-animated-box');
   if (!container) return;
-  const filtered = category === 'all' ? state.sponsors : state.sponsors.filter(s => s.category === category);
+  const filtered = state.sponsors;
   const dict = translations[state.language] || translations.EN;
   
   if (!filtered || !filtered.length) {
@@ -864,6 +807,8 @@ function renderSponsors(category = 'all') {
         <p>${escapeHtml(dict.sponsorEmptyHelp)}</p>
       </div>
     `;
+    container.scrollLeft = 0;
+    startSponsorRotation();
     return;
   }
 
@@ -893,10 +838,32 @@ function renderSponsors(category = 'all') {
     </article>
   `;
   }).join('');
+  container.scrollLeft = 0;
 
   container.querySelectorAll('[data-sponsor-id]').forEach(card => {
     card.addEventListener('click', () => openSponsorModal(card.dataset.sponsorId));
   });
+  startSponsorRotation();
+}
+
+function startSponsorRotation() {
+  window.clearInterval(sponsorRotationTimer);
+  const viewport = $('sponsors-animated-box');
+  if (!viewport) return;
+  const cards = [...viewport.querySelectorAll('.sponsor-card')];
+  if (!cards.length) return;
+  const markCurrent = () => {
+    const index = Math.min(cards.length - 1, Math.round(viewport.scrollLeft / Math.max(1, viewport.clientWidth)));
+    cards.forEach((card, cardIndex) => card.classList.toggle('is-current', cardIndex === index));
+  };
+  markCurrent();
+  if (cards.length < 2 || sponsorRotationPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  sponsorRotationTimer = window.setInterval(() => {
+    const current = Math.round(viewport.scrollLeft / Math.max(1, viewport.clientWidth));
+    const next = (current + 1) % cards.length;
+    cards.forEach((card, index) => card.classList.toggle('is-current', index === next));
+    viewport.scrollTo({ left: next * viewport.clientWidth, behavior: 'smooth' });
+  }, 5200);
 }
 
 function renderFeaturedPodcasts(items = state.podcasts) {
@@ -905,15 +872,19 @@ function renderFeaturedPodcasts(items = state.podcasts) {
   const dict = translations[state.language] || translations.EN;
   if (!items.length) {
     target.innerHTML = `<p class="podcast-empty">${escapeHtml(dict.podcastEmpty)}</p>`;
+    target.scrollLeft = 0;
+    syncCarouselControls('featured-podcasts', '.podcast-episode', 'podcast-position', 'podcast-prev', 'podcast-next');
     return;
   }
-  target.innerHTML = items.slice(0, 3).map(episode => {
+  target.innerHTML = items.map(episode => {
     const title = text(episode.title);
     const description = text(episode.summary || episode.description);
     const audioUrl = safeUrl(episode.audioUrl || episode.episodeUrl || episode.mediaUrl);
     const imageUrl = safeUrl(episode.coverImage || episode.image);
     return `<article class="podcast-episode">${imageUrl ? `<img class="podcast-cover" src="${escapeHtml(imageUrl)}" alt="">` : '<span class="podcast-cover podcast-cover-fallback" aria-hidden="true">🎙️</span>'}<div class="podcast-episode-copy"><h3>${escapeHtml(title || dict.podcastTitle)}</h3>${description ? `<p>${escapeHtml(description)}</p>` : ''}${audioUrl ? `<audio controls preload="none" aria-label="${escapeHtml(dict.podcastPlay)}: ${escapeHtml(title)}"><source src="${escapeHtml(audioUrl)}"></audio>` : ''}</div></article>`;
   }).join('');
+  target.scrollLeft = 0;
+  syncCarouselControls('featured-podcasts', '.podcast-episode', 'podcast-position', 'podcast-prev', 'podcast-next');
 }
 
 async function loadFeaturedPodcasts() {
@@ -998,9 +969,10 @@ async function renderWestBengalMap(filterRegion = 'all') {
   if (!container) return;
 
   const regionNamesBn = { all: 'সব জেলা', 'North Bengal': 'উত্তরবঙ্গ', 'Central Bengal': 'মধ্যবঙ্গ', 'Western Rarh': 'পশ্চিম রাঢ়', 'South Bengal': 'দক্ষিণবঙ্গ', 'Coastal Delta': 'উপকূলীয় বদ্বীপ' };
+  const regionNamesHi = { all: 'सभी बंगाल', 'North Bengal': 'उत्तर बंगाल', 'Central Bengal': 'मध्य बंगाल', 'Western Rarh': 'पश्चिम राढ़', 'South Bengal': 'दक्षिण बंगाल', 'Coastal Delta': 'तटीय डेल्टा' };
   const regionPills = WB_REGIONS.map(r => `
     <button class="region-pill ${r.id === filterRegion ? 'active' : ''}" data-region-id="${r.id}">
-      ${escapeHtml(state.language === 'BN' ? (regionNamesBn[r.id] || r.name) : r.name)}
+      ${escapeHtml(state.language === 'BN' ? (regionNamesBn[r.id] || r.name) : state.language === 'HI' ? (regionNamesHi[r.id] || r.name) : r.name)}
     </button>
   `).join('');
 
@@ -1101,7 +1073,7 @@ setInterval(updateClock, 1000);
 if (!firebaseConfigured) {
   showSetupMessage();
   renderFeaturedPodcasts([]);
-  state.articles = DEFAULT_DEMO_ARTICLES;
+  state.articles = [];
   renderArticles();
   renderHero();
   renderHeadlineStrip();
@@ -1118,7 +1090,7 @@ if (!firebaseConfigured) {
     loadVideosAndPoll();
   } catch (e) {
     console.warn('Firebase init error, using fallback feeds:', e);
-    state.articles = DEFAULT_DEMO_ARTICLES;
+    state.articles = [];
     renderArticles();
     renderHero();
     renderHeadlineStrip();

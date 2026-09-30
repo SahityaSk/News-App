@@ -12,7 +12,7 @@
   <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
   <title>YUGANTAR News</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./styles.css?v=20260929-social">
+  <link rel="stylesheet" href="./styles.css?v=20260930-language-ticker">
 </head>
 
 <body>
@@ -28,7 +28,7 @@
     <div class="shell header-row">
       <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
         <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
-        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small class="brand-slogan"><span data-i18n="brandSlogan">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span></small></span>
+        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small class="brand-slogan"><span class="brand-slogan-track"><span data-i18n="brandSlogan">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span><span data-i18n="brandSlogan" aria-hidden="true">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span></span></small></span>
       </a>
       <div class="header-actions">
         <label class="sr-only" for="language">Language</label>
@@ -42,9 +42,9 @@
         <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch theme"
           title="Switch theme"><svg class="theme-icon-svg moon-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg></button>
         
-        <div id="subscribers-btn" class="header-action-btn subscribers-btn" role="status" aria-label="YouTube subscribers" title="YouTube subscribers">
+        <div id="subscribers-btn" class="header-action-btn subscribers-btn" role="status" aria-label="Subscribers" title="Subscribers">
           <svg class="sub-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          <span class="sub-badge"><strong id="header-sub-count">—</strong> <span data-i18n="youtubeSubscriberCount">YouTube subscribers</span></span>
+          <span class="sub-badge"><strong id="header-sub-count">—</strong> <span data-i18n="youtubeSubscriberCount">Subscribers</span></span>
         </div>
 
         <button id="jobs-btn" class="header-action-btn jobs-btn" type="button" title="Careers & Job Opportunities">
@@ -67,65 +67,14 @@
   <main>
     <section class="ticker" aria-label="Breaking news">
       <div class="shell ticker-row"><strong data-i18n="tickerBreaking">BREAKING</strong>
-        <div id="ticker-items" data-i18n="tickerConnecting">Connecting to live updates…</div>
+        <div id="ticker-items" data-i18n="tickerConnecting" aria-live="polite">Connecting to live updates…</div>
       </div>
     </section>
 
-    <!-- 3-Column Layout: Extreme Left (Sponsors) | Center (Newsroom) | Extreme Right (West Bengal Map) -->
+    <!-- Main stories first, with live coverage and community tools in the sidebars. -->
     <div class="main-layout-container">
 
-      <!-- FEATURED PODCASTS AND SPONSOR PARTNERS -->
-      <div class="left-sidebar-stack">
-      <aside id="podcasts-sidebar" class="podcasts-sidebar panel" aria-labelledby="podcasts-title">
-        <div class="sidebar-header">
-          <span class="section-kicker" data-i18n="podcastKicker">YUGANTAR AUDIO</span>
-          <h2 id="podcasts-title" data-i18n="podcastTitle">Featured podcasts</h2>
-        </div>
-        <div id="featured-podcasts" class="featured-podcasts" aria-live="polite">
-          <p class="podcast-empty" data-i18n="podcastLoading">Loading featured episodes…</p>
-        </div>
-      </aside>
-
-      <aside id="sponsors-sidebar" class="sponsors-sidebar panel">
-        <div class="sidebar-header">
-          <span class="section-kicker" data-i18n="sponsorKicker">SPONSOR PARTNERS</span>
-          <h2 data-i18n="sponsorTitle">Official Sponsors</h2>
-          <span class="sponsor-live-badge"><i></i><span data-i18n="sponsorSpotlight">SPOTLIGHT</span></span>
-        </div>
-        <div class="sponsor-tabs">
-          <button class="sponsor-tab active" data-sponsor-cat="all" data-i18n="sponsorAll">All</button>
-          <button class="sponsor-tab" data-sponsor-cat="platinum" data-i18n="sponsorPlatinum">Platinum</button>
-          <button class="sponsor-tab" data-sponsor-cat="gold" data-i18n="sponsorGold">Gold</button>
-          <button class="sponsor-tab" data-sponsor-cat="tech" data-i18n="sponsorTech">Tech</button>
-        </div>
-
-        <div id="sponsors-animated-box" class="sponsors-animated-container">
-          <!-- Dynamically loaded from sponsors-data.js -->
-        </div>
-
-        <button id="become-sponsor-btn" class="button button-outline sponsor-join-btn" type="button">
-          <span data-i18n="sponsorJoin">🤝 Become a Partner</span>
-        </button>
-      </aside>
-      </div>
-
-      <!-- CENTER COLUMN: MAIN NEWSROOM -->
       <div class="main-news-column">
-        <section class="hero-section" aria-label="Featured coverage">
-          <div id="hero-card" class="hero-card empty-state">Loading the latest newsroom update…</div>
-          <aside class="live-card">
-            <div class="live-card-head">
-              <div class="section-kicker" data-i18n="liveTvKicker">LIVE TV</div><span class="live-pill"><i></i>24/7</span>
-            </div>
-            <h2 id="live-title" data-i18n="liveTvTitle">Live channel</h2>
-            <div id="live-player" class="media-placeholder">No live stream configured.</div>
-            <p id="live-meta" class="muted" data-i18n="liveTvMeta">The editorial desk can change the stream URL without redeploying the frontend.
-            </p>
-            <a id="live-action" class="button button-light hidden" href="#live-player" target="_blank"
-              rel="noopener noreferrer" data-i18n="liveTvAction">Open live coverage</a>
-          </aside>
-        </section>
-
         <section class="headline-strip-section" aria-label="Top developments">
           <div class="strip-label"><span class="section-kicker" data-i18n="inFocusKicker">IN FOCUS</span><strong data-i18n="inFocusTitle">Top developments</strong></div>
           <div id="headline-strip" class="headline-strip"><span class="muted">Loading the latest developments…</span></div>
@@ -177,6 +126,46 @@
               type="submit" data-i18n="subscribeBtn">Subscribe</button></form>
           <p id="newsletter-status" class="status" aria-live="polite"></p>
         </section>
+      </div>
+
+      <div class="left-sidebar-stack">
+        <aside class="live-card sidebar-live-card" aria-labelledby="live-title">
+          <div class="live-card-head">
+            <div class="section-kicker" data-i18n="liveTvKicker">LIVE TV</div><span class="live-pill"><i></i>24/7</span>
+          </div>
+          <h2 id="live-title" data-i18n="liveTvTitle">Live channel</h2>
+          <div id="live-player" class="media-placeholder">No live stream configured.</div>
+          <p id="live-meta" class="muted" data-i18n="liveTvMeta">The editorial desk can change the stream URL without redeploying the frontend.</p>
+          <a id="live-action" class="button button-light hidden" href="#live-player" target="_blank"
+            rel="noopener noreferrer" data-i18n="liveTvAction">Open live coverage</a>
+        </aside>
+
+        <aside id="podcasts-sidebar" class="podcasts-sidebar panel" aria-labelledby="podcasts-title">
+          <div class="sidebar-header">
+            <span class="section-kicker" data-i18n="podcastKicker">YUGANTAR AUDIO</span>
+            <h2 id="podcasts-title" data-i18n="podcastTitle">Featured podcasts</h2>
+          </div>
+          <div id="featured-podcasts" class="featured-podcasts" aria-live="polite">
+            <p class="podcast-empty" data-i18n="podcastLoading">Loading featured episodes…</p>
+          </div>
+          <div class="carousel-controls" role="group" aria-label="Podcast navigation">
+            <button id="podcast-prev" class="carousel-arrow" type="button" aria-label="Previous podcast">‹</button>
+            <span id="podcast-position" class="carousel-position" aria-live="polite">0 / 0</span>
+            <button id="podcast-next" class="carousel-arrow" type="button" aria-label="Next podcast">›</button>
+          </div>
+        </aside>
+
+        <aside id="sponsors-sidebar" class="sponsors-sidebar panel">
+          <div class="sidebar-header">
+            <span class="section-kicker" data-i18n="sponsorKicker">SPONSOR PARTNERS</span>
+            <h2 data-i18n="sponsorTitle">Official Sponsors</h2>
+            <span class="sponsor-live-badge"><i></i><span data-i18n="sponsorSpotlight">SPOTLIGHT</span></span>
+          </div>
+          <div id="sponsors-animated-box" class="sponsors-animated-container"></div>
+          <button id="become-sponsor-btn" class="button button-outline sponsor-join-btn" type="button">
+            <span data-i18n="sponsorJoin">🤝 Become a Partner</span>
+          </button>
+        </aside>
       </div>
 
       <!-- EXTREME RIGHT SIDEBAR: WEST BENGAL ALL DISTRICTS INTERACTIVE MAP -->
@@ -289,7 +278,8 @@
       <div class="sub-stats-grid">
         <div class="sub-stat-card">
           <strong id="modal-sub-count">—</strong>
-          <small data-i18n="youtubeSubscriberCount">YouTube subscribers</small>
+          <small data-i18n="youtubeSubscriberCount">Subscribers</small>
+          <small class="muted" data-i18n="subscriberCountNote">YouTube rounds public subscriber counts above 1,000. The exact total is available in YouTube Studio.</small>
         </div>
         <div class="sub-stat-card">
           <strong>23 Districts</strong>
@@ -425,7 +415,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=20260930-language-ticker"></script>
 </body>
 
 </html>

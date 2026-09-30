@@ -12,10 +12,10 @@
   <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
   <title>West Bengal District News | YUGANTAR</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260930-district-header-fix">
 </head>
 
-<body>
+<body class="district-page">
   <noscript>
     <div class="notice">YUGANTAR News requires JavaScript to load live district coverage.</div>
   </noscript>
@@ -23,9 +23,9 @@
   <header class="site-header">
     <div class="utility-bar">
       <div class="shell utility-inner">
-        <span class="utility-live" data-district-i18n="utilityLive"><i></i> বাংলার জেলা ডেস্ক</span>
+        <span class="utility-live" data-district-i18n="utilityLive"><i></i> লাইভ নিউজ নেটওয়ার্ক</span>
         <span id="current-date">Loading newsroom time…</span>
-        <span id="sync-status" data-district-i18n="syncStatus">জেলা সংবাদ সরাসরি</span>
+        <div class="utility-end"><span id="sync-status" data-district-i18n="syncStatus">লাইভ ডাটা</span><nav class="utility-social" aria-label="YUGANTAR News social media"><a href="https://www.facebook.com/YugantarNewsLive" target="_blank" rel="noopener noreferrer" aria-label="YUGANTAR News on Facebook" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H7.3V13h2.8v8h3.4z"/></svg></a><a href="https://instagram.com/yugantar.news" target="_blank" rel="noopener noreferrer" aria-label="YUGANTAR News on Instagram" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm5.2-3.5a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z"/></svg></a><a href="https://www.youtube.com/@Yugantar_News" target="_blank" rel="noopener noreferrer" aria-label="YUGANTAR News on YouTube" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg></a><a href="https://x.com/yugantarnews" target="_blank" rel="noopener noreferrer" aria-label="YUGANTAR News on X" title="X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.4l7.3-8.4L1.8 2h6.5l4.5 6.8L18.9 2zm-1.1 18h1.7L7.3 3.9H5.5L17.8 20z"/></svg></a></nav></div>
       </div>
     </div>
     <div class="shell header-row">
@@ -33,11 +33,10 @@
         <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
         <span class="brand-copy">
           <strong>YUGANTAR <em>NEWS</em></strong>
-          <small class="brand-slogan"><span data-district-i18n="brandSlogan">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span></small>
+          <small class="brand-slogan"><span class="brand-slogan-track"><span data-district-i18n="brandSlogan">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span><span data-district-i18n="brandSlogan" aria-hidden="true">নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।</span></span></small>
         </span>
       </a>
       <div class="header-actions">
-        <a class="button button-muted district-back-link" href="./index.html" data-district-i18n="allNews">← সব খবর</a>
         <label class="sr-only" for="language" data-district-i18n="languageLabel">ভাষা</label>
         <select id="language">
           <option value="EN">English</option>
@@ -111,10 +110,10 @@
     </section>
 
     <!-- District Breaking Ticker -->
-    <section class="ticker shell" aria-label="জেলার ব্রেকিং খবর">
-      <div class="ticker-row">
+    <section class="ticker" aria-label="জেলার ব্রেকিং খবর">
+      <div class="shell ticker-row">
         <strong data-district-i18n="districtTicker">জেলার ব্রেকিং খবর</strong>
-        <div id="district-ticker">Loading local updates…</div>
+        <div id="district-ticker" aria-live="polite">Loading local updates…</div>
       </div>
     </section>
 
@@ -351,7 +350,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="./district.js"></script>
+  <script type="module" src="./district.js?v=20260930-district-header-fix"></script>
 </body>
 
 </html>

@@ -7,7 +7,7 @@ return [
     'allowExternalNews' => true,
     'youtubeApiKey' => '', // Keep private. Needed for live discovery and the subscriber counter.
     'subscriberCountChannelId' => '', // Optional explicit channel ID.
-    'subscriberCountChannelHandle' => '', // Optional public handle (for example, @channel); takes precedence over ID.
+    'subscriberCountChannelHandle' => '@Yugantar_News', // Public handle linked from the YUGANTAR News website; takes precedence over ID.
     'graphApiVersion' => 'v23.0',
     // Store headlines, short descriptions, dates, and source links only.
     'rssSources' => [

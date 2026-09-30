@@ -28,7 +28,7 @@ let db;
 
 const districtUi = {
   BN: {
-    utilityLive: 'বাংলার জেলা ডেস্ক', syncStatus: 'জেলা সংবাদ সরাসরি', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
+    utilityLive: 'লাইভ নিউজ নেটওয়ার্ক', syncStatus: 'লাইভ ডাটা', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     allNews: '← সব খবর', languageLabel: 'ভাষা', homeLabel: 'যুগান্তর নিউজ হোম', savedLabel: 'সেভ করা খবর খুলুন', subscribers: 'সাবস্ক্রাইবার', subscriberCountLabel: 'ইউটিউব সাবস্ক্রাইবার', subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careers: 'ক্যারিয়ার', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ', hiring: 'নিয়োগ চলছে',
     navAll: 'সব জেলার খবর', navInfrastructure: 'পরিকাঠামো', navCulture: 'সংস্কৃতি ও পর্যটন', navEconomy: 'অর্থনীতি ও কৃষি', navHealth: 'শিক্ষা ও স্বাস্থ্য', navEnvironment: 'পরিবেশ',
     liveDesk: 'লাইভ ডেস্ক', switchDistrict: 'জেলা বদলান:', districtHq: 'জেলা সদর', regionZone: 'অঞ্চল', activeStories: 'প্রকাশিত খবর', localStatus: 'স্থানীয় সংবাদ', verifiedFeed: '● যাচাইকৃত সংবাদ',
@@ -39,7 +39,7 @@ const districtUi = {
     savedTitle: 'সেভ করা খবর', emptySaved: 'আপনার সেভ করা খবরের তালিকা খালি।'
   },
   EN: {
-    utilityLive: 'BENGAL DISTRICTS DESK', syncStatus: 'DISTRICT DATA LIVE', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
+    utilityLive: 'LIVE NEWS NETWORK', syncStatus: 'LIVE DATA', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     allNews: '← All News', languageLabel: 'Language', homeLabel: 'YUGANTAR News home', savedLabel: 'Open saved articles', subscribers: 'Subs', subscriberCountLabel: 'YouTube subscribers', subscribersTitle: 'View Subscribers & Subscribe', careers: 'Careers', careersTitle: 'Careers & Job Opportunities', hiring: 'Hiring',
     navAll: 'All District News', navInfrastructure: 'Infrastructure', navCulture: 'Culture & Tourism', navEconomy: 'Economy & Agri', navHealth: 'Health & Education', navEnvironment: 'Environment',
     liveDesk: 'LIVE DESK', switchDistrict: 'Switch District:', districtHq: 'District HQ', regionZone: 'Region Zone', activeStories: 'Active Stories', localStatus: 'Local Status', verifiedFeed: '● Verified Feed',
@@ -50,7 +50,7 @@ const districtUi = {
     savedTitle: 'Saved articles', emptySaved: 'Your saved reading list is empty.'
   },
   HI: {
-    utilityLive: 'बंगाल जिला डेस्क', syncStatus: 'जिला समाचार लाइव', brandSlogan: 'नিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
+    utilityLive: 'लाइव न्यूज नेटवर्क', syncStatus: 'लाइव डेटा', brandSlogan: 'नিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     allNews: '← सभी समाचार', languageLabel: 'भाषा', homeLabel: 'युगांतर समाचार होम', savedLabel: 'सेव किए गए समाचार खोलें', subscribers: 'सब्सक्राइबर', subscriberCountLabel: 'YouTube सब्सक्राइबर', subscribersTitle: 'सब्सक्राइबर और सदस्यता', careers: 'करियर', careersTitle: 'करियर और नौकरी के अवसर', hiring: 'भर्ती जारी',
     navAll: 'सभी जिलों की खबरें', navInfrastructure: 'बुनियादी ढांचा', navCulture: 'संस्कृति और पर्यटन', navEconomy: 'अर्थव्यवस्था और कृषि', navHealth: 'शिक्षा और स्वास्थ्य', navEnvironment: 'पर्यावरण',
     liveDesk: 'लाइव डेस्क', switchDistrict: 'जिला बदलें:', districtHq: 'जिला मुख्यालय', regionZone: 'क्षेत्र', activeStories: 'प्रकाशित खबरें', localStatus: 'स्थानीय समाचार', verifiedFeed: '● सत्यापित फ़ीड',
@@ -345,7 +345,10 @@ function renderDistrictHeader() {
     : state.language === 'HI'
       ? `${districtName(d)} जिले की ताज़ा खबरें, बुनियादी ढांचे और जनजीवन की रिपोर्ट।`
       : `Real-time updates, infrastructure, and community news from ${d.nameEn} district.`;
-  if (tickerEl) tickerEl.innerHTML = `<span>${escapeHtml(dict.breakingIn)} ${escapeHtml(districtName(d).toUpperCase())}: ${escapeHtml(description)}</span> <b>•</b> <span>${escapeHtml(dict.headquarters)} ${escapeHtml(hq)} ${escapeHtml(dict.reporting)}.</span>`;
+  if (tickerEl) {
+    const headlines = `<span>${escapeHtml(dict.breakingIn)} ${escapeHtml(districtName(d).toUpperCase())}: ${escapeHtml(description)}</span><b aria-hidden="true">•</b><span>${escapeHtml(dict.headquarters)} ${escapeHtml(hq)} ${escapeHtml(dict.reporting)}.</span>`;
+    tickerEl.innerHTML = `<div class="ticker-track"><div class="ticker-group">${headlines}</div><div class="ticker-group" aria-hidden="true">${headlines}</div></div>`;
+  }
   document.title = `${districtName(d)} · ${dict.pageTitle}`;
 }
 

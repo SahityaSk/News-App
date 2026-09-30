@@ -7,6 +7,12 @@ const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message; node.className = `status${error ? ' error' : ''}`; } };
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const languageObject = (en, bn, hi) => ({ EN: en.trim(), BN: bn.trim(), HI: hi.trim() });
+const DEMO_ARTICLE_IDS = new Set([
+  ...Array.from({ length: 6 }, (_, index) => `demo-art-${index + 1}`),
+  ...Array.from({ length: 10 }, (_, index) => `art-${index + 1}`),
+  ...Array.from({ length: 6 }, (_, index) => `art-art-${index + 1}`)
+]);
+const isDemoArticle = article => article?.isDemo === true || DEMO_ARTICLE_IDS.has(String(article?.id || ''));
 const displayText = value => typeof value === 'string' ? value : (value?.EN || value?.BN || value?.HI || 'Untitled');
 const dateText = value => { const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null); return date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : 'Recently'; };
 const readUrl = value => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; } catch { return ''; } };
@@ -122,19 +128,6 @@ const DEFAULT_DEMO_VIDEOS = [
   { id: 'v-12', title: 'Live Climate Summit & Renewable Energy Breakthroughs', provider: 'youtube', publishedAt: '3/10/2026, 11:20:00 AM' }
 ];
 
-const DEFAULT_DEMO_ARTICLES = [
-  { id: 'art-1', title: 'Tonganoxie Recreation Commission, County Road Upgrade Approved', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-2', title: 'UNECA and AUDA-NEPAD renew partnership to boost Infrastructure', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-3', title: "'Vampire Carnival' Trailer Unveils a Bloody Spectacle Ahead of Release", status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-4', title: 'Man Robbed of ¥1 Million and Shoes While Walking Home at Night', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-5', title: 'Evidence tampering: Judge recuses self from Yugantar high-profile hearing', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-6', title: 'Waleed Aly | WAtoday Special Analysis on Asian Geopolitics', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-7', title: 'Woman jailed over ammonia attack on friend in tragic dispute', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-8', title: 'NAMI Walks Rome this weekend for Global Mental Health Initiative', status: 'published', category: 'general', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-9', title: 'Global Semiconductor Supply Chains See Surge in Production Rates', status: 'published', category: 'tech', publishedAt: '9/25/2026, 1:16:47 AM' },
-  { id: 'art-10', title: 'Renewable Energy Grid Investments Hit Historic Peak in Q3', status: 'published', category: 'science', publishedAt: '9/25/2026, 1:16:47 AM' }
-];
-
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
@@ -156,8 +149,7 @@ async function loadAdminData() {
     const controlsSnapshot = byName('videoControls').snapshot;
     jobApplicationCache = applicationsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     sponsorCache = sponsorsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
-    articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-    if (articleCache.length < 8) articleCache = [...articleCache, ...DEFAULT_DEMO_ARTICLES.filter(d => !articleCache.some(a => a.id === d.id))];
+    articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(article => !isDemoArticle(article)).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
     const hiddenIds = new Set(controlsSnapshot.docs.filter(item => item.data().hidden === true).map(item => item.id));
     const allVideos = videosSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
     videoCache = allVideos.filter(item => item.active !== false && !hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));

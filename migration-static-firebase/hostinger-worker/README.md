@@ -7,7 +7,7 @@ This worker is deliberately PHP so it can run from a Hostinger Single cron job. 
 1. Copy `worker-config.example.php` to `worker-config.php`.
 2. Put `worker-config.php` and the Firebase service-account JSON outside `public_html`.
 3. Fill in the Firebase project ID and private service-account path.
-4. Add the official YouTube channel handle or ID. The counter uses `subscriberCountChannelHandle`, then `subscriberCountChannelId`, or the first active entry in `youtubeChannels` when both are blank.
+4. The counter is preconfigured for the website's linked channel, `@Yugantar_News`. Confirm this is the channel with 682 subscribers. The counter uses `subscriberCountChannelHandle`, then `subscriberCountChannelId`, or the first active entry in `youtubeChannels` when both are blank. YouTube's public API returns exact counts below 1,000 subscribers.
 5. Add a private YouTube Data API key as `youtubeApiKey`; the same key supports live discovery and refreshes the public subscriber count during each worker run.
 6. Add a Facebook Page ID and valid Page access token only if the client owns/administers the Page and the Meta permissions are approved.
 7. Test with:
