@@ -24,9 +24,12 @@ service cloud.firestore {
 
     match /articles/{id} {
       allow read: if resource.data.status == 'published' || staff();
-      allow create: if editor() || (role() == 'reporter' && request.resource.data.status == 'draft');
+      allow create: if editor() || (role() == 'reporter'
+        && request.resource.data.status == 'draft'
+        && request.resource.data.createdBy == request.auth.uid);
       allow update: if editor() || (role() == 'reporter'
         && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == 'draft');
       allow delete: if editor();
     }

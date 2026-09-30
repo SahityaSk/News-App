@@ -27,7 +27,7 @@ https://YOUR-DOMAIN.com/
 
 Both pages are inside the same website and use the same Firebase project. No second Hostinger website, second domain, Node.js server, or separate hosting plan is required.
 
-The public page intentionally has no Editorial Desk button. Staff use the direct `/admin.html` address. The page is also marked `noindex`, but hiding the link is not security. Real protection comes from Firebase Authentication and Firestore Rules: an unauthenticated visitor cannot publish, edit, or read staff-only data.
+The public page intentionally has no Editorial Desk button. Staff can open `/admin.html`; reporters can open `/reporter.html` or use the Reporter workspace link in the homepage footer. Both staff pages are marked `noindex`, but hiding links is not security. Real protection comes from Firebase Authentication and Firestore Rules: an unauthenticated visitor cannot publish, edit, or read staff-only data.
 
 ## Files and responsibilities
 
@@ -35,8 +35,10 @@ The public page intentionally has no Editorial Desk button. Staff use the direct
 migration-static-firebase/
 ├── index.html                         Public homepage
 ├── admin.html                         Staff login and editorial desk
+├── reporter.html                      Reporter login, story drafting, and own drafts
 ├── app.js                             Public Firebase reads and UI
 ├── admin.js                           Staff authentication and writes
+├── reporter.js                        Reporter role checks and draft-only submissions
 ├── styles.css                         Public/admin styling and dark mode
 ├── yugantar-logo.jpg                  Branded logo copied from the main project
 ├── firebase-config.js                 Public Firebase web configuration
@@ -80,7 +82,8 @@ Firebase Firestore
           ▼
 index.html + app.js in the visitor's browser
 
-Staff browser ── Firebase Authentication ── admin.html/admin.js ── Firestore
+Reporter browser ── Firebase Authentication + reporter role ── reporter.html/reporter.js ── own drafts
+Editor browser ── Firebase Authentication ── admin.html/admin.js ── Firestore
 ```
 
 ### Automatic news workflow
@@ -188,6 +191,14 @@ Open:
 ```text
 https://YOUR-DOMAIN.com/admin.html
 ```
+
+Reporter accounts use the focused draft workspace at:
+
+```text
+https://YOUR-DOMAIN.com/reporter.html
+```
+
+The reporter page checks `users/{uid}` for the exact `reporter` role. It saves only `status: "draft"` articles with the reporter UID in `createdBy`, and lists drafts created by that signed-in reporter. Firestore Rules enforce draft-only create/update access for reporters; editors retain publishing access through the admin desk.
 
 Use the Firebase Authentication email/password. If login succeeds but the page says the account has no editorial role, check that the Firestore path is exactly `users/{Authentication UID}` and that `role` is a string, not a map or number.
 

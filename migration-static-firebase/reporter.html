@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#09111f">
+  <title>Reporter Workspace | YUGANTAR News</title>
+  <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
+  <link rel="stylesheet" href="./styles.css?v=20260930-reporter-workspace">
+</head>
+<body class="admin-body reporter-body">
+  <header class="site-header">
+    <div class="shell header-row reporter-header-row">
+      <a class="brand" href="./index.html" aria-label="YUGANTAR News home">
+        <span class="brand-mark"><img src="./yugantar-logo.jpg" alt="YUGANTAR logo"></span>
+        <span class="brand-copy"><strong>YUGANTAR <em>NEWS</em></strong><small>REPORTER WORKSPACE</small></span>
+      </a>
+      <a class="button button-muted reporter-home-link" href="./index.html">← Public site</a>
+    </div>
+  </header>
+
+  <main class="shell reporter-main">
+    <div class="reporter-intro">
+      <div class="section-kicker">FIELD REPORTING</div>
+      <h1>Your newsroom workspace</h1>
+      <p class="muted">Prepare and save a story draft for editorial review. Only an editor can publish it.</p>
+    </div>
+    <div id="reporter-setup" class="notice hidden" role="status"></div>
+
+    <section id="reporter-login" class="panel narrow-panel reporter-login-panel">
+      <div class="section-kicker">SECURE REPORTER SIGN IN</div>
+      <h2>Sign in to continue</h2>
+      <p class="muted">Use the email and password for your approved reporter account.</p>
+      <form id="reporter-login-form" class="stack-form">
+        <label for="reporter-email">Email address</label>
+        <input id="reporter-email" type="email" autocomplete="username" required placeholder="you@example.com">
+        <label for="reporter-password">Password</label>
+        <input id="reporter-password" type="password" autocomplete="current-password" required placeholder="Your password">
+        <button class="button" type="submit">Sign in securely</button>
+      </form>
+      <p id="reporter-login-status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section id="reporter-workspace" class="hidden" aria-labelledby="workspace-heading">
+      <div class="admin-toolbar reporter-toolbar">
+        <div><div class="section-kicker">REPORTER DESK</div><h2 id="workspace-heading">Create a story draft</h2><p id="reporter-account" class="muted"></p></div>
+        <div class="toolbar-actions"><button id="reporter-new-draft" class="button button-muted" type="button">New draft</button><button id="reporter-signout" class="button button-muted" type="button">Sign out</button></div>
+      </div>
+      <div class="reporter-layout">
+        <form id="reporter-story-form" class="panel stack-form reporter-story-form">
+          <input id="reporter-draft-id" type="hidden">
+          <div class="reporter-form-heading"><div><h3 id="reporter-form-title">Story details</h3><p class="muted">Save a draft whenever you are ready. Required fields are marked.</p></div><span class="status-chip draft">EDITOR REVIEW REQUIRED</span></div>
+          <label for="reporter-title-en">Headline in English *</label>
+          <input id="reporter-title-en" required maxlength="180" placeholder="Write a clear, factual headline">
+          <div class="form-row">
+            <div class="reporter-field"><label for="reporter-category">Section *</label><select id="reporter-category" required><option value="national">National</option><option value="world">World</option><option value="business">Business</option><option value="sports">Sports</option><option value="tech">Technology</option><option value="entertainment">Entertainment</option><option value="science">Science</option></select></div>
+            <div class="reporter-field"><label for="reporter-district">District / location</label><input id="reporter-district" maxlength="120" placeholder="e.g. Raiganj, Uttar Dinajpur"></div>
+          </div>
+          <label for="reporter-title-bn">Headline in Bengali</label>
+          <input id="reporter-title-bn" maxlength="180" placeholder="বাংলা শিরোনাম">
+          <label for="reporter-summary-en">Short summary in English *</label>
+          <textarea id="reporter-summary-en" required maxlength="600" placeholder="Summarize the verified facts in a few sentences."></textarea>
+          <label for="reporter-summary-bn">Short summary in Bengali</label>
+          <textarea id="reporter-summary-bn" maxlength="600" placeholder="সংক্ষেপে বাংলায় খবরের মূল তথ্য লিখুন।"></textarea>
+          <label for="reporter-content-en">Full story in English *</label>
+          <textarea id="reporter-content-en" class="reporter-story-copy" required maxlength="12000" placeholder="Write the full report. Separate confirmed facts from claims and include relevant context."></textarea>
+          <label for="reporter-content-bn">Full story in Bengali</label>
+          <textarea id="reporter-content-bn" class="reporter-story-copy" maxlength="12000" placeholder="সম্পূর্ণ প্রতিবেদন বাংলায় লিখুন।"></textarea>
+          <div class="form-row">
+            <div class="reporter-field"><label for="reporter-source-url">Source link</label><input id="reporter-source-url" type="url" maxlength="1000" placeholder="https://..."></div>
+            <div class="reporter-field"><label for="reporter-image-url">Image link</label><input id="reporter-image-url" type="url" maxlength="1000" placeholder="https://..."></div>
+          </div>
+          <div class="reporter-form-footer"><p class="muted">Drafts remain private to newsroom staff until an editor publishes them.</p><button id="reporter-save" class="button" type="submit">Save draft</button></div>
+          <p id="reporter-form-status" class="status" aria-live="polite"></p>
+        </form>
+
+        <aside class="panel reporter-drafts-panel" aria-labelledby="reporter-drafts-heading">
+          <div class="list-heading"><div><div class="section-kicker">YOUR WORK</div><h3 id="reporter-drafts-heading">Saved drafts</h3></div><button id="reporter-refresh" class="icon-button" type="button" aria-label="Refresh drafts" title="Refresh drafts">↻</button></div>
+          <div id="reporter-drafts" class="admin-list" aria-live="polite"><div class="empty-state">Sign in to see your drafts.</div></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./reporter.js?v=20260930-reporter-workspace"></script>
+</body>
+</html>
