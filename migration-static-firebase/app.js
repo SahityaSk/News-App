@@ -10,7 +10,8 @@ import { SPONSORS } from './sponsors-data.js';
 
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
-const savedLanguageKey = 'yugantar_language';
+// Versioned so older testing preferences such as EN do not override the Bengali production default.
+const savedLanguageKey = 'yugantar_language_v2';
 const DEMO_ARTICLE_IDS = new Set([
   ...Array.from({ length: 6 }, (_, index) => `demo-art-${index + 1}`),
   ...Array.from({ length: 10 }, (_, index) => `art-${index + 1}`),
@@ -547,7 +548,8 @@ function startRealtimeListeners() {
     renderSubscriberCount();
   });
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
-    state.tickers = snapshot.docs.map(item => item.data());
+    // The homepage only displays global tickers. District-targeted tickers belong on district.html.
+    state.tickers = snapshot.docs.map(item => item.data()).filter(item => item.scope !== 'district' && !item.districtId);
     state.tickerState = 'ready';
     renderTicker();
   }, () => { state.tickerState = 'error'; renderTicker(); });

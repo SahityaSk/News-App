@@ -2,6 +2,8 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
+import { WB_DISTRICTS } from './wb-map-data.js';
+import { DISTRICT_SUBCATEGORIES } from './district-content.js';
 
 const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message; node.className = `status${error ? ' error' : ''}`; } };
@@ -59,23 +61,56 @@ function articlePayload(auth) {
   const requestedStatus = $('article-status-select').value;
   const articleStatus = currentRole === 'reporter' ? 'draft' : requestedStatus;
   const category = $('article-category').value;
+  const districtId = $('article-district')?.value || '';
+  const coverageScope = $('article-coverage-scope')?.value || (districtId ? 'district' : 'state');
   if (articleStatus === 'published' && category !== 'world' && (! $('article-title-bn').value.trim() || ! $('article-summary-bn').value.trim() || ! $('article-content-bn').value.trim())) {
     throw new Error('Add the Bengali headline, summary, and story before publishing this article.');
   }
   return {
     title: languageObject($('article-title-en').value, $('article-title-bn').value, $('article-title-hi').value),
-    summary: languageObject($('article-summary-en').value, $('article-summary-bn').value, ''), content: languageObject($('article-content-en').value, $('article-content-bn').value, ''),
-    category, author: $('article-author').value.trim(), sourceAgency: $('article-source-agency').value.trim(), sourceUrl: readUrl($('article-source-url').value), image: readUrl($('article-image').value), sourceLanguage: 'EN', status: articleStatus, hero: $('article-hero').checked, trending: false, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid
+    summary: languageObject($('article-summary-en').value, $('article-summary-bn').value, $('article-summary-hi').value), content: languageObject($('article-content-en').value, $('article-content-bn').value, $('article-content-hi').value),
+    category, subcategory: $('article-subcategory')?.value || 'other', districtId, primaryDistrictId: districtId, districtIds: districtId ? [districtId] : [], coverageScope, author: $('article-author').value.trim(), sourceAgency: $('article-source-agency').value.trim(), sourceUrl: readUrl($('article-source-url').value), image: readUrl($('article-image').value), sourceLanguage: 'EN', status: articleStatus, hero: $('article-hero').checked, trending: false, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid
   };
 }
 
 function resetArticleForm() {
-  editingArticleId = ''; $('article-form').reset(); $('article-author').value = 'YUGANTAR Editorial'; $('article-source-agency').value = 'YUGANTAR'; $('article-status-select').value = currentRole === 'reporter' ? 'draft' : 'published'; $('article-submit').textContent = 'Publish article'; $('article-reset').classList.add('hidden'); $('article-image-preview').textContent = 'Cover preview appears here';
+  editingArticleId = ''; $('article-form').reset(); $('article-author').value = 'YUGANTAR Editorial'; $('article-source-agency').value = 'YUGANTAR'; $('article-status-select').value = currentRole === 'reporter' ? 'draft' : 'published'; $('article-submit').textContent = 'Publish article'; $('article-reset').classList.add('hidden'); $('article-image-preview').textContent = 'Cover preview appears here'; document.querySelector('[data-article-language="EN"]')?.click(); updateArticleEditorPreview();
+}
+
+function populateDistrictFields() {
+  const district = $('article-district');
+  const subcategory = $('article-subcategory');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn || item.nameEn || item.id}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.BN} · ${item.label.EN}</option>`).join('');
+  const tickerDistrict = $('ticker-district');
+  if (tickerDistrict && !tickerDistrict.options.length) tickerDistrict.innerHTML = '<option value="">Global ticker</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn || item.nameEn || item.id}</option>`).join('');
 }
 
 function updateImagePreview() {
   const url = readUrl($('article-image').value); const preview = $('article-image-preview');
   preview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Cover preview" onerror="this.parentElement.textContent='This image URL could not be loaded.'">` : 'Cover preview appears here';
+}
+
+function updateArticleEditorPreview() {
+  const active = document.querySelector('.article-language-tab.active')?.dataset.articleLanguage || 'EN';
+  const title = $('article-title-' + active.toLowerCase())?.value.trim() || 'Untitled article';
+  const summary = $('article-summary-' + active.toLowerCase())?.value.trim() || 'Add a short summary for readers.';
+  const content = $('article-content-' + active.toLowerCase())?.value.trim() || 'Your story preview will appear here.';
+  const target = $('article-live-preview');
+  const count = $('article-editor-count');
+  if (target) target.innerHTML = `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(summary)}</p><div>${escapeHtml(content.slice(0, 420))}${content.length > 420 ? '…' : ''}</div>`;
+  if (count) count.textContent = `${content.length} characters · ${active}`;
+}
+
+function bindArticleEditor() {
+  document.querySelectorAll('[data-article-language]').forEach(tab => tab.addEventListener('click', () => {
+    const language = tab.dataset.articleLanguage;
+    document.querySelectorAll('[data-article-language]').forEach(item => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); });
+    document.querySelectorAll('[data-article-language-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.articleLanguagePanel === language));
+    updateArticleEditorPreview();
+  }));
+  ['en', 'bn', 'hi'].forEach(language => ['title', 'summary', 'content'].forEach(field => $(`article-${field}-${language}`)?.addEventListener('input', updateArticleEditorPreview)));
+  updateArticleEditorPreview();
 }
 
 let articleSearchQuery = '';
@@ -88,9 +123,38 @@ function renderArticleList() {
     ? articleCache.filter(item => (displayText(item.title) || '').toLowerCase().includes(articleSearchQuery))
     : articleCache;
   if (!filtered.length) { target.innerHTML = `<div class="empty-state">${articleSearchQuery ? 'No articles match "' + escapeHtml(articleSearchQuery) + '"' : 'No articles found.'}</div>`; return; }
-  target.innerHTML = filtered.map(article => `<div class="admin-list-item"><div><strong>${escapeHtml(displayText(article.title))}</strong><small><span class="status-chip ${escapeHtml(article.status || 'draft')}">${escapeHtml(article.status || 'draft')}</span> ${escapeHtml(article.category || 'news')} · ${escapeHtml(dateText(article.updatedAt || article.publishedAt))}</small></div><div class="item-actions"><button class="text-button" type="button" data-edit-article="${escapeHtml(article.id)}">Edit</button>${currentRole !== 'reporter' ? `<button class="text-button danger" type="button" data-delete-article="${escapeHtml(article.id)}">Delete</button>` : ''}</div></div>`).join('');
+  target.innerHTML = filtered.map(article => {
+    const moderationButton = currentRole !== 'reporter'
+      ? (article.status === 'published'
+        ? `<button class="text-button" type="button" data-draft-article="${escapeHtml(article.id)}">Make draft</button>`
+        : `<button class="text-button" type="button" data-approve-article="${escapeHtml(article.id)}">Approve</button>`)
+      : '';
+    const rejectButton = currentRole !== 'reporter' && ['draft', 'submitted', 'under_review'].includes(article.status)
+      ? `<button class="text-button danger" type="button" data-reject-article="${escapeHtml(article.id)}">Reject</button>` : '';
+    return `<div class="admin-list-item"><div><strong>${escapeHtml(displayText(article.title))}</strong><small><span class="status-chip ${escapeHtml(article.status || 'draft')}">${escapeHtml(article.status || 'draft')}</span> ${escapeHtml(article.category || 'news')} · ${escapeHtml(article.subcategory || 'general')} · ${escapeHtml(article.districtId || 'state-wide')} · ${escapeHtml(article.author || 'YUGANTAR')} · ${escapeHtml(dateText(article.updatedAt || article.publishedAt))}</small></div><div class="item-actions"><button class="text-button" type="button" data-edit-article="${escapeHtml(article.id)}">Edit</button>${moderationButton}${rejectButton}${currentRole !== 'reporter' ? `<button class="text-button danger" type="button" data-delete-article="${escapeHtml(article.id)}">Delete</button>` : ''}</div></div>`;
+  }).join('');
   target.querySelectorAll('[data-edit-article]').forEach(button => button.addEventListener('click', () => editArticle(button.dataset.editArticle)));
   target.querySelectorAll('[data-delete-article]').forEach(button => button.addEventListener('click', () => deleteArticle(button.dataset.deleteArticle)));
+  target.querySelectorAll('[data-approve-article]').forEach(button => button.addEventListener('click', () => moderateArticle(button.dataset.approveArticle, 'published')));
+  target.querySelectorAll('[data-draft-article]').forEach(button => button.addEventListener('click', () => moderateArticle(button.dataset.draftArticle, 'draft')));
+  target.querySelectorAll('[data-reject-article]').forEach(button => button.addEventListener('click', () => moderateArticle(button.dataset.rejectArticle, 'rejected')));
+}
+
+async function moderateArticle(id, nextStatus) {
+  const article = articleCache.find(item => item.id === id);
+  const actionLabel = nextStatus === 'published' ? 'approve and publish' : nextStatus === 'draft' ? 'move back to draft' : 'reject';
+  if (!window.confirm(`Are you sure you want to ${actionLabel} this article?`)) return;
+  if (nextStatus === 'published' && article?.districtId && (!article.title?.BN || !article.summary?.BN || !article.content?.BN)) {
+    status('admin-data-status', 'Add Bengali headline, summary, and story before publishing district news.', true);
+    return;
+  }
+  const note = nextStatus === 'rejected' ? window.prompt('Reason for rejection (shown privately to the reporter):', '') : '';
+  if (nextStatus === 'rejected' && note === null) return;
+  try {
+    await updateDoc(doc(db, 'articles', id), { status: nextStatus, reviewNote: note || '', reviewedBy: activeAuth.currentUser.uid, reviewedAt: serverTimestamp(), ...(nextStatus === 'published' ? { publishedAt: serverTimestamp() } : {}), updatedAt: serverTimestamp(), updatedBy: activeAuth.currentUser.uid });
+    status('admin-data-status', nextStatus === 'published' ? 'Article approved and published.' : 'Article rejected with feedback.');
+    await loadAdminData();
+  } catch (error) { status('admin-data-status', error.message, true); }
 }
 
 function renderSimpleList(targetId, items, type) {
@@ -105,7 +169,8 @@ function renderSimpleList(targetId, items, type) {
     const actions = type === 'video'
       ? `<button class="text-button" type="button" data-edit-video="${escapeHtml(item.id)}">Edit</button><button class="text-button danger" type="button" data-hide-video="${escapeHtml(item.id)}">Hide</button>`
       : `<button class="text-button" type="button" data-edit-ticker="${escapeHtml(item.id)}">Edit</button><button class="text-button danger" type="button" data-delete-ticker="${escapeHtml(item.id)}">Delete</button>`;
-    return `<div class="admin-list-item"><div><strong>${escapeHtml(label)}</strong><small>${escapeHtml(item.provider || item.category || 'YUGANTAR')} · ${escapeHtml(dateText(item.updatedAt || item.publishedAt))}</small></div><div class="item-actions">${actions}</div></div>`;
+    const destination = type === 'ticker' ? (item.districtId ? `District · ${item.districtId}` : 'Main website') : (item.provider || item.category || 'YUGANTAR');
+    return `<div class="admin-list-item"><div><strong>${escapeHtml(label)}</strong><small>${escapeHtml(destination)} · ${escapeHtml(dateText(item.updatedAt || item.publishedAt))}</small></div><div class="item-actions">${actions}</div></div>`;
   }).join('');
   target.querySelectorAll('[data-edit-video]').forEach(button => button.addEventListener('click', () => editVideo(button.dataset.editVideo)));
   target.querySelectorAll('[data-hide-video]').forEach(button => button.addEventListener('click', () => hideVideo(button.dataset.hideVideo)));
@@ -232,8 +297,8 @@ function editArticle(id) {
   const title = typeof article.title === 'string' ? { [sourceLanguage]: article.title } : (article.title || {});
   const summary = typeof article.summary === 'string' ? { [sourceLanguage]: article.summary } : (article.summary || {});
   const content = typeof article.content === 'string' ? { [sourceLanguage]: article.content } : (article.content || {});
-  editingArticleId = id; $('article-title-en').value = title.EN || ''; $('article-title-bn').value = title.BN || ''; $('article-title-hi').value = title.HI || ''; $('article-summary-en').value = summary.EN || ''; $('article-summary-bn').value = summary.BN || ''; $('article-content-en').value = content.EN || ''; $('article-content-bn').value = content.BN || '';
-  $('article-category').value = article.category || 'national'; $('article-author').value = article.author || ''; $('article-source-agency').value = article.sourceAgency || 'YUGANTAR'; $('article-image').value = article.image || ''; $('article-source-url').value = article.sourceUrl || ''; $('article-hero').checked = Boolean(article.hero); $('article-status-select').value = article.status || 'draft'; $('article-submit').textContent = 'Save article changes'; $('article-reset').classList.remove('hidden'); updateImagePreview();
+  editingArticleId = id; $('article-title-en').value = title.EN || ''; $('article-title-bn').value = title.BN || ''; $('article-title-hi').value = title.HI || ''; $('article-summary-en').value = summary.EN || ''; $('article-summary-bn').value = summary.BN || ''; $('article-summary-hi').value = summary.HI || ''; $('article-content-en').value = content.EN || ''; $('article-content-bn').value = content.BN || ''; $('article-content-hi').value = content.HI || '';
+  $('article-category').value = article.category || 'national'; $('article-subcategory').value = article.subcategory || 'other'; $('article-district').value = article.districtId || article.primaryDistrictId || ''; $('article-coverage-scope').value = article.coverageScope || (article.districtId ? 'district' : 'state'); $('article-author').value = article.author || ''; $('article-source-agency').value = article.sourceAgency || 'YUGANTAR'; $('article-image').value = article.image || ''; $('article-source-url').value = article.sourceUrl || ''; $('article-hero').checked = Boolean(article.hero); $('article-status-select').value = article.status || 'draft'; $('article-submit').textContent = 'Save article changes'; $('article-reset').classList.remove('hidden'); updateImagePreview();
   document.querySelector('[data-admin-tab="publish"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -287,12 +352,12 @@ async function purgeVideo(id) {
 }
 
 function resetTickerForm() {
-  $('ticker-form').reset(); delete $('ticker-form').dataset.editingId; $('ticker-category').value = 'BREAKING'; $('ticker-priority').value = '1'; $('ticker-submit').textContent = 'Publish ticker'; $('ticker-reset').classList.add('hidden');
+  $('ticker-form').reset(); delete $('ticker-form').dataset.editingId; $('ticker-category').value = 'BREAKING'; $('ticker-priority').value = '1'; $('ticker-district').value = ''; $('ticker-submit').textContent = 'Publish ticker'; $('ticker-reset').classList.add('hidden');
 }
 
 function editTicker(id) {
   const item = tickerCache.find(ticker => ticker.id === id); if (!item) return;
-  const title = item.title || {}; $('ticker-en').value = title.EN || ''; $('ticker-bn').value = title.BN || ''; $('ticker-hi').value = title.HI || ''; $('ticker-category').value = item.category || 'BREAKING'; $('ticker-priority').value = item.priority ?? 1;
+  const title = item.title || {}; $('ticker-en').value = title.EN || ''; $('ticker-bn').value = title.BN || ''; $('ticker-hi').value = title.HI || ''; $('ticker-category').value = item.category || 'BREAKING'; $('ticker-priority').value = item.priority ?? 1; $('ticker-district').value = item.districtId || '';
   $('ticker-form').dataset.editingId = id; $('ticker-submit').textContent = 'Save ticker changes'; $('ticker-reset').classList.remove('hidden'); document.querySelector('[data-admin-tab="live"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -331,7 +396,9 @@ async function deletePoll(id) {
 }
 
 function bindForms(auth) {
+  populateDistrictFields();
   activeAuth = auth;
+  bindArticleEditor();
   $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm;
   $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
   $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
@@ -340,7 +407,7 @@ function bindForms(auth) {
   document.querySelectorAll('[data-admin-tab]').forEach(button => button.addEventListener('click', () => { const name = button.dataset.adminTab; document.querySelectorAll('[data-admin-tab]').forEach(item => item.classList.toggle('active', item === button)); document.querySelectorAll('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === name)); }));
   $('article-form').onsubmit = async event => { event.preventDefault(); try { const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };
-  $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const data = { title: languageObject($('ticker-en')?.value || '', $('ticker-bn')?.value || '', $('ticker-hi')?.value || ''), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
+  $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const data = { title: languageObject($('ticker-en')?.value || '', $('ticker-bn')?.value || '', $('ticker-hi')?.value || ''), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', districtId: $('ticker-district')?.value || '', scope: $('ticker-district')?.value ? 'district' : 'global', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
   $('stream-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'liveStreams', 'primary'), { title: $('stream-title').value.trim(), provider: $('stream-provider').value, videoUrl: readUrl($('stream-url').value), isLive: $('stream-live').checked, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }); status('stream-status', 'Live stream saved.'); $('stream-delete').classList.remove('hidden'); } catch (error) { status('stream-status', error.message, true); } };
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };
   $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };

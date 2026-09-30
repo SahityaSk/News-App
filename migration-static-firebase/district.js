@@ -2,10 +2,12 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { collection, doc, getDocs, getFirestore, limit, onSnapshot, orderBy, query, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS, WB_MAP_VIEWBOX } from './wb-map-data.js';
+import { districtSubcategoryLabel } from './district-content.js';
 
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
-const savedLanguageKey = 'yugantar_language';
+// Keep the district page aligned with the Bengali-first production default.
+const savedLanguageKey = 'yugantar_language_v2';
 
 const getStoredLanguage = () => {
   try { return ['BN', 'EN', 'HI'].includes(localStorage.getItem(savedLanguageKey)) ? localStorage.getItem(savedLanguageKey) : 'BN'; }
@@ -20,6 +22,7 @@ const state = {
   search: '',
   articles: [],
   firestoreArticles: [],
+  tickers: [],
   saved: readSaved(),
   subscriberCount: null
 };
@@ -30,7 +33,7 @@ const districtUi = {
   BN: {
     utilityLive: 'লাইভ নিউজ নেটওয়ার্ক', syncStatus: 'লাইভ ডাটা', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     allNews: '← সব খবর', languageLabel: 'ভাষা', homeLabel: 'যুগান্তর নিউজ হোম', savedLabel: 'সেভ করা খবর খুলুন', subscribers: 'সাবস্ক্রাইবার', subscriberCountLabel: 'ইউটিউব সাবস্ক্রাইবার', subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careers: 'ক্যারিয়ার', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ', hiring: 'নিয়োগ চলছে',
-    navAll: 'সব জেলার খবর', navInfrastructure: 'পরিকাঠামো', navCulture: 'সংস্কৃতি ও পর্যটন', navEconomy: 'অর্থনীতি ও কৃষি', navHealth: 'শিক্ষা ও স্বাস্থ্য', navEnvironment: 'পরিবেশ',
+    navAll: 'এই জেলার সব খবর', navInfrastructure: 'পরিকাঠামো', navCulture: 'সংস্কৃতি ও পর্যটন', navEconomy: 'অর্থনীতি ও কৃষি', navHealth: 'শিক্ষা ও স্বাস্থ্য', navEnvironment: 'পরিবেশ',
     liveDesk: 'লাইভ ডেস্ক', switchDistrict: 'জেলা বদলান:', districtHq: 'জেলা সদর', regionZone: 'অঞ্চল', activeStories: 'প্রকাশিত খবর', localStatus: 'স্থানীয় সংবাদ', verifiedFeed: '● যাচাইকৃত সংবাদ',
     districtTicker: 'জেলার ব্রেকিং খবর', localDesk: 'স্থানীয় সংবাদ ডেস্ক', latestDistrict: 'জেলার সর্বশেষ খবর', searchStories: 'জেলার খবর খুঁজুন', searchPlaceholder: 'এই জেলার খবর খুঁজুন…',
     interactiveMap: 'ইন্টার‌্যাক্টিভ মানচিত্র', westBengalMap: 'পশ্চিমবঙ্গের মানচিত্র', mapInstruction: 'দ্রুত জেলা বদলাতে মানচিত্রে ক্লিক করুন।',
@@ -41,7 +44,7 @@ const districtUi = {
   EN: {
     utilityLive: 'LIVE NEWS NETWORK', syncStatus: 'LIVE DATA', brandSlogan: 'নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     allNews: '← All News', languageLabel: 'Language', homeLabel: 'YUGANTAR News home', savedLabel: 'Open saved articles', subscribers: 'Subs', subscriberCountLabel: 'YouTube subscribers', subscribersTitle: 'View Subscribers & Subscribe', careers: 'Careers', careersTitle: 'Careers & Job Opportunities', hiring: 'Hiring',
-    navAll: 'All District News', navInfrastructure: 'Infrastructure', navCulture: 'Culture & Tourism', navEconomy: 'Economy & Agri', navHealth: 'Health & Education', navEnvironment: 'Environment',
+    navAll: 'All News in This District', navInfrastructure: 'Infrastructure', navCulture: 'Culture & Tourism', navEconomy: 'Economy & Agri', navHealth: 'Health & Education', navEnvironment: 'Environment',
     liveDesk: 'LIVE DESK', switchDistrict: 'Switch District:', districtHq: 'District HQ', regionZone: 'Region Zone', activeStories: 'Active Stories', localStatus: 'Local Status', verifiedFeed: '● Verified Feed',
     districtTicker: 'DISTRICT TICKER', localDesk: 'LOCAL DESK REPORTING', latestDistrict: 'Latest District Coverage', searchStories: 'Search district stories', searchPlaceholder: 'Search in this district…',
     interactiveMap: 'INTERACTIVE MAP', westBengalMap: 'West Bengal Map', mapInstruction: 'Click any district to switch views instantly.',
@@ -52,7 +55,7 @@ const districtUi = {
   HI: {
     utilityLive: 'लाइव न्यूज नेटवर्क', syncStatus: 'लाइव डेटा', brandSlogan: 'नিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা | বাংলার খবর, দেশের খবর, বিশ্বের খবর | সত্যের সঙ্গে, মানুষের পাশে।',
     allNews: '← सभी समाचार', languageLabel: 'भाषा', homeLabel: 'युगांतर समाचार होम', savedLabel: 'सेव किए गए समाचार खोलें', subscribers: 'सब्सक्राइबर', subscriberCountLabel: 'YouTube सब्सक्राइबर', subscribersTitle: 'सब्सक्राइबर और सदस्यता', careers: 'करियर', careersTitle: 'करियर और नौकरी के अवसर', hiring: 'भर्ती जारी',
-    navAll: 'सभी जिलों की खबरें', navInfrastructure: 'बुनियादी ढांचा', navCulture: 'संस्कृति और पर्यटन', navEconomy: 'अर्थव्यवस्था और कृषि', navHealth: 'शिक्षा और स्वास्थ्य', navEnvironment: 'पर्यावरण',
+    navAll: 'इस जिले की सभी खबरें', navInfrastructure: 'बुनियादी ढांचा', navCulture: 'संस्कृति और पर्यटन', navEconomy: 'अर्थव्यवस्था और कृषि', navHealth: 'शिक्षा और स्वास्थ्य', navEnvironment: 'पर्यावरण',
     liveDesk: 'लाइव डेस्क', switchDistrict: 'जिला बदलें:', districtHq: 'जिला मुख्यालय', regionZone: 'क्षेत्र', activeStories: 'प्रकाशित खबरें', localStatus: 'स्थानीय समाचार', verifiedFeed: '● सत्यापित फ़ीड',
     districtTicker: 'जिला ब्रेकिंग न्यूज़', localDesk: 'स्थानीय समाचार डेस्क', latestDistrict: 'जिले की ताज़ा खबरें', searchStories: 'जिले की खबरें खोजें', searchPlaceholder: 'इस जिले में खोजें…',
     interactiveMap: 'इंटरैक्टिव नक्शा', westBengalMap: 'पश्चिम बंगाल का नक्शा', mapInstruction: 'तुरंत जिला बदलने के लिए नक्शे पर क्लिक करें।',
@@ -103,6 +106,9 @@ function translateDistrictUi() {
     if (icon) { element.textContent = ` ${value}`; element.prepend(icon); }
     else element.textContent = value;
   });
+  document.querySelectorAll('[data-district-cat]').forEach(element => {
+    element.textContent = element.dataset.districtCat === 'all' ? dict.navAll : districtSubcategoryLabel(element.dataset.districtCat, state.language);
+  });
   document.querySelectorAll('[data-district-placeholder]').forEach(element => {
     const value = dict[element.dataset.districtPlaceholder];
     if (value) element.placeholder = value;
@@ -152,7 +158,10 @@ function headquartersName(district) {
 }
 
 function getDistrictNews(districtId, articles, maxItems = 10) {
-  return articles.filter(article => article.districtId === districtId).slice(0, maxItems);
+  return articles.filter(article => {
+    const ids = Array.isArray(article.districtIds) ? article.districtIds : [];
+    return article.districtId === districtId || article.primaryDistrictId === districtId || ids.includes(districtId);
+  }).sort((a, b) => (b.publishedAt?.toMillis?.() || new Date(b.publishedAt || 0).getTime() || 0) - (a.publishedAt?.toMillis?.() || new Date(a.publishedAt || 0).getTime() || 0)).slice(0, maxItems);
 }
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -345,11 +354,32 @@ function renderDistrictHeader() {
     : state.language === 'HI'
       ? `${districtName(d)} जिले की ताज़ा खबरें, बुनियादी ढांचे और जनजीवन की रिपोर्ट।`
       : `Real-time updates, infrastructure, and community news from ${d.nameEn} district.`;
-  if (tickerEl) {
-    const headlines = `<span>${escapeHtml(dict.breakingIn)} ${escapeHtml(districtName(d).toUpperCase())}: ${escapeHtml(description)}</span><b aria-hidden="true">•</b><span>${escapeHtml(dict.headquarters)} ${escapeHtml(hq)} ${escapeHtml(dict.reporting)}.</span>`;
-    tickerEl.innerHTML = `<div class="ticker-track"><div class="ticker-group">${headlines}</div><div class="ticker-group" aria-hidden="true">${headlines}</div></div>`;
-  }
+  renderDistrictTicker();
   document.title = `${districtName(d)} · ${dict.pageTitle}`;
+}
+
+function localizedValue(value) {
+  if (typeof value === 'string') return value;
+  return value?.[state.language] || value?.BN || value?.EN || value?.HI || '';
+}
+
+function renderDistrictTicker() {
+  const tickerEl = $('district-ticker');
+  if (!tickerEl) return;
+  const now = Date.now();
+  const relevant = state.tickers.filter(item => {
+    const expires = item.expiresAt?.toDate ? item.expiresAt.toDate().getTime() : (item.expiresAt ? new Date(item.expiresAt).getTime() : 0);
+    return item.active !== false && (!expires || expires > now) && (!item.districtId || item.districtId === state.districtId || item.scope === 'global');
+  }).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
+  const fallback = state.articles.slice(0, 5).map(item => ({ title: item.title, category: item.subcategory || item.category }));
+  const items = relevant.length ? relevant : fallback;
+  const label = (districtUi[state.language] || districtUi.EN).districtTicker;
+  if (!items.length) {
+    tickerEl.innerHTML = `<div class="ticker-empty">${escapeHtml(label)} · ${(districtUi[state.language] || districtUi.EN).noStories}</div>`;
+    return;
+  }
+  const headlines = items.map(item => `<span>${escapeHtml(label)}: ${escapeHtml(localizedValue(item.title) || item.text || '')}</span><b aria-hidden="true">•</b>`).join('');
+  tickerEl.innerHTML = `<div class="ticker-track"><div class="ticker-group">${headlines}</div><div class="ticker-group" aria-hidden="true">${headlines}</div></div>`;
 }
 
 function updateDistrictStickyOffset() {
@@ -364,7 +394,7 @@ function renderDistrictArticles() {
   const term = state.search.trim().toLowerCase();
   const filtered = state.articles.filter(art => {
     if (!articleAvailableInLanguage(art)) return false;
-    const catMatch = state.category === 'all' || art.category === state.category;
+    const catMatch = state.category === 'all' || art.subcategory === state.category;
     const searchable = `${articleText(art, 'title')} ${articleText(art, 'summary')} ${art.author || ''}`.toLowerCase();
     return catMatch && (!term || searchable.includes(term));
   });
@@ -383,7 +413,7 @@ function renderDistrictArticles() {
         <img loading="lazy" src="${escapeHtml(article.image || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80')}" alt="${escapeHtml(articleText(article, 'title'))}">
       </div>
       <div class="article-body">
-        <span class="tag">${escapeHtml(article.category || 'DISTRICT NEWS')}</span>
+        <span class="tag">${escapeHtml(districtSubcategoryLabel(article.subcategory, state.language) || article.category || 'DISTRICT NEWS')}</span>
         <h3>${escapeHtml(articleText(article, 'title'))}</h3>
         <p>${escapeHtml(articleText(article, 'summary'))}</p>
         <small>${escapeHtml(article.sourceAgency || 'YUGANTAR Bengal Desk')} · ${escapeHtml(dateText(article.publishedAt))}</small>
@@ -438,6 +468,7 @@ function openArticle(id) {
 
 function loadDistrictArticles() {
   state.articles = getDistrictNews(state.districtId, state.firestoreArticles, 10);
+  renderDistrictTicker();
   renderDistrictArticles();
 }
 
@@ -459,8 +490,12 @@ async function loadFirestoreData() {
       state.subscriberCount = null;
       renderSubscriberCount();
     });
-    const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
+    const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(100)));
     state.firestoreArticles = result.docs.map(item => ({ id: item.id, ...item.data() }));
+    try {
+      const tickerResult = await getDocs(query(collection(db, 'tickers'), where('active', '==', true), limit(50)));
+      state.tickers = tickerResult.docs.map(item => ({ id: item.id, ...item.data() }));
+    } catch (tickerError) { console.warn('District tickers unavailable:', tickerError); state.tickers = []; }
   } catch (err) {
     console.warn('Firestore load failed for district page, using local district news:', err);
   } finally {
