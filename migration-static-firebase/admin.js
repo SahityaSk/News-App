@@ -138,9 +138,22 @@ const DEFAULT_DEMO_ARTICLES = [
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
-    const applicationsSnapshot = currentRole === 'reporter' ? { docs: [] } : await getDocs(collection(db, 'jobApplications'));
-    const sponsorsSnapshot = currentRole === 'reporter' ? { docs: [] } : await getDocs(collection(db, 'sponsors'));
-    const [articlesSnapshot, tickersSnapshot, videosSnapshot, controlsSnapshot] = await Promise.all([getDocs(collection(db, 'articles')), getDocs(collection(db, 'tickers')), getDocs(collection(db, 'videoItems')), getDocs(collection(db, 'videoControls'))]);
+    const readCollection = async name => {
+      try { return { name, snapshot: await getDocs(collection(db, name)) }; }
+      catch (error) { console.warn(`Could not read ${name}:`, error); return { name, snapshot: { docs: [] }, error }; }
+    };
+    const results = await Promise.all([
+      currentRole === 'reporter' ? Promise.resolve({ name: 'jobApplications', snapshot: { docs: [] } }) : readCollection('jobApplications'),
+      currentRole === 'reporter' ? Promise.resolve({ name: 'sponsors', snapshot: { docs: [] } }) : readCollection('sponsors'),
+      readCollection('articles'), readCollection('tickers'), readCollection('videoItems'), readCollection('videoControls')
+    ]);
+    const byName = name => results.find(result => result.name === name) || { name, snapshot: { docs: [] } };
+    const applicationsSnapshot = byName('jobApplications').snapshot;
+    const sponsorsSnapshot = byName('sponsors').snapshot;
+    const articlesSnapshot = byName('articles').snapshot;
+    const tickersSnapshot = byName('tickers').snapshot;
+    const videosSnapshot = byName('videoItems').snapshot;
+    const controlsSnapshot = byName('videoControls').snapshot;
     jobApplicationCache = applicationsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     sponsorCache = sponsorsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
@@ -157,13 +170,16 @@ async function loadAdminData() {
     $('stat-videos').textContent = videoCache.length;
     $('stat-tickers').textContent = tickerCache.length;
     $('stat-applications').textContent = jobApplicationCache.length;
-    const pollSnapshot = await getDocs(collection(db, 'polls'));
+    const pollsResult = await readCollection('polls');
+    const pollSnapshot = pollsResult.snapshot;
     pollVoteCounts = new Map();
     pollCache = await Promise.all(pollSnapshot.docs.map(async item => { const votes = await getDocs(collection(db, 'polls', item.id, 'votes')).catch(() => ({ size: 0 })); pollVoteCounts.set(item.id, votes.size || 0); return { id: item.id, ...item.data() }; }));
     pollCache.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
     renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPollList(); renderJobApplications(); renderSponsors();
-    $('last-refresh').textContent = `Updated ${new Date().toLocaleTimeString()}`; status('admin-data-status', 'Data refreshed.');
-  } catch (error) { console.error('Admin data load failed:', error); status('admin-data-status', 'Could not load editorial data. Check Firestore rules.', true); }
+    $('last-refresh').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    const failedSections = results.concat(pollsResult).filter(result => result.error).map(result => result.name);
+    status('admin-data-status', failedSections.length ? `Data loaded with limited sections. Deploy Firestore rules for: ${failedSections.join(', ')}.` : 'Data refreshed.', Boolean(failedSections.length));
+  } catch (error) { console.error('Admin data load failed:', error); status('admin-data-status', `Could not load editorial data: ${error.message || 'check Firestore rules.'}`, true); }
 }
 
 function renderJobApplications() {
@@ -353,7 +369,16 @@ function bindForms(auth) {
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };
   $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };
   $('source-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'externalSources', `${$('source-provider').value}-${$('source-id').value.trim()}`), { provider: $('source-provider').value, name: $('source-name').value.trim(), channelOrPageId: $('source-id').value.trim(), liveUrl: readUrl($('source-live-url').value), active: true, updatedAt: serverTimestamp() }); $('source-form').reset(); status('source-status', 'Source saved. Keep tokens in the private worker config.'); } catch (error) { status('source-status', error.message, true); } };
-  $('sponsor-form').onsubmit = async event => { event.preventDefault(); try { const data = { name: $('sponsor-name').value.trim(), tagline: $('sponsor-tagline').value.trim(), logo: readUrl($('sponsor-logo').value), website: readUrl($('sponsor-website').value), description: $('sponsor-description').value.trim(), category: $('sponsor-category').value, priority: Number($('sponsor-priority').value) || 1, bannerBg: $('sponsor-banner').value.trim() || 'linear-gradient(135deg, #091526, #d92535)', active: $('sponsor-active').checked, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingSponsorId) { await updateDoc(doc(db, 'sponsors', editingSponsorId), data); status('sponsor-status', 'Sponsor changes saved.'); } else { await addDoc(collection(db, 'sponsors'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('sponsor-status', 'Sponsor added.'); } resetSponsorForm(); await loadAdminData(); } catch (error) { status('sponsor-status', error.message, true); } };
+  $('sponsor-form').onsubmit = async event => { event.preventDefault(); try {
+    const name = $('sponsor-name').value.trim();
+    const logoInput = $('sponsor-logo').value.trim();
+    const logo = readUrl(logoInput);
+    if (!name) throw new Error('Sponsor name is required.');
+    if (!logo) throw new Error('Enter a valid image URL beginning with http:// or https://.');
+    const data = { name, tagline: $('sponsor-tagline').value.trim(), logo, website: readUrl($('sponsor-website').value), description: $('sponsor-description').value.trim(), category: $('sponsor-category').value, priority: Number($('sponsor-priority').value) || 1, bannerBg: $('sponsor-banner').value.trim() || 'linear-gradient(135deg, #091526, #d92535)', active: $('sponsor-active').checked, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid };
+    if (editingSponsorId) { await updateDoc(doc(db, 'sponsors', editingSponsorId), data); status('sponsor-status', 'Sponsor changes saved.'); } else { await addDoc(collection(db, 'sponsors'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('sponsor-status', 'Sponsor added.'); }
+    resetSponsorForm(); await loadAdminData();
+  } catch (error) { status('sponsor-status', error.message, true); } };
   if (currentRole === 'reporter') { $('article-status-select').value = 'draft'; $('article-status-select').disabled = true; }
 }
 

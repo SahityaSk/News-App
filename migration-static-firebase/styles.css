@@ -612,6 +612,7 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .sponsor-empty-card {
@@ -651,10 +652,12 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   border-radius: var(--radius-sm);
   padding: 14px;
   color: #fff;
+  background: var(--banner-bg, linear-gradient(135deg, #091526, #d92535));
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  isolation: isolate;
 }
 
 .sponsor-card:hover {
@@ -673,6 +676,8 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   background: linear-gradient(45deg, transparent, rgba(255,255,255,0.08), transparent);
   transform: rotate(30deg);
   animation: sponsorShimmer 4s infinite linear;
+  pointer-events: none;
+  z-index: -1;
 }
 
 @keyframes sponsorShimmer {
@@ -681,6 +686,8 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 }
 
 .sponsor-badge {
+  position: relative;
+  z-index: 1;
   display: inline-block;
   padding: 2px 7px;
   border-radius: 999px;
@@ -693,10 +700,13 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 }
 
 .sponsor-top-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 6px;
+  min-width: 0;
 }
 
 .sponsor-logo-box {
@@ -716,9 +726,14 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 
 .sponsor-logo-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
   font-size: 1.1rem;
 }
 
@@ -727,6 +742,7 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   font-size: 0.88rem;
   line-height: 1.15;
   color: #fff;
+  overflow-wrap: anywhere;
 }
 
 .sponsor-info small {
@@ -734,6 +750,12 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.85);
   margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.sponsor-info {
+  min-width: 0;
+  flex: 1;
 }
 
 .sponsor-join-btn {
