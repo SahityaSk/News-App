@@ -328,7 +328,7 @@ const safeUrl = value => {
     return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
   } catch { return ''; }
 };
-const youtubeId = value => String(value || '').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i)?.[1] || '';
+const youtubeId = value => String(value || '').match(/(?:v=|youtu\.be\/|shorts\/|live\/|embed\/)([^?&/]+)/i)?.[1] || '';
 const facebookUrl = item => safeUrl(item.embedUrl || item.sourceUrl || item.videoUrl);
 const youtubeEmbed = id => id ? `<div class="social-embed"><iframe title="YouTube video" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : '';
 const facebookEmbed = url => url ? `<div class="social-embed facebook-embed"><div class="fb-post" data-href="${escapeHtml(url)}" data-width="500"></div></div>` : '';

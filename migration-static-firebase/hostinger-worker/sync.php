@@ -273,22 +273,7 @@ try {
     $token = accessToken($service);
     $projectId = (string) $config['projectId'];
     $count = 0;
-    if (!empty($config['allowExternalNews'])) {
-        $rssSources = $config['rssSources'] ?? [];
-        fwrite(STDOUT, 'External RSS mode enabled; configured sources: ' . count($rssSources) . "\n");
-        foreach ($rssSources as $source) {
-            if (empty($source['active'])) continue;
-            try {
-                $articles = rssArticles($source);
-                foreach ($articles as $article) { $article['sourceType'] = 'external-news'; upsertFirestore($projectId, $token, 'articles', $article['documentId'], $article); $count++; }
-                fwrite(STDOUT, 'RSS ' . ($source['id'] ?? $source['name'] ?? 'unknown') . ': ' . count($articles) . " articles\n");
-            } catch (Throwable $sourceError) {
-                fwrite(STDERR, 'RSS failed ' . ($source['id'] ?? $source['name'] ?? 'unknown') . ': ' . $sourceError->getMessage() . "\n");
-            }
-        }
-    } else {
-        fwrite(STDOUT, "External RSS mode disabled; no third-party news wires will be synchronized.\n");
-    }
+    fwrite(STDOUT, "RSS article synchronization disabled; no third-party news wires will be synchronized.\n");
     $remoteSources = listFirestoreCollection($projectId, $token, 'externalSources');
     $videoControls = [];
     foreach (listFirestoreCollection($projectId, $token, 'videoControls') as $control) {
@@ -297,10 +282,8 @@ try {
     $youtubeSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'youtube'
         && ($source['active'] ?? false)
         && trim((string) ($source['channelId'] ?? $source['channelOrPageId'] ?? '')) !== ''));
-    $facebookSources = array_values(array_filter($remoteSources, fn(array $source): bool => ($source['provider'] ?? '') === 'facebook' && ($source['active'] ?? false)));
     if (!$remoteSources || !$youtubeSources) {
         $youtubeSources = $config['youtubeChannels'] ?? [];
-        $facebookSources = $config['facebookPages'] ?? [];
     }
     foreach ($youtubeSources as $source) {
         if (empty($source['active'])) continue;
@@ -330,14 +313,7 @@ try {
             $count++;
         }
     }
-    foreach ($facebookSources as $source) {
-        if (empty($source['active'])) continue;
-        $source['pageId'] = $source['pageId'] ?? $source['channelOrPageId'] ?? '';
-        $source['id'] = $source['id'] ?? 'facebook-' . $source['pageId'];
-        $pageToken = (string) ($config['facebookPageAccessTokens'][$source['id']] ?? '');
-        foreach (facebookPosts($source, $pageToken, (string) ($config['graphApiVersion'] ?? 'v23.0')) as $post) { upsertFirestore($projectId, $token, 'videoItems', $post['documentId'], $post); $count++; }
-        foreach (($config['facebookPostLinks'] ?? []) as $link) { $post = facebookPostLink((string) $link, $pageToken, (string) ($config['graphApiVersion'] ?? 'v23.0')); if ($post) { upsertFirestore($projectId, $token, 'videoItems', $post['documentId'], $post); $count++; } }
-    }
+    fwrite(STDOUT, "Automatic Facebook synchronization disabled; manage Facebook links manually in the admin desk.\n");
     try {
         $subscriberChannelId = (string) ($config['subscriberCountChannelId'] ?? '');
         $subscriberChannelHandle = (string) ($config['subscriberCountChannelHandle'] ?? '');
@@ -360,7 +336,7 @@ try {
     } catch (Throwable $statsError) {
         fwrite(STDERR, 'YouTube subscriber count refresh failed: ' . $statsError->getMessage() . "\n");
     }
-    fwrite(STDOUT, "Sync complete: {$count} external items processed.\n");
+    fwrite(STDOUT, "Sync complete: {$count} YouTube items processed.\n");
 } catch (Throwable $error) {
     fwrite(STDERR, 'Sync failed: ' . $error->getMessage() . "\n");
     exit(1);

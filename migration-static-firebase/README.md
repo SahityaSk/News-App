@@ -8,7 +8,7 @@ This directory contains the Hostinger-compatible version of YUGANTAR News. It us
 - Firebase Authentication for staff and reporter login.
 - Cloud Firestore for articles, videos, polls, tickers, sponsors, podcasts, users, and moderation data.
 - Optional Realtime Database for chat only.
-- PHP worker for RSS and YouTube synchronization.
+- PHP worker for YouTube video, live-status, and subscriber-count synchronization.
 - Hostinger cron job for automatic feed refresh.
 - Local GeoJSON/Leaflet map for all 23 West Bengal districts.
 - Bengali, English, and Hindi support, with Bengali as the default language.
@@ -55,7 +55,7 @@ Never upload `.git`, service-account JSON, private worker configuration, local s
 ## Content workflow
 
 ```text
-RSS feeds / YouTube API
+YouTube channel / YouTube API
           ↓
 Private PHP worker on a schedule
           ↓
@@ -64,7 +64,7 @@ Cloud Firestore
 Static pages read approved/public records
 ```
 
-The worker normalizes titles, summaries, source links, thumbnails, provider IDs, categories, and timestamps. Stable IDs make repeated runs idempotent. The site does not crawl the entire internet; only configured feeds and APIs are processed.
+The worker normalizes YouTube titles, descriptions, links, thumbnails, provider IDs, and timestamps. Stable IDs make repeated runs idempotent. It does not fetch articles from RSS feeds or automatically fetch Facebook posts.
 
 External article content should be limited to permitted metadata, short summaries, attribution, and links to the original source. The client remains responsible for rights, attribution, corrections, and takedowns.
 
@@ -80,7 +80,7 @@ The podcast section is currently manually managed by an admin. The admin enters 
 
 ### Images and storage
 
-RSS, YouTube, and manually entered media normally remain at their external URLs. The frontend shows a branded fallback when an image is broken or blocked. This avoids filling Firebase Storage, but external images are not permanent. Re-hosting media requires rights approval, storage limits, cleanup, and a CDN/storage decision.
+YouTube and manually entered media normally remain at their external URLs. The frontend shows a branded fallback when an image is broken or blocked. This avoids filling Firebase Storage, but external images are not permanent. Re-hosting media requires rights approval, storage limits, cleanup, and a CDN/storage decision.
 
 ## Admin, reporter, and public workflows
 
@@ -88,7 +88,7 @@ Admin authentication uses a separate named Firebase app with persistent Auth sto
 
 ### Admin/editor
 
-Authorized staff can manage articles, drafts, tickers, polls, videos, live streams, sponsors, podcasts, sources, and moderation status. Publishing and destructive actions should be confirmed and audited.
+Authorized staff can manage articles, drafts, tickers, polls, videos, live streams, sponsors, podcasts, and moderation status. Feed and provider configuration is kept in the private worker configuration rather than exposed as a public admin form. Publishing and destructive actions should be confirmed and audited.
 
 ### Reporter
 
@@ -198,7 +198,7 @@ In Hostinger hPanel → File Manager:
 
 ### Configure the private PHP worker
 
-Place the worker and service-account JSON outside `public_html` if the account permits it. Configure the client project ID, service-account path, RSS sources, YouTube channel ID, and private credentials.
+Place the worker and service-account JSON outside `public_html` if the account permits it. Configure the client project ID, service-account path, YouTube channel ID, and private API credentials.
 
 Create a Hostinger cron command similar to:
 
@@ -302,9 +302,9 @@ Use a separate development key or Firebase App Check debug provider for local te
 
 Verify the Firebase project, published article documents, public-read rules, required indexes, and HTTP/HTTPS serving rather than `file://`.
 
-### No automatic news
+### No YouTube updates
 
-The browser does not fetch arbitrary news. Run the PHP worker, inspect diagnostics, verify active RSS sources and network access, and confirm Firestore documents are changing.
+The browser does not fetch YouTube data directly. Run the PHP worker, inspect diagnostics, verify the active YouTube channel and API key, and confirm `videoItems`, `liveStreams`, and `publicStats/subscribers` are changing.
 
 ### Admin login or permissions fail
 
@@ -320,7 +320,7 @@ Confirm the Page ID, Page token, Meta permissions, token expiry, and client owne
 
 ### Worker reports zero items
 
-Check feed URLs, redirects, TLS, PHP cURL/SimpleXML, source activation flags, duplicate keys, and worker error output.
+Check the YouTube channel ID, API key, quota, PHP cURL/TLS access, active source configuration, duplicate keys, and worker error output.
 
 ## Operational ownership
 
