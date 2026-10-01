@@ -10,7 +10,8 @@ import { SPONSORS } from './sponsors-data.js';
 
 const $ = id => document.getElementById(id);
 const savedKey = 'yugantar_saved_articles';
-const savedLanguageKey = 'yugantar_language';
+// Versioned so older testing preferences such as EN do not override the Bengali production default.
+const savedLanguageKey = 'yugantar_language_v2';
 const DEMO_ARTICLE_IDS = new Set([
   ...Array.from({ length: 6 }, (_, index) => `demo-art-${index + 1}`),
   ...Array.from({ length: 10 }, (_, index) => `art-${index + 1}`),
@@ -469,23 +470,8 @@ function renderHeadlineStrip() {
   target.querySelectorAll('[data-headline-id]').forEach(button => button.addEventListener('click', () => openArticle(button.dataset.headlineId)));
 }
 
-const DEFAULT_DEMO_VIDEOS = [
-  { id: 'v-1', title: '🔴 SahiDon Is Live | PUBG MOBILE Kr | Noob Is Back 🤠', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade! Follow me for more: https://omlet.gg/d/profile/sahidongamingyt...', publishedAt: '1/26/2021, 1:12:10 PM' },
-  { id: 'v-2', title: 'Thank You Guys For 600 SUBS & Support 🔥', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Thank you guys for 600 subs & support! Keep supporting!', publishedAt: '8/31/2020, 7:39:50 PM' },
-  { id: 'v-3', title: 'Crafting Smithy 🛠️ & Metal Tools Unlocked! | ARK Survival', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream ARK: Survival Evolved on Omlet Arcade!', publishedAt: '11/20/2020, 7:41:21 PM' },
-  { id: 'v-4', title: 'Watch me stream PUBG MOBILE on Omlet Arcade!', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Watch me stream PUBG MOBILE on Omlet Arcade!', publishedAt: '1/23/2021, 12:06:12 PM' },
-  { id: 'v-5', title: 'SahiDon Gaming Live Stream Highlights', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Official livestream highlights and clutch moments.', publishedAt: '1/21/2021, 9:52:51 AM' },
-  { id: 'v-6', title: '🔴 This Match Took Me From Ace To Conqueror 🏆', provider: 'youtube', mediaType: 'video', videoUrl: 'https://www.youtube.com/watch?v=live_stream', description: 'Insane Conqueror lobby push with top tier gameplay.', publishedAt: '8/27/2020, 7:12:48 PM' }
-];
-
 function renderVideos(snapshot) {
-  let itemsToRender = Array.isArray(snapshot) && snapshot.length > 0 ? snapshot : [];
-  if (itemsToRender.length < 6) {
-    const existing = new Set(itemsToRender.map(item => item.id || item.videoUrl));
-    const fill = DEFAULT_DEMO_VIDEOS.filter(item => !existing.has(item.id) && !existing.has(item.videoUrl));
-    itemsToRender = [...itemsToRender, ...fill];
-  }
-  itemsToRender = itemsToRender.slice(0, 6);
+  const itemsToRender = (Array.isArray(snapshot) ? snapshot : []).slice(0, 6);
   const videos = itemsToRender.map(item => {
     const id = youtubeId(item.videoUrl || item.embedUrl);
     const thumbnail = item.thumbnail || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
@@ -562,7 +548,8 @@ function startRealtimeListeners() {
     renderSubscriberCount();
   });
   onSnapshot(query(collection(db, 'tickers'), where('active', '==', true), orderBy('priority', 'asc'), limit(20)), snapshot => {
-    state.tickers = snapshot.docs.map(item => item.data());
+    // The homepage only displays global tickers. District-targeted tickers belong on district.html.
+    state.tickers = snapshot.docs.map(item => item.data()).filter(item => item.scope !== 'district' && !item.districtId);
     state.tickerState = 'ready';
     renderTicker();
   }, () => { state.tickerState = 'error'; renderTicker(); });

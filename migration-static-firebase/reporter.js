@@ -2,6 +2,8 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
+import { WB_DISTRICTS } from './wb-map-data.js';
+import { DISTRICT_SUBCATEGORIES } from './district-content.js';
 
 const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => {
@@ -23,6 +25,13 @@ let auth;
 let currentUser;
 let drafts = [];
 
+function populateDistrictFields() {
+  const district = $('reporter-district');
+  const subcategory = $('reporter-subcategory');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn} · ${item.nameEn}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.BN} · ${item.label.EN}</option>`).join('');
+}
+
 function resetForm() {
   $('reporter-story-form').reset();
   $('reporter-draft-id').value = '';
@@ -36,16 +45,22 @@ function loadDraft(draft) {
   $('reporter-draft-id').value = draft.id;
   $('reporter-title-en').value = draft.title?.EN || '';
   $('reporter-title-bn').value = draft.title?.BN || '';
+  $('reporter-title-hi').value = draft.title?.HI || '';
   $('reporter-category').value = draft.category || 'national';
-  $('reporter-district').value = draft.district || '';
+  $('reporter-district').value = draft.districtId || draft.primaryDistrictId || '';
+  $('reporter-subcategory').value = draft.subcategory || 'other';
+  $('reporter-coverage-scope').value = draft.coverageScope || (draft.districtId ? 'district' : 'state');
   $('reporter-summary-en').value = draft.summary?.EN || '';
   $('reporter-summary-bn').value = draft.summary?.BN || '';
+  $('reporter-summary-hi').value = draft.summary?.HI || '';
   $('reporter-content-en').value = draft.content?.EN || '';
   $('reporter-content-bn').value = draft.content?.BN || '';
+  $('reporter-content-hi').value = draft.content?.HI || '';
   $('reporter-source-url').value = draft.sourceUrl || '';
   $('reporter-image-url').value = draft.image || '';
   $('reporter-form-title').textContent = 'Edit your draft';
   $('reporter-save').textContent = 'Save changes';
+  $('reporter-submit').textContent = draft.status === 'rejected' ? 'Resubmit for review' : 'Submit for review';
   status('reporter-form-status', `Editing draft · Last saved ${displayDate(draft.updatedAt || draft.createdAt)}`);
   $('reporter-story-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -57,11 +72,11 @@ function renderDrafts() {
     return;
   }
   target.innerHTML = drafts.map(draft => `<article class="reporter-draft-item">
-    <span class="status-chip draft">DRAFT</span>
+    <span class="status-chip ${escapeHtml(draft.status || 'draft')}">${escapeHtml(String(draft.status || 'draft').replace('_', ' ').toUpperCase())}</span>
     <h4>${escapeHtml(draft.title?.EN || 'Untitled draft')}</h4>
-    <p>${escapeHtml(draft.category || 'news')}${draft.district ? ` · ${escapeHtml(draft.district)}` : ''}</p>
+    <p>${escapeHtml(draft.category || 'news')}${draft.districtId ? ` · ${escapeHtml(draft.districtId)}` : ''}${draft.reviewNote ? ` · ${escapeHtml(draft.reviewNote)}` : ''}</p>
     <small>Updated ${escapeHtml(displayDate(draft.updatedAt || draft.createdAt))}</small>
-    <button class="button button-muted reporter-edit-draft" type="button" data-edit-draft="${escapeHtml(draft.id)}">Continue editing</button>
+    ${['draft', 'rejected'].includes(draft.status) ? `<button class="button button-muted reporter-edit-draft" type="button" data-edit-draft="${escapeHtml(draft.id)}">Continue editing</button>` : ''}
   </article>`).join('');
   target.querySelectorAll('[data-edit-draft]').forEach(button => button.addEventListener('click', () => {
     const draft = drafts.find(item => item.id === button.dataset.editDraft);
@@ -75,7 +90,7 @@ async function refreshDrafts() {
   try {
     const result = await getDocs(query(collection(db, 'articles'), where('createdBy', '==', currentUser.uid)));
     drafts = result.docs.map(snapshot => ({ ...snapshot.data(), id: snapshot.id }))
-      .filter(article => article.status === 'draft')
+      .filter(article => ['draft', 'submitted', 'under_review', 'approved', 'published', 'rejected'].includes(article.status))
       .sort((a, b) => {
         const aDate = a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
         const bDate = b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
@@ -88,21 +103,25 @@ async function refreshDrafts() {
   }
 }
 
-function articlePayload() {
+function articlePayload(nextStatus = 'draft') {
   const sourceInput = $('reporter-source-url').value.trim();
   const imageInput = $('reporter-image-url').value.trim();
   if (sourceInput && !safeUrl(sourceInput)) throw new Error('Enter a valid source link beginning with http:// or https://.');
   if (imageInput && !safeUrl(imageInput)) throw new Error('Enter a valid image link beginning with http:// or https://.');
   return {
-    title: { EN: $('reporter-title-en').value.trim(), BN: $('reporter-title-bn').value.trim(), HI: '' },
-    summary: { EN: $('reporter-summary-en').value.trim(), BN: $('reporter-summary-bn').value.trim(), HI: '' },
-    content: { EN: $('reporter-content-en').value.trim(), BN: $('reporter-content-bn').value.trim(), HI: '' },
+    title: { EN: $('reporter-title-en').value.trim(), BN: $('reporter-title-bn').value.trim(), HI: $('reporter-title-hi').value.trim() },
+    summary: { EN: $('reporter-summary-en').value.trim(), BN: $('reporter-summary-bn').value.trim(), HI: $('reporter-summary-hi').value.trim() },
+    content: { EN: $('reporter-content-en').value.trim(), BN: $('reporter-content-bn').value.trim(), HI: $('reporter-content-hi').value.trim() },
     category: $('reporter-category').value,
-    district: $('reporter-district').value.trim(),
+    districtId: $('reporter-district').value || '',
+    primaryDistrictId: $('reporter-district').value || '',
+    districtIds: $('reporter-district').value ? [$('reporter-district').value] : [],
+    coverageScope: $('reporter-coverage-scope').value,
+    subcategory: $('reporter-subcategory').value,
     author: currentUser.displayName || currentUser.email || 'YUGANTAR Reporter',
     sourceAgency: 'YUGANTAR', sourceLanguage: 'EN',
     sourceUrl: safeUrl(sourceInput), image: safeUrl(imageInput),
-    status: 'draft', hero: false, trending: false,
+    status: nextStatus, hero: false, trending: false,
     updatedAt: serverTimestamp(), updatedBy: currentUser.uid
   };
 }
@@ -110,26 +129,27 @@ function articlePayload() {
 function bindWorkspace() {
   $('reporter-story-form').addEventListener('submit', async event => {
     event.preventDefault();
-    const button = $('reporter-save');
+    const button = event.submitter || $('reporter-save');
+    const nextStatus = button.dataset.action === 'submit' ? 'submitted' : 'draft';
     button.disabled = true;
     try {
-      const payload = articlePayload();
+      const payload = articlePayload(nextStatus);
       const draftId = $('reporter-draft-id').value;
       if (draftId) {
         const existing = drafts.find(item => item.id === draftId);
-        if (!existing || existing.createdBy !== currentUser.uid || existing.status !== 'draft') {
+        if (!existing || existing.createdBy !== currentUser.uid || !['draft', 'rejected'].includes(existing.status)) {
           throw new Error('This draft is no longer available to edit. Refresh your drafts.');
         }
         await updateDoc(doc(db, 'articles', draftId), payload);
-        status('reporter-form-status', 'Draft changes saved. It is still private and needs editorial review.');
+        status('reporter-form-status', nextStatus === 'submitted' ? 'Submitted to the editor for review.' : 'Draft changes saved. It is still private.');
       } else {
         const ref = await addDoc(collection(db, 'articles'), {
-          ...payload, createdBy: currentUser.uid, createdAt: serverTimestamp(), publishedAt: serverTimestamp()
+          ...payload, createdBy: currentUser.uid, createdAt: serverTimestamp(), ...(nextStatus === 'submitted' ? { submittedAt: serverTimestamp() } : {})
         });
         $('reporter-draft-id').value = ref.id;
         $('reporter-form-title').textContent = 'Edit your draft';
         $('reporter-save').textContent = 'Save changes';
-        status('reporter-form-status', 'Draft saved. It is still private and needs editorial review.');
+        status('reporter-form-status', nextStatus === 'submitted' ? 'Submitted to the editor for review.' : 'Draft saved. It is still private.');
       }
       await refreshDrafts();
     } catch (error) {
@@ -140,6 +160,7 @@ function bindWorkspace() {
   $('reporter-new-draft').addEventListener('click', resetForm);
   $('reporter-refresh').addEventListener('click', refreshDrafts);
   $('reporter-signout').addEventListener('click', () => signOut(auth));
+  $('reporter-submit').dataset.action = 'submit';
 }
 
 if (!firebaseConfigured) {
@@ -149,6 +170,7 @@ if (!firebaseConfigured) {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  populateDistrictFields();
   $('reporter-login-form').addEventListener('submit', async event => {
     event.preventDefault();
     status('reporter-login-status', 'Signing in…');

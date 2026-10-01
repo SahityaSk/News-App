@@ -5,6 +5,7 @@ service cloud.firestore {
     function role() { return signedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : ''; }
     function staff() { return role() in ['superadmin', 'editor', 'reporter']; }
     function editor() { return role() in ['superadmin', 'editor']; }
+    function reporter() { return role() == 'reporter'; }
     function superadmin() { return role() == 'superadmin'; }
     function validVoteUpdate(pollId) {
       let vote = getAfter(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid));
@@ -23,15 +24,35 @@ service cloud.firestore {
     }
 
     match /articles/{id} {
-      allow read: if resource.data.status == 'published' || staff();
-      allow create: if editor() || (role() == 'reporter'
-        && request.resource.data.status == 'draft'
+      allow read: if resource.data.status == 'published' || editor()
+        || (reporter() && resource.data.createdBy == request.auth.uid);
+  allow create: if editor() || (role() == 'reporter'
+    && request.resource.data.status in ['draft', 'submitted']
         && request.resource.data.createdBy == request.auth.uid);
-      allow update: if editor() || (role() == 'reporter'
+      allow update: if editor() || (reporter()
         && resource.data.createdBy == request.auth.uid
         && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.status == 'draft');
+        && resource.data.status in ['draft', 'rejected']
+        && request.resource.data.status in ['draft', 'submitted']);
       allow delete: if editor();
+    }
+
+    // Optional unified queue for reporter-created polls, tickers, or future content types.
+    // Reporters can only see and edit their own drafts; editors control review and publication.
+    match /reporterSubmissions/{id} {
+      allow read: if editor() || (reporter() && resource.data.reporterUid == request.auth.uid);
+      allow create: if reporter()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.contentType in ['article', 'poll', 'ticker', 'social_item']
+        && request.resource.data.status in ['draft', 'submitted'];
+      allow update: if editor() || (reporter()
+        && resource.data.reporterUid == request.auth.uid
+        && request.resource.data.reporterUid == request.auth.uid
+        && resource.data.status in ['draft', 'rejected']
+        && request.resource.data.status in ['draft', 'submitted']);
+      allow delete: if editor() || (reporter()
+        && resource.data.reporterUid == request.auth.uid
+        && resource.data.status == 'draft');
     }
 
     match /tickers/{id} {
@@ -89,8 +110,13 @@ service cloud.firestore {
     }
 
     match /polls/{pollId} {
-      allow read: if true;
-      allow create, delete: if editor();
+      allow read: if resource.data.active == true || editor()
+        || (reporter() && resource.data.createdBy == request.auth.uid);
+      allow create: if editor() || (reporter()
+        && request.resource.data.active == false
+        && request.resource.data.status in ['draft', 'submitted']
+        && request.resource.data.createdBy == request.auth.uid);
+      allow delete: if editor();
       allow update: if editor() || (signedIn() && validVoteUpdate(pollId));
       match /votes/{uid} {
         allow create: if signedIn() && request.auth.uid == uid

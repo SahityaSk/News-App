@@ -881,6 +881,50 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   margin-top: 4px;
 }
 
+/* Multilingual article editor */
+.article-language-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.article-language-tab {
+  flex: 1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: transparent;
+  color: var(--muted-dark);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.article-language-tab.active,
+.article-language-tab:hover {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.article-language-panel { display: none; gap: 8px; }
+.article-language-panel.active { display: grid; }
+.article-language-panel label { margin-top: 4px; font-size: .78rem; font-weight: 800; color: var(--ink); }
+.field-language { color: var(--red); font-size: .72rem; margin-left: 4px; }
+.article-content-editor { min-height: 230px; line-height: 1.65; resize: vertical; }
+.article-form-spacer { flex: 1; }
+.article-editor-tools { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .75rem; }
+.article-live-preview { padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-soft); color: var(--ink); line-height: 1.55; }
+.article-live-preview strong { display: block; font-size: 1.05rem; line-height: 1.25; }
+.article-live-preview p { margin: 7px 0; color: var(--muted-dark); }
+
+@media (max-width: 600px) {
+  .article-editor-tools { flex-direction: column; gap: 3px; }
+  .article-language-tab { padding-inline: 7px; font-size: .78rem; }
+}
+
 /* --------------------------------------------------------------------------
    EXTREME RIGHT SIDEBAR: WEST BENGAL MAP & ALL 23 DISTRICTS
    -------------------------------------------------------------------------- */

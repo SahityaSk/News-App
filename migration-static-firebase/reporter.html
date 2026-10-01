@@ -55,23 +55,30 @@
           <input id="reporter-title-en" required maxlength="180" placeholder="Write a clear, factual headline">
           <div class="form-row">
             <div class="reporter-field"><label for="reporter-category">Section *</label><select id="reporter-category" required><option value="national">National</option><option value="world">World</option><option value="business">Business</option><option value="sports">Sports</option><option value="tech">Technology</option><option value="entertainment">Entertainment</option><option value="science">Science</option></select></div>
-            <div class="reporter-field"><label for="reporter-district">District / location</label><input id="reporter-district" maxlength="120" placeholder="e.g. Raiganj, Uttar Dinajpur"></div>
+            <div class="reporter-field"><label for="reporter-district">District / location</label><select id="reporter-district"></select></div>
           </div>
+          <div class="form-row"><div class="reporter-field"><label for="reporter-subcategory">Local topic</label><select id="reporter-subcategory"></select></div><div class="reporter-field"><label for="reporter-coverage-scope">Coverage scope</label><select id="reporter-coverage-scope"><option value="district">District coverage</option><option value="state">State-wide coverage</option></select></div></div>
           <label for="reporter-title-bn">Headline in Bengali</label>
           <input id="reporter-title-bn" maxlength="180" placeholder="বাংলা শিরোনাম">
+          <label for="reporter-title-hi">Headline in Hindi</label>
+          <input id="reporter-title-hi" maxlength="180" placeholder="हिंदी शीर्षक">
           <label for="reporter-summary-en">Short summary in English *</label>
           <textarea id="reporter-summary-en" required maxlength="600" placeholder="Summarize the verified facts in a few sentences."></textarea>
           <label for="reporter-summary-bn">Short summary in Bengali</label>
           <textarea id="reporter-summary-bn" maxlength="600" placeholder="সংক্ষেপে বাংলায় খবরের মূল তথ্য লিখুন।"></textarea>
+          <label for="reporter-summary-hi">Short summary in Hindi</label>
+          <textarea id="reporter-summary-hi" maxlength="600" placeholder="हिंदी में खबर का संक्षिप्त सारांश लिखें।"></textarea>
           <label for="reporter-content-en">Full story in English *</label>
           <textarea id="reporter-content-en" class="reporter-story-copy" required maxlength="12000" placeholder="Write the full report. Separate confirmed facts from claims and include relevant context."></textarea>
           <label for="reporter-content-bn">Full story in Bengali</label>
           <textarea id="reporter-content-bn" class="reporter-story-copy" maxlength="12000" placeholder="সম্পূর্ণ প্রতিবেদন বাংলায় লিখুন।"></textarea>
+          <label for="reporter-content-hi">Full story in Hindi</label>
+          <textarea id="reporter-content-hi" class="reporter-story-copy" maxlength="12000" placeholder="हिंदी में पूरी रिपोर्ट लिखें।"></textarea>
           <div class="form-row">
             <div class="reporter-field"><label for="reporter-source-url">Source link</label><input id="reporter-source-url" type="url" maxlength="1000" placeholder="https://..."></div>
             <div class="reporter-field"><label for="reporter-image-url">Image link</label><input id="reporter-image-url" type="url" maxlength="1000" placeholder="https://..."></div>
           </div>
-          <div class="reporter-form-footer"><p class="muted">Drafts remain private to newsroom staff until an editor publishes them.</p><button id="reporter-save" class="button" type="submit">Save draft</button></div>
+          <div class="reporter-form-footer"><p class="muted">Save privately, or submit to the editor. Nothing becomes public automatically.</p><div class="form-actions"><button id="reporter-save" class="button" data-action="save" type="submit">Save draft</button><button id="reporter-submit" class="button button-outline" data-action="submit" type="submit">Submit for review</button></div></div>
           <p id="reporter-form-status" class="status" aria-live="polite"></p>
         </form>
 
