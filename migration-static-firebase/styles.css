@@ -605,8 +605,9 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 .sidebar-live-card .media-placeholder { min-height: 150px; padding: 14px; font-size: .85rem; text-align: center; }
 .sidebar-live-card .media-placeholder iframe { height: 160px; }
 .sidebar-live-card .muted { margin: 10px 0 0; font-size: .76rem; line-height: 1.45; }
-.podcasts-sidebar { height: 232px; min-height: 232px; padding: 14px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); gap: 9px; }
-.podcasts-sidebar .sidebar-header { flex: 0 0 auto; margin-bottom: 0; padding-bottom: 8px; }
+.podcasts-sidebar { height: 202px; min-height: 202px; padding: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); gap: 7px; }
+.podcasts-sidebar .sidebar-header { flex: 0 0 auto; margin-bottom: 0; padding-bottom: 6px; }
+.podcasts-sidebar > .carousel-controls { margin-top: 6px; }
 .podcasts-sidebar .sidebar-header h2 { font-size: 1rem; }
 .featured-podcasts { display: flex; flex: 1 1 auto; min-height: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-inline: contain; }
 .featured-podcasts::-webkit-scrollbar, .sponsors-animated-container::-webkit-scrollbar { display: none; }
