@@ -84,6 +84,8 @@ RSS, YouTube, and manually entered media normally remain at their external URLs.
 
 ## Admin, reporter, and public workflows
 
+Admin authentication uses a separate named Firebase app with persistent Auth storage. Reporter authentication uses another named app with tab-scoped session storage, allowing different reporter accounts to work in separate browser tabs without replacing one another. Admin and reporters can work simultaneously on separate devices; reporter sessions remain active through refreshes and end when their tab closes.
+
 ### Admin/editor
 
 Authorized staff can manage articles, drafts, tickers, polls, videos, live streams, sponsors, podcasts, sources, and moderation status. Publishing and destructive actions should be confirmed and audited.

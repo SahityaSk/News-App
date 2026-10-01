@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { browserLocalPersistence, getAuth, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS } from './wb-map-data.js';
@@ -475,7 +475,8 @@ function bindForms(auth) {
 bindTheme();
 if (!firebaseConfigured) { $('admin-setup').textContent = 'Firebase is not configured. Add the client configuration in firebase-config.js before deployment.'; $('admin-setup').classList.remove('hidden'); }
 else {
-  const app = initializeApp(firebaseConfig); const auth = getAuth(app); db = getFirestore(app);
+  const app = initializeApp(firebaseConfig, 'yugantar-admin'); const auth = getAuth(app); db = getFirestore(app);
+  await setPersistence(auth, browserLocalPersistence);
   $('login-form').onsubmit = async event => { event.preventDefault(); try { status('login-status', 'Signing in…'); await signInWithEmailAndPassword(auth, $('login-email').value.trim(), $('login-password').value); } catch (error) { console.error('Firebase admin login failed:', error); const messages = { 'auth/invalid-credential': 'Email or password is incorrect.', 'auth/user-not-found': 'No Firebase Authentication user exists for this email.', 'auth/wrong-password': 'The password is incorrect.', 'auth/operation-not-allowed': 'Email/Password sign-in is not enabled in Firebase Authentication.', 'auth/unauthorized-domain': 'This website domain is not authorized in Firebase Authentication settings.' }; status('login-status', messages[error.code] || error.message || 'Firebase sign-in failed.', true); } };
   onAuthStateChanged(auth, async user => { if (!user) { $('login-panel').classList.remove('hidden'); $('desk-panel').classList.add('hidden'); return; } try { currentRole = await roleFor(user); if (!['superadmin', 'editor'].includes(currentRole)) { await signOut(auth); status('login-status', currentRole === 'reporter' ? 'Reporter accounts must use the Reporter Workspace.' : 'This account has no admin access.', true); return; } $('login-panel').classList.add('hidden'); $('desk-panel').classList.remove('hidden'); $('admin-user').textContent = `${user.email || 'Staff account'} · ${currentRole}`; bindForms(auth); resetArticleForm(); await loadAdminData(); } catch (error) { console.error('Role verification failed:', error); status('login-status', 'Could not verify editorial permissions.', true); } });
 }
