@@ -26,6 +26,8 @@ const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey)
 const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, tickers: [], tickerState: 'loading', saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
 let sponsorRotationTimer = null;
 let sponsorRotationPaused = false;
+let podcastRotationTimer = null;
+let podcastRotationPaused = false;
 let db;
 const legacyWireNames = new Set(['NDTV National Feed', 'ABP Ananda Bengali Feed', 'BBC Hindi Feed', 'NYT World Feed', 'NYT Technology Feed', 'NYT Business Feed', 'NYT Sports Feed']);
 
@@ -673,6 +675,11 @@ function bindUi() {
 
   // Sponsors Sidebar setup
   bindSidebarCarousel('featured-podcasts', '.podcast-episode', 'podcast-position', 'podcast-prev', 'podcast-next');
+  const podcastViewport = $('featured-podcasts');
+  podcastViewport?.addEventListener('mouseenter', () => { podcastRotationPaused = true; window.clearInterval(podcastRotationTimer); });
+  podcastViewport?.addEventListener('mouseleave', () => { podcastRotationPaused = false; startPodcastRotation(); });
+  podcastViewport?.addEventListener('focusin', () => { podcastRotationPaused = true; window.clearInterval(podcastRotationTimer); });
+  podcastViewport?.addEventListener('focusout', () => { podcastRotationPaused = false; startPodcastRotation(); });
   const sponsorViewport = $('sponsors-animated-box');
   sponsorViewport?.addEventListener('mouseenter', () => {
     sponsorRotationPaused = true;
@@ -683,10 +690,6 @@ function bindUi() {
     startSponsorRotation();
   });
   renderSponsors();
-
-  $('become-sponsor-btn')?.addEventListener('click', () => {
-    openSponsorModal(SPONSORS[0].id);
-  });
 
   // Header Modals (Subscribers & Careers)
   setupHeaderModals();
@@ -864,17 +867,33 @@ function renderFeaturedPodcasts(items = state.podcasts) {
     target.innerHTML = `<p class="podcast-empty">${escapeHtml(dict.podcastEmpty)}</p>`;
     target.scrollLeft = 0;
     syncCarouselControls('featured-podcasts', '.podcast-episode', 'podcast-position', 'podcast-prev', 'podcast-next');
+    startPodcastRotation();
     return;
   }
   target.innerHTML = items.map(episode => {
     const title = text(episode.title);
     const description = text(episode.summary || episode.description);
     const audioUrl = safeUrl(episode.audioUrl || episode.episodeUrl || episode.mediaUrl);
-    const imageUrl = safeUrl(episode.coverImage || episode.image);
-    return `<article class="podcast-episode">${imageUrl ? `<img class="podcast-cover" src="${escapeHtml(imageUrl)}" alt="">` : '<span class="podcast-cover podcast-cover-fallback" aria-hidden="true">🎙️</span>'}<div class="podcast-episode-copy"><h3>${escapeHtml(title || dict.podcastTitle)}</h3>${description ? `<p>${escapeHtml(description)}</p>` : ''}${audioUrl ? `<audio controls preload="none" aria-label="${escapeHtml(dict.podcastPlay)}: ${escapeHtml(title)}"><source src="${escapeHtml(audioUrl)}"></audio>` : ''}</div></article>`;
+    const imageUrl = safeUrl(episode.thumbnail || episode.coverImage || episode.image);
+    const facebookUrl = safeUrl(episode.facebookUrl || episode.sourceUrl);
+    return `<article class="podcast-episode">${imageUrl ? `<img class="podcast-cover" src="${escapeHtml(imageUrl)}" alt="">` : '<span class="podcast-cover podcast-cover-fallback" aria-hidden="true">🎙️</span>'}<div class="podcast-episode-copy"><h3>${escapeHtml(title || dict.podcastTitle)}</h3>${description ? `<p>${escapeHtml(description)}</p>` : ''}${facebookUrl ? `<a class="podcast-facebook-link" href="${escapeHtml(facebookUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(dict.podcastPlay)} · Facebook ↗</a>` : ''}${audioUrl ? `<audio controls preload="none" aria-label="${escapeHtml(dict.podcastPlay)}: ${escapeHtml(title)}"><source src="${escapeHtml(audioUrl)}"></audio>` : ''}</div></article>`;
   }).join('');
   target.scrollLeft = 0;
   syncCarouselControls('featured-podcasts', '.podcast-episode', 'podcast-position', 'podcast-prev', 'podcast-next');
+  startPodcastRotation();
+}
+
+function startPodcastRotation() {
+  window.clearInterval(podcastRotationTimer);
+  const viewport = $('featured-podcasts');
+  if (!viewport || podcastRotationPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cards = [...viewport.querySelectorAll('.podcast-episode')];
+  if (cards.length < 2) return;
+  podcastRotationTimer = window.setInterval(() => {
+    const current = Math.round(viewport.scrollLeft / Math.max(1, viewport.clientWidth));
+    const next = (current + 1) % cards.length;
+    viewport.scrollTo({ left: next * viewport.clientWidth, behavior: 'smooth' });
+  }, 6500);
 }
 
 async function loadFeaturedPodcasts() {
@@ -886,7 +905,7 @@ async function loadFeaturedPodcasts() {
     const snapshot = await getDocs(query(collection(db, 'podcasts'), where('status', '==', 'published'), limit(30)));
     state.podcasts = snapshot.docs
       .map(item => ({ id: item.id, ...item.data() }))
-      .filter(episode => episode.featured === true || episode.highlighted === true)
+      .filter(episode => episode.active !== false && (episode.featured === true || episode.highlighted === true))
       .sort((a, b) => {
         const date = value => value?.toDate ? value.toDate().getTime() : new Date(value || 0).getTime();
         return date(b.publishedAt) - date(a.publishedAt);

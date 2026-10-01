@@ -558,7 +558,15 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   .footer-grid { grid-template-columns: 1fr; gap: 27px; }
   .footer-about { grid-column: auto; }
   .form-row { grid-template-columns: 1fr; }
+  .form-group-row { grid-template-columns: 1fr; }
   .article-dialog { padding: 25px 20px; }
+}
+
+/* Keep dense editorial controls usable on narrow screens. */
+@media (max-width: 600px) {
+  .admin-list-item { align-items: flex-start; flex-wrap: wrap; }
+  .admin-list-item .item-actions { width: 100%; margin-left: 0; flex-wrap: wrap !important; }
+  .admin-list-item .item-actions .text-button { flex: 1 1 auto; min-width: 68px; }
 }
 
 /* ==========================================================================
@@ -599,6 +607,8 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 .podcast-episode-copy { min-width: 0; }
 .podcast-episode-copy h3 { margin: 0; font-size: .88rem; line-height: 1.35; }
 .podcast-episode-copy p { margin: 5px 0 8px; color: var(--muted); font-size: .75rem; line-height: 1.45; }
+.podcast-facebook-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; color: var(--red-dark); font-size: .74rem; font-weight: 800; text-decoration: none; }
+.podcast-facebook-link:hover { text-decoration: underline; }
 .podcast-episode-copy audio { display: block; width: 100%; height: 34px; margin-top: 8px; }
 .podcast-empty { margin: 0; color: var(--muted); font-size: .82rem; }
 .featured-podcasts > .podcast-episode { box-sizing: border-box; flex: 0 0 100%; min-width: 0; height: 100%; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 9px; overflow: hidden; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); scroll-snap-align: start; }
@@ -647,8 +657,8 @@ small, .muted { color: var(--muted); font-size: .8rem; }
    EXTREME LEFT SIDEBAR: SPONSORS & PARTNERS
    -------------------------------------------------------------------------- */
 .sponsors-sidebar {
-  height: 300px;
-  min-height: 300px;
+  height: auto;
+  min-height: 220px;
   position: static;
   max-height: none;
   overflow: visible;
@@ -715,6 +725,8 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   scrollbar-width: none;
   overscroll-behavior-inline: contain;
   scroll-behavior: smooth;
+  flex: 0 0 112px;
+  height: 112px;
 }
 
 .sponsor-empty-card {
@@ -870,15 +882,6 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 .sponsor-info {
   min-width: 0;
   flex: 1;
-}
-}
-
-.sponsor-join-btn {
-  width: 100%;
-  font-size: 0.78rem;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  margin-top: 4px;
 }
 
 /* Multilingual article editor */
