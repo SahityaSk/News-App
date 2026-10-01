@@ -71,7 +71,7 @@ service cloud.firestore {
     }
 
     match /podcasts/{id} {
-      allow read: if resource.data.status == 'published';
+      allow read: if resource.data.status == 'published' || editor();
       allow create, update, delete: if editor();
     }
 

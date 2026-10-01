@@ -25,6 +25,8 @@ let articleCache = [];
 let videoCache = [];
 let hiddenVideoCache = [];
 let tickerCache = [];
+let podcastCache = [];
+let editingPodcastId = '';
 let pollCache = [];
 let pollVoteCounts = new Map();
 let jobApplicationCache = [];
@@ -178,6 +180,48 @@ function renderSimpleList(targetId, items, type) {
   target.querySelectorAll('[data-delete-ticker]').forEach(button => button.addEventListener('click', () => deleteTicker(button.dataset.deleteTicker)));
 }
 
+function renderPodcastList() {
+  const target = $('podcast-list');
+  if (!target) return;
+  if (!podcastCache.length) { target.innerHTML = '<div class="empty-state">No podcasts found.</div>'; return; }
+  target.innerHTML = podcastCache.map(item => `<div class="admin-list-item"><div><strong>${escapeHtml(item.title || 'Untitled podcast')}</strong><small><span class="status-chip ${escapeHtml(item.status || 'draft')}">${escapeHtml(item.status || 'draft')}</span> · ${item.active === false ? 'Hidden' : 'Visible'} · ${escapeHtml(dateText(item.updatedAt || item.publishedAt))}</small></div><div class="item-actions"><button class="text-button" type="button" data-edit-podcast="${escapeHtml(item.id)}">Edit</button><button class="text-button danger" type="button" data-delete-podcast="${escapeHtml(item.id)}">Delete</button></div></div>`).join('');
+  target.querySelectorAll('[data-edit-podcast]').forEach(button => button.addEventListener('click', () => editPodcast(button.dataset.editPodcast)));
+  target.querySelectorAll('[data-delete-podcast]').forEach(button => button.addEventListener('click', () => deletePodcast(button.dataset.deletePodcast)));
+}
+
+function resetPodcastForm() {
+  const form = $('podcast-form');
+  if (!form) return;
+  editingPodcastId = '';
+  form.reset();
+  $('podcast-status-select').value = 'published';
+  $('podcast-active').checked = true;
+  $('podcast-submit').textContent = 'Publish podcast';
+  $('podcast-reset').classList.add('hidden');
+}
+
+function editPodcast(id) {
+  const item = podcastCache.find(podcast => podcast.id === id);
+  if (!item) return;
+  editingPodcastId = id;
+  $('podcast-title').value = item.title || '';
+  $('podcast-description').value = item.description || '';
+  $('podcast-thumbnail').value = item.thumbnail || item.image || '';
+  $('podcast-facebook-url').value = item.facebookUrl || item.sourceUrl || '';
+  $('podcast-status-select').value = item.status || 'published';
+  $('podcast-active').checked = item.active !== false;
+  $('podcast-submit').textContent = 'Save podcast changes';
+  $('podcast-reset').classList.remove('hidden');
+  document.querySelector('[data-admin-tab="podcasts"]')?.click();
+}
+
+async function deletePodcast(id) {
+  const item = podcastCache.find(podcast => podcast.id === id);
+  if (!item || !window.confirm(`Delete podcast “${item.title || 'this podcast'}”? This cannot be undone.`)) return;
+  try { await deleteDoc(doc(db, 'podcasts', id)); status('podcast-status', 'Podcast deleted.'); await loadAdminData(); }
+  catch (error) { status('podcast-status', error.message, true); }
+}
+
 async function loadAdminData() {
   status('admin-data-status', 'Refreshing newsroom data…');
   try {
@@ -188,7 +232,7 @@ async function loadAdminData() {
     const results = await Promise.all([
       currentRole === 'reporter' ? Promise.resolve({ name: 'jobApplications', snapshot: { docs: [] } }) : readCollection('jobApplications'),
       currentRole === 'reporter' ? Promise.resolve({ name: 'sponsors', snapshot: { docs: [] } }) : readCollection('sponsors'),
-      readCollection('articles'), readCollection('tickers'), readCollection('videoItems'), readCollection('videoControls')
+      readCollection('articles'), readCollection('tickers'), readCollection('videoItems'), readCollection('videoControls'), readCollection('podcasts')
     ]);
     const byName = name => results.find(result => result.name === name) || { name, snapshot: { docs: [] } };
     const applicationsSnapshot = byName('jobApplications').snapshot;
@@ -197,6 +241,7 @@ async function loadAdminData() {
     const tickersSnapshot = byName('tickers').snapshot;
     const videosSnapshot = byName('videoItems').snapshot;
     const controlsSnapshot = byName('videoControls').snapshot;
+    const podcastsSnapshot = byName('podcasts').snapshot;
     jobApplicationCache = applicationsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     sponsorCache = sponsorsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(article => !isDemoArticle(article)).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
@@ -206,6 +251,7 @@ async function loadAdminData() {
     hiddenVideoCache = allVideos.filter(item => item.active === false || hiddenIds.has(item.id)).sort((a, b) => (b.publishedAt?.toMillis?.() || 0) - (a.publishedAt?.toMillis?.() || 0));
     const tickers = tickerCache = tickersSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.active !== false);
     tickerCache.sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
+    podcastCache = podcastsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || b.publishedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || a.publishedAt?.toMillis?.() || 0));
     $('stat-articles').textContent = articleCache.filter(item => item.status === 'published').length;
     $('stat-drafts').textContent = articleCache.filter(item => item.status === 'draft').length;
     $('stat-videos').textContent = videoCache.length;
@@ -216,7 +262,7 @@ async function loadAdminData() {
     pollVoteCounts = new Map();
     pollCache = await Promise.all(pollSnapshot.docs.map(async item => { const votes = await getDocs(collection(db, 'polls', item.id, 'votes')).catch(() => ({ size: 0 })); pollVoteCounts.set(item.id, votes.size || 0); return { id: item.id, ...item.data() }; }));
     pollCache.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-    renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPollList(); renderJobApplications(); renderSponsors();
+    renderArticleList(); renderSimpleList('video-list', videoCache, 'video'); renderHiddenVideos(); renderSimpleList('ticker-list', tickerCache, 'ticker'); renderPodcastList(); renderPollList(); renderJobApplications(); renderSponsors();
     $('last-refresh').textContent = `Updated ${new Date().toLocaleTimeString()}`;
     const failedSections = results.concat(pollsResult).filter(result => result.error).map(result => result.name);
     status('admin-data-status', failedSections.length ? `Data loaded with limited sections. Deploy Firestore rules for: ${failedSections.join(', ')}.` : 'Data refreshed.', Boolean(failedSections.length));
@@ -399,7 +445,7 @@ function bindForms(auth) {
   populateDistrictFields();
   activeAuth = auth;
   bindArticleEditor();
-  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm;
+  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm; $('podcast-reset').onclick = resetPodcastForm;
   $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
   $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
   $('search-hidden-videos')?.addEventListener('input', (e) => { hiddenVideoSearchQuery = e.target.value.trim().toLowerCase(); renderHiddenVideos(); });
@@ -408,6 +454,7 @@ function bindForms(auth) {
   $('article-form').onsubmit = async event => { event.preventDefault(); try { const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };
   $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const data = { title: languageObject($('ticker-en')?.value || '', $('ticker-bn')?.value || '', $('ticker-hi')?.value || ''), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', districtId: $('ticker-district')?.value || '', scope: $('ticker-district')?.value ? 'district' : 'global', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
+  $('podcast-form').onsubmit = async event => { event.preventDefault(); try { const title = $('podcast-title').value.trim(); const description = $('podcast-description').value.trim(); const thumbnail = readUrl($('podcast-thumbnail').value); const facebookUrl = readUrl($('podcast-facebook-url').value); if (!title || !facebookUrl) throw new Error('Podcast title and Facebook link are required.'); if ($('podcast-thumbnail').value.trim() && !thumbnail) throw new Error('Enter a valid thumbnail URL beginning with http:// or https://.'); const data = { title, description, thumbnail, facebookUrl, sourceUrl: facebookUrl, status: $('podcast-status-select').value, active: $('podcast-active').checked, featured: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingPodcastId) { await updateDoc(doc(db, 'podcasts', editingPodcastId), data); status('podcast-status', 'Podcast changes saved.'); } else { await addDoc(collection(db, 'podcasts'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('podcast-status', 'Podcast published.'); } resetPodcastForm(); await loadAdminData(); } catch (error) { status('podcast-status', error.message, true); } };
   $('stream-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'liveStreams', 'primary'), { title: $('stream-title').value.trim(), provider: $('stream-provider').value, videoUrl: readUrl($('stream-url').value), isLive: $('stream-live').checked, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }); status('stream-status', 'Live stream saved.'); $('stream-delete').classList.remove('hidden'); } catch (error) { status('stream-status', error.message, true); } };
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };
   $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };
@@ -430,5 +477,5 @@ if (!firebaseConfigured) { $('admin-setup').textContent = 'Firebase is not confi
 else {
   const app = initializeApp(firebaseConfig); const auth = getAuth(app); db = getFirestore(app);
   $('login-form').onsubmit = async event => { event.preventDefault(); try { status('login-status', 'Signing in…'); await signInWithEmailAndPassword(auth, $('login-email').value.trim(), $('login-password').value); } catch (error) { console.error('Firebase admin login failed:', error); const messages = { 'auth/invalid-credential': 'Email or password is incorrect.', 'auth/user-not-found': 'No Firebase Authentication user exists for this email.', 'auth/wrong-password': 'The password is incorrect.', 'auth/operation-not-allowed': 'Email/Password sign-in is not enabled in Firebase Authentication.', 'auth/unauthorized-domain': 'This website domain is not authorized in Firebase Authentication settings.' }; status('login-status', messages[error.code] || error.message || 'Firebase sign-in failed.', true); } };
-  onAuthStateChanged(auth, async user => { if (!user) { $('login-panel').classList.remove('hidden'); $('desk-panel').classList.add('hidden'); return; } try { currentRole = await roleFor(user); if (!['superadmin', 'editor', 'reporter'].includes(currentRole)) { await signOut(auth); status('login-status', 'This account has no editorial role.', true); return; } $('login-panel').classList.add('hidden'); $('desk-panel').classList.remove('hidden'); $('admin-user').textContent = `${user.email || 'Staff account'} · ${currentRole}`; bindForms(auth); resetArticleForm(); await loadAdminData(); } catch (error) { console.error('Role verification failed:', error); status('login-status', 'Could not verify editorial permissions.', true); } });
+  onAuthStateChanged(auth, async user => { if (!user) { $('login-panel').classList.remove('hidden'); $('desk-panel').classList.add('hidden'); return; } try { currentRole = await roleFor(user); if (!['superadmin', 'editor'].includes(currentRole)) { await signOut(auth); status('login-status', currentRole === 'reporter' ? 'Reporter accounts must use the Reporter Workspace.' : 'This account has no admin access.', true); return; } $('login-panel').classList.add('hidden'); $('desk-panel').classList.remove('hidden'); $('admin-user').textContent = `${user.email || 'Staff account'} · ${currentRole}`; bindForms(auth); resetArticleForm(); await loadAdminData(); } catch (error) { console.error('Role verification failed:', error); status('login-status', 'Could not verify editorial permissions.', true); } });
 }
