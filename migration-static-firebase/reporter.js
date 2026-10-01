@@ -25,6 +25,20 @@ let auth;
 let currentUser;
 let drafts = [];
 
+function setReporterLanguage(language) {
+  document.querySelectorAll('[data-reporter-language]').forEach(tab => {
+    const active = tab.dataset.reporterLanguage === language;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('[data-reporter-language-panel]').forEach(panel => {
+    panel.classList.toggle('active', panel.dataset.reporterLanguagePanel === language);
+  });
+  document.querySelectorAll('[data-required-english]').forEach(field => {
+    field.required = language === 'en';
+  });
+}
+
 function populateDistrictFields() {
   const district = $('reporter-district');
   const subcategory = $('reporter-subcategory');
@@ -34,6 +48,7 @@ function populateDistrictFields() {
 
 function resetForm() {
   $('reporter-story-form').reset();
+  setReporterLanguage('en');
   $('reporter-draft-id').value = '';
   $('reporter-form-title').textContent = 'Story details';
   $('reporter-save').textContent = 'Save draft';
@@ -42,6 +57,7 @@ function resetForm() {
 }
 
 function loadDraft(draft) {
+  setReporterLanguage('en');
   $('reporter-draft-id').value = draft.id;
   $('reporter-title-en').value = draft.title?.EN || '';
   $('reporter-title-bn').value = draft.title?.BN || '';
@@ -127,10 +143,21 @@ function articlePayload(nextStatus = 'draft') {
 }
 
 function bindWorkspace() {
+  setReporterLanguage('en');
+  document.querySelectorAll('[data-reporter-language]').forEach(tab => {
+    tab.addEventListener('click', () => setReporterLanguage(tab.dataset.reporterLanguage));
+  });
   $('reporter-story-form').addEventListener('submit', async event => {
     event.preventDefault();
     const button = event.submitter || $('reporter-save');
     const nextStatus = button.dataset.action === 'submit' ? 'submitted' : 'draft';
+    const missingEnglishField = [...document.querySelectorAll('[data-required-english]')].find(field => !field.value.trim());
+    if (missingEnglishField) {
+      setReporterLanguage('en');
+      status('reporter-form-status', 'Add the English headline, summary, and full story before saving or submitting.', true);
+      missingEnglishField.focus();
+      return;
+    }
     button.disabled = true;
     try {
       const payload = articlePayload(nextStatus);
