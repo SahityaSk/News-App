@@ -1,518 +1,325 @@
-# YUGANTAR static + Firebase migration
+# YUGANTAR News — Static/Firebase Migration
 
-This folder is a separate migration site. The original React/Node project in `frontend/` and `backend/` is not changed by this migration.
+This directory contains the Hostinger-compatible version of YUGANTAR News. It uses HTML, CSS, browser JavaScript, Firebase, and a private PHP worker. The React/Node application in `frontend/` and `backend/` is separate and is not required for this deployment.
 
-The target is a Hostinger Single-compatible news website:
+## Architecture
 
-- Frontend: plain HTML, CSS, and browser JavaScript.
-- Database and authentication: Firebase Firestore and Firebase Authentication.
-- Automatic feed worker: PHP, executed by a Hostinger cron job.
-- Media: external image/video URLs; this migration does not upload feed media to Firebase Storage.
+- Static frontend: HTML, CSS, and browser JavaScript.
+- Firebase Authentication for staff and reporter login.
+- Cloud Firestore for articles, videos, polls, tickers, sponsors, podcasts, users, and moderation data.
+- Optional Realtime Database for chat only.
+- PHP worker for RSS and YouTube synchronization.
+- Hostinger cron job for automatic feed refresh.
+- Local GeoJSON/Leaflet map for all 23 West Bengal districts.
+- Bengali, English, and Hindi support, with Bengali as the default language.
 
-## The most important answer: how do I access the admin page?
+Hostinger Single can serve many pages from one `public_html` directory. The public homepage, admin desk, reporter workspace, district page, and video page do not require separate websites or Node.js hosting.
 
-Hostinger Single allowing one website does **not** mean it allows only one HTML page. It means one website/domain and one `public_html` directory. A website can contain many files and URLs.
-
-After deployment, access the desk at:
-
-```text
-https://YOUR-DOMAIN.com/admin.html
-```
-
-The public homepage is:
+## URLs after deployment
 
 ```text
 https://YOUR-DOMAIN.com/
-```
-
-Both pages are inside the same website and use the same Firebase project. No second Hostinger website, second domain, Node.js server, or separate hosting plan is required.
-
-The public page intentionally has no Editorial Desk button. Staff can open `/admin.html`; reporters can open `/reporter.html` or use the Reporter workspace link in the homepage footer. Both staff pages are marked `noindex`, but hiding links is not security. Real protection comes from Firebase Authentication and Firestore Rules: an unauthenticated visitor cannot publish, edit, or read staff-only data.
-
-## Files and responsibilities
-
-```text
-migration-static-firebase/
-├── index.html                         Public homepage
-├── admin.html                         Staff login and editorial desk
-├── reporter.html                      Reporter login, story drafting, and own drafts
-├── app.js                             Public Firebase reads and UI
-├── admin.js                           Staff authentication and writes
-├── reporter.js                        Reporter role checks and draft-only submissions
-├── styles.css                         Public/admin styling and dark mode
-├── yugantar-logo.jpg                  Branded logo copied from the main project
-├── firebase-config.js                 Public Firebase web configuration
-├── firebase-config.example.js         Safe configuration template
-├── firestore.rules                    Firestore security rules
-├── firestore.indexes.json             Required Firestore query indexes
-├── database.rules.json                Optional Realtime Database rules
-├── firebase.json                      Firebase CLI deployment mapping
-├── .firebaserc                        Firebase project alias
-├── .htaccess                          Apache caching/security/rewrite rules
-├── robots.txt                         Crawler rules; excludes admin.html
-├── sitemap.xml                        Homepage sitemap
-├── hostinger-worker/
-│   ├── sync.php                        Private PHP feed synchronizer
-│   ├── worker-config.example.php       Safe worker configuration template
-│   └── README.md                       Worker-specific notes
-├── assets/
-│   └── west-bengal-districts.geojson   Bundled 23-district map boundaries
-└── README.md                           This handoff guide
-```
-
-### Interactive West Bengal map
-
-The homepage uses Leaflet with the local `assets/west-bengal-districts.geojson` file. The boundaries come from the Government of India's BharatMap district service and are bundled locally so the map does not depend on a live GIS request after deployment. Each polygon carries the matching application district ID; clicking a district opens its existing district-news page. The GeoJSON is simplified for browser performance while retaining all 23 district features.
-
-Leaflet is loaded from its public CDN, so the deployed site needs normal internet access in the visitor's browser. If the CDN is unavailable, the district search/list remains available as a fallback.
-
-Do not upload the repository, `node_modules`, `.git`, service-account JSON, `.env` files, or `worker-config.php` into `public_html`.
-
-## How the complete workflow works
-
-```text
-RSS / YouTube / Facebook Page
-          │
-          ▼
-PHP worker on a scheduled cron job
-          │  normalizes title, text, URL, image, source, timestamp
-          ▼
-Firebase Firestore
-          │
-          ▼
-index.html + app.js in the visitor's browser
-
-Reporter browser ── Firebase Authentication + reporter role ── reporter.html/reporter.js ── own drafts
-Editor browser ── Firebase Authentication ── admin.html/admin.js ── Firestore
-```
-
-### Automatic news workflow
-
-1. The PHP worker runs every 10–15 minutes.
-2. It reads the configured RSS feeds and optional YouTube/Facebook sources.
-3. It converts each item into the common `articles`, `videoItems`, or `liveStreams` format.
-4. It uses a stable provider/source key to avoid repeatedly creating duplicates.
-5. It writes metadata and external URLs to Firestore using the private service account.
-6. The public browser queries published articles and listens for live ticker/stream changes.
-7. Visitors see the new content after the next successful worker run or page refresh.
-
-Automatic news is feed-based. It does not magically crawl every article on the internet. Add only sources that permit the intended use, and confirm attribution and republication rights with the client. The worker stores short metadata/summary fields and links to the original source; it does not copy entire publisher websites.
-
-### Manual link workflow
-
-The client can give staff a YouTube or Facebook link. An editor can then add the video, live link, thumbnail URL, or source record from the admin desk. These are additional manual records; they do not replace the PHP worker's automatic feed process.
-
-### Image workflow
-
-Images remain at their original public URL. The worker extracts image URLs from RSS `media:thumbnail`, `media:content`, enclosure fields, and embedded feed HTML where available. The browser lazy-loads the URL and shows a branded YUGANTAR fallback if the publisher blocks hotlinking, removes the image, or returns an invalid URL.
-
-This design avoids filling Firebase Storage. It also means an image can disappear if the original publisher changes or blocks its URL. Downloading/re-hosting images requires a separate rights, storage, and cleanup decision.
-
-## What the admin panel does
-
-The admin panel is the content control room. It avoids editing Firestore documents manually for routine work and gives the team a safer, repeatable workflow.
-
-### Admin capabilities
-
-- Secure email/password login through Firebase Authentication.
-- Role verification through `users/{uid}` in Firestore.
-- Dashboard counts for published articles, drafts, channel videos, and active tickers.
-- Article publishing in English, Bengali, and Hindi fields.
-- Draft and published status.
-- Homepage feature/hero selection.
-- Article editing and deletion for editors/superadmins.
-- Image URL preview before publishing.
-- Breaking ticker management.
-- Live stream URL and provider management.
-- Manual YouTube/Facebook video entries.
-- External source definitions for the worker.
-- Dark mode for the desk.
-
-### Why use an admin panel?
-
-Without an admin panel, every title, link, ticker, and image change would require editing code and uploading files. With the desk, approved staff can update Firestore data while the static frontend stays unchanged. This reduces deployment frequency, keeps the public site simple, and lets the client manage content without Node.js or database credentials.
-
-The admin panel is not a replacement for editorial review. The client remains responsible for fact checking, copyright/republishing permission, source attribution, takedowns, and correcting inaccurate material.
-
-## Roles and admin access setup
-
-### 1. Enable authentication
-
-In Firebase Console:
-
-1. Open the correct Firebase project.
-2. Open **Authentication → Sign-in method**.
-3. Enable **Email/Password**.
-4. Enable Anonymous Authentication only if anonymous poll/chat identity is actually required.
-
-### 2. Create a staff account
-
-In **Authentication → Users**:
-
-1. Click **Add user**.
-2. Enter the staff email and a strong temporary password.
-3. Create the user.
-4. Copy the generated **User UID**.
-
-### 3. Give the account a Firestore role
-
-In **Firestore Database → Data**:
-
-1. Open or create the `users` collection.
-2. Click **Add document**.
-3. Set the document ID to the exact Authentication UID, for example:
-
-```text
-8yoMggQD0GhJH7jUe834UwjI7Zo2
-```
-
-4. Add a field:
-
-```text
-Field name: role
-Type: string
-Value: superadmin
-```
-
-5. Save the document.
-
-The Authentication UID and Firestore document ID must match exactly. The role must be one of:
-
-| Role | Permissions |
-|---|---|
-| `superadmin` | Full staff access, including source records and user role administration through rules |
-| `editor` | Publish/edit/delete articles, tickers, videos, and live streams |
-| `reporter` | Create and edit their own drafts; cannot publish or manage configuration |
-
-### 4. Log in
-
-Open:
-
-```text
+https://YOUR-DOMAIN.com/district.html
+https://YOUR-DOMAIN.com/videos.html
 https://YOUR-DOMAIN.com/admin.html
-```
-
-Reporter accounts use the focused draft workspace at:
-
-```text
 https://YOUR-DOMAIN.com/reporter.html
 ```
 
-The reporter page checks `users/{uid}` for the exact `reporter` role. It saves only `status: "draft"` articles with the reporter UID in `createdBy`, and lists drafts created by that signed-in reporter. Firestore Rules enforce draft-only create/update access for reporters; editors retain publishing access through the admin desk.
+The admin and reporter URLs may not be prominent public links, but URL hiding is not security. Firebase Authentication and Firestore Rules provide the actual protection.
 
-Use the Firebase Authentication email/password. If login succeeds but the page says the account has no editorial role, check that the Firestore path is exactly `users/{Authentication UID}` and that `role` is a string, not a map or number.
+## Main files
 
-For security, change or remove temporary passwords and do not share the Firebase project owner account with the client. Create individual staff accounts so access can be revoked separately.
+```text
+index.html                  Public homepage
+district.html               District news and interactive map
+videos.html                 YouTube/video archive
+admin.html                  Admin/editor desk
+reporter.html               Reporter draft workspace
+app.js                      Public UI, Firebase reads, forms, polls
+district.js                 District filtering and page rendering
+videos.js                   Video archive rendering
+admin.js                    Admin authentication and publishing
+reporter.js                 Reporter role checks and submissions
+styles.css                  Public, staff, mobile, and dark-mode styling
+firebase-config.js          Public Firebase web configuration
+firestore.rules             Firestore authorization rules
+firestore.indexes.json      Firestore composite indexes
+database.rules.json         Optional Realtime Database rules
+firebase.json               Firebase CLI configuration
+hostinger-worker/            Private PHP worker and worker notes
+assets/                     Local map data and public assets
+```
 
-## Firebase setup for the developer
+Never upload `.git`, service-account JSON, private worker configuration, local secrets, or private resumes to `public_html`.
 
-1. Create or select the client's Firebase project.
-2. Add a Web App in **Project settings → Your apps**.
-3. Copy the web configuration into `firebase-config.js`.
-4. Enable Firestore Database. The Standard edition is the normal choice for this project; Enterprise is unnecessary unless the client has a specific enterprise requirement.
-5. Start Firestore in production/locked mode, then deploy the supplied rules.
-6. Create the required composite indexes by deploying `firestore.indexes.json` or by following Firebase's index link when a query reports a missing index.
-7. Enable Email/Password Authentication.
-8. Create the staff accounts and matching role documents.
-9. Enable Realtime Database only if chat is actually implemented and required. It is not needed for normal articles, videos, tickers, or admin login.
-10. Deploy rules and indexes from the migration folder:
+## Content workflow
+
+```text
+RSS feeds / YouTube API
+          ↓
+Private PHP worker on a schedule
+          ↓
+Cloud Firestore
+          ↓
+Static pages read approved/public records
+```
+
+The worker normalizes titles, summaries, source links, thumbnails, provider IDs, categories, and timestamps. Stable IDs make repeated runs idempotent. The site does not crawl the entire internet; only configured feeds and APIs are processed.
+
+External article content should be limited to permitted metadata, short summaries, attribution, and links to the original source. The client remains responsible for rights, attribution, corrections, and takedowns.
+
+### YouTube
+
+The private worker uses the configured channel ID and YouTube Data API key. Recent uploads and live information are stored in Firestore. Video records use soft hide/restore controls so a hidden video does not return on the next worker run.
+
+The YouTube API key belongs only in the private worker configuration. It must not be placed in browser JavaScript, HTML, or `firebase-config.js`.
+
+### Facebook and podcasts
+
+The podcast section is currently manually managed by an admin. The admin enters the podcast title, description, thumbnail URL, and Facebook link. Automatic Facebook Page data requires client-owned Page access, valid Meta permissions, and a renewable Page token. Arbitrary profile/group scraping is not supported.
+
+### Images and storage
+
+RSS, YouTube, and manually entered media normally remain at their external URLs. The frontend shows a branded fallback when an image is broken or blocked. This avoids filling Firebase Storage, but external images are not permanent. Re-hosting media requires rights approval, storage limits, cleanup, and a CDN/storage decision.
+
+## Admin, reporter, and public workflows
+
+### Admin/editor
+
+Authorized staff can manage articles, drafts, tickers, polls, videos, live streams, sponsors, podcasts, sources, and moderation status. Publishing and destructive actions should be confirmed and audited.
+
+### Reporter
+
+Reporters sign in at `/reporter.html`. They can create article and poll drafts, submit work for review, and see approval or rejection feedback. Reporter content must never become public directly from the reporter workspace.
+
+Recommended lifecycle:
+
+```text
+draft → submitted → under_review → approved/published
+                              ↘ rejected with feedback
+```
+
+### Public visitor
+
+Visitors can read published articles, browse district news, watch videos, view podcasts, vote in active polls, use the map, and view active tickers. They do not receive staff permissions by opening a staff URL.
+
+## Firebase setup
+
+1. Open the client’s Firebase project.
+2. Add or select the Web App in **Project settings → Your apps**.
+3. Put the client web configuration in `firebase-config.js`.
+4. Enable Cloud Firestore using Standard edition unless Enterprise is specifically required.
+5. Enable Authentication → Email/Password.
+6. Enable Anonymous Authentication only if the poll/chat design requires it.
+7. Enable Realtime Database only if chat is used.
+8. Deploy rules and indexes:
 
 ```powershell
+firebase use yugantar-news
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-The Firebase web configuration is expected to be visible in browser code. The API key there is not a service-account secret. Security comes from Authentication, Firestore Rules, Realtime Database Rules, App Check/abuse controls, and least-privilege data access.
+The Firebase web API key is public client configuration, not a service-account secret. Security comes from rules, authentication, App Check, validation, and keeping private worker credentials outside the website.
 
-### About Firebase's free tier
+## Creating staff access
 
-Firebase can be used without a paid plan for a small site while usage remains within the current no-cost quotas. It is not safe to promise “lifetime unlimited free” service: quotas, eligible products, billing requirements, and Firebase terms can change. Monitor Firestore reads/writes, bandwidth, authentication usage, and worker frequency.
+1. In Firebase Authentication → Users, create an email/password user.
+2. Copy the user’s UID.
+3. In Firestore, create `users/{UID}` where `{UID}` exactly matches the Authentication UID.
+4. Add a string field named `role`.
 
-This migration deliberately avoids Firebase Storage for RSS images and videos. That prevents the worker from accumulating media files, but external image URLs are less durable. If the client later wants permanent media storage, add a retention policy, size limits, cleanup job, and a billing/quota review first.
+| Role | Main access |
+|---|---|
+| `superadmin` | All editorial data, users, settings-sensitive records, and audit functions |
+| `editor` | Review, publish, edit, hide, and restore editorial content |
+| `reporter` | Own drafts and submissions only; cannot publish directly |
 
-## Local development and testing
+Create individual staff accounts rather than sharing the Firebase project owner account.
 
-### Requirements
+## Local testing
 
-- A modern browser.
-- PHP with cURL, OpenSSL, and SimpleXML for the worker.
-- Firebase project credentials/configuration.
-- The private service-account JSON only for the worker.
+Do not double-click `index.html` as a `file://` URL. Use HTTP/HTTPS so modules and Firebase requests work correctly.
 
-### Run the static site locally
-
-From the migration directory, use any local static server. Examples:
+From the migration directory:
 
 ```powershell
 php -S 127.0.0.1:5500 -t D:\Work\News-App\migration-static-firebase
 ```
 
-Then open:
+Open:
 
 ```text
 http://127.0.0.1:5500/index.html
 http://127.0.0.1:5500/admin.html
+http://127.0.0.1:5500/reporter.html
 ```
 
-Do not test by double-clicking `index.html` as a `file://` URL. ES modules and Firebase browser requests may be blocked or behave differently without HTTP.
+Test Bengali default language, language switching, published articles, image fallbacks, district map clicks, polls, YouTube videos, subscriber count, sponsors, podcasts, admin/editor/reporter permissions, reporter review flow, job applications, tickers, live streams, and browser Console/Network errors.
 
-### Test sequence
+## Running the worker locally
 
-1. Confirm `firebase-config.js` contains the intended project.
-2. Open the public page and confirm the YUGANTAR logo, contact links, categories, dark mode, and footer.
-3. Confirm published Firestore articles appear.
-4. Confirm an article image loads; test an invalid image URL to verify the fallback.
-5. Confirm ticker and live-stream records appear when active.
-6. Open `/admin.html` and test an approved staff account.
-7. Create a draft as a reporter and confirm it is not public.
-8. Publish an article as an editor/superadmin and confirm it appears on the homepage.
-9. Edit an article, change its hero status, then verify the public page.
-10. Test the source, video, ticker, and live-stream forms.
-11. Check browser DevTools Console and Network for blocked Firebase requests, missing indexes, CORS errors, or image failures.
-12. Run the worker locally and verify its output says how many feeds/items were processed.
-13. Confirm new documents exist in Firestore under the expected collections.
-14. Repeat the public test in a private/incognito window to ensure the page does not depend on an admin login.
-
-### Run the worker locally
-
-Copy `hostinger-worker/worker-config.example.php` to a private, ignored location such as:
+Keep the service account and worker configuration outside Git and outside this directory. Example private location:
 
 ```text
 D:\Work\News-App\local-secrets\yugantar-worker\worker-config.php
 ```
 
-Set the service-account path in that private config, then run:
+Run:
 
 ```powershell
 $env:YUGANTAR_WORKER_CONFIG="D:\Work\News-App\local-secrets\yugantar-worker\worker-config.php"
 C:\xampp\php\php.exe D:\Work\News-App\migration-static-firebase\hostinger-worker\sync.php
 ```
 
-Expected output includes feed/source diagnostics and processed item counts. If it says zero items, check the feed URL, PHP extensions, network access, source `active` flags, and the worker's error output before checking the browser.
+Check source diagnostics, processed counts, duplicate handling, Firestore errors, and the resulting documents.
 
-## Hostinger deployment: complete procedure
+## Hostinger deployment
 
-### A. Prepare Firebase first
+### Prepare Firebase
 
-1. Use the client's Firebase project, not the developer's test project.
-2. Update `migration-static-firebase/firebase-config.js` with the client's web app config.
-3. Deploy Firestore rules and indexes to the client's project.
-4. Create staff Authentication users and role documents.
-5. Test the client project locally with the new config.
+1. Use the client’s Firebase project.
+2. Update `firebase-config.js` with the client Web App configuration.
+3. Deploy the final rules and indexes.
+4. Create staff accounts and matching role documents.
+5. Add the final domain to Authentication authorized domains.
+6. Test locally against the client project.
 
-Do not copy the developer's service account into the public website. Create a separate private worker credential for the client's Firebase project.
+### Upload the public site
 
-### B. Upload the website to Hostinger
+In Hostinger hPanel → File Manager:
 
-1. Open Hostinger hPanel → **Websites** → the client's website → **File Manager**.
-2. Open the domain's `public_html` directory.
-3. Upload the contents of `migration-static-firebase/` directly into `public_html`.
-4. The final public path should be:
+1. Open the domain’s `public_html` directory.
+2. Upload the contents of this folder directly into `public_html`.
+3. Ensure `public_html/index.html` exists at the document root.
+4. Exclude `.git`, service accounts, private configuration, archives, and private files.
+5. Enable HTTPS and test the domain.
 
-```text
-public_html/index.html
-public_html/admin.html
-public_html/app.js
-public_html/admin.js
-public_html/styles.css
-public_html/firebase-config.js
-public_html/yugantar-logo.jpg
-```
+### Configure the private PHP worker
 
-5. Do not upload the `.git` folder, local secrets, service-account JSON, `worker-config.php`, or development dependencies.
-6. Ensure the domain's document root is the same `public_html` directory.
-7. Enable/confirm the domain's SSL certificate, then test with HTTPS.
+Place the worker and service-account JSON outside `public_html` if the account permits it. Configure the client project ID, service-account path, RSS sources, YouTube channel ID, and private credentials.
 
-### C. Configure the private PHP worker
-
-The worker is not a second website. It is a scheduled PHP command that writes to Firebase.
-
-1. Create a private directory outside `public_html` if Hostinger permits it, for example:
-
-```text
-/home/USERNAME/private/yugantar-worker/
-```
-
-2. Upload `sync.php` and a private copy of `worker-config.php` there.
-3. Upload the Firebase service-account JSON outside `public_html`.
-4. Set `serviceAccountPath` to the server path.
-5. Set the client's `projectId`.
-6. Add permitted RSS sources.
-7. Add the client's YouTube channel ID.
-8. Add the Facebook Page ID and private Page token only if Meta permissions and client ownership are confirmed.
-9. Never put tokens in `firebase-config.js`, `app.js`, `admin.js`, HTML, Firestore, or a public directory.
-
-### D. Create the Hostinger cron job
-
-In hPanel, open the website's **Cron Jobs** tool and create a PHP command that runs approximately every 10–15 minutes. The exact PHP binary path varies by Hostinger server. A typical command is:
+Create a Hostinger cron command similar to:
 
 ```text
 /usr/bin/php /home/USERNAME/private/yugantar-worker/sync.php
 ```
 
-If Hostinger displays a different PHP binary path, use the path shown by that account. Run the command once manually if the panel supports it, or inspect the cron log after the first scheduled run.
+The PHP binary path varies by account. Use the path shown by Hostinger, run it manually once if possible, and inspect cron logs.
 
-If the Single plan/account does not expose the required cron frequency or private filesystem path, alternatives are:
+### Post-deployment smoke test
 
-- Run the same PHP worker on the developer's or client's computer using Windows Task Scheduler.
-- Use an external scheduled job that calls a secured worker endpoint, after adding authentication and rate limiting.
-- Upgrade hosting only if the client later needs a server runtime, higher cron control, or more resources.
+Verify HTTPS, all pages, client Firebase requests, admin login, staff-only collection protection, worker-created documents, polls, sponsors, podcasts, careers, image fallback, `robots.txt`, and `sitemap.xml`.
 
-The public website remains static in all three cases.
-
-### E. Verify after deployment
-
-Open:
+## Important collections
 
 ```text
-https://YOUR-DOMAIN.com/
-https://YOUR-DOMAIN.com/admin.html
+articles
+videoItems
+videoControls
+podcasts
+sponsors
+tickers
+polls
+polls/{pollId}/votes
+liveStreams
+subscribers
+jobApplications
+reporterSubmissions
+externalSources
+users
+publicStats/subscribers
 ```
 
-Then verify:
+Public pages should read only records intended for public display. Private collections such as job applications must never be publicly readable.
 
-- HTTPS works without mixed-content warnings.
-- Firebase requests point to the client's project.
-- Published articles render.
-- The admin login works.
-- A staff-only Firestore collection is not readable when logged out.
-- The worker creates/updates documents.
-- `https://YOUR-DOMAIN.com/robots.txt` loads.
-- `https://YOUR-DOMAIN.com/sitemap.xml` loads.
+## Forms and abuse protection
 
-## Firestore collections and important fields
+The bottom newsletter form currently stores an email in `subscribers`. It does not send email by itself. A real newsletter later needs an email provider, verification, duplicate detection, unsubscribe, and privacy handling.
 
-### `articles`
+The job form currently has required identity/contact fields, a hidden honeypot field, and a ten-minute client-side cooldown after successful submission. These reduce simple abuse but can be bypassed by a determined attacker. Server-side validation, App Check, and/or a server-verified CAPTCHA are stronger additions.
+
+## Security rules for operation
+
+- Keep service-account JSON, worker API keys, Meta tokens, worker config, resumes, and logs private.
+- Never trust client-supplied role, status, reviewer, or publication timestamp.
+- Treat Firestore Rules as the authorization boundary.
+- Use separate accounts for superadmins, editors, and reporters.
+- Review unauthenticated creates such as subscribers and job applications.
+- Keep resumes outside public web paths or use a protected download endpoint.
+- Back up Firestore before major schema or rules changes.
+- Monitor worker failures, stale feeds, quotas, broken images, and suspicious request patterns.
+
+## After-deployment hardening plan
+
+Complete these tasks after the first production deployment has been smoke-tested. Doing them after launch allows App Check and anti-abuse changes to be monitored separately from basic deployment issues.
+
+### Firebase App Check with reCAPTCHA Enterprise
+
+Firebase App Check helps reject requests that do not originate from the registered web application. For new web integrations, use reCAPTCHA Enterprise. It is score-based and normally invisible to visitors; it is not a visible checkbox CAPTCHA.
+
+Planned setup:
+
+1. In Google Cloud Console, enable the reCAPTCHA Enterprise API for the client project.
+2. Create a score-based Web key for the production domain. Do not use a checkbox challenge.
+3. In Firebase Console → Security → App Check, register the YUGANTAR Web App with that key.
+4. Add the Firebase App Check SDK and initialize it before Firestore/Auth access:
 
 ```js
-{
-  title: { EN: "", BN: "", HI: "" },
-  summary: { EN: "", BN: "", HI: "" },
-  content: { EN: "", BN: "", HI: "" },
-  category: "national",
-  author: "YUGANTAR Editorial",
-  sourceAgency: "YUGANTAR",
-  sourceUrl: "https://original-source.example/story",
-  sourceLanguage: "EN",
-  image: "https://cdn.example/image.jpg",
-  status: "published",
-  hero: false,
-  trending: false,
-  publishedAt: Timestamp,
-  updatedAt: Timestamp,
-  createdBy: "firebase-auth-uid"
-}
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider
+} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check.js';
+
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaEnterpriseProvider('RECAPTCHA_SITE_KEY'),
+  isTokenAutoRefreshEnabled: true
+});
 ```
 
-Public pages read only `status == "published"`. Drafts remain staff-only through Firestore Rules.
+5. Test locally and on the production domain without enforcement.
+6. Monitor verified and unverified request metrics.
+7. Enable enforcement for Cloud Firestore only after the deployed site sends valid App Check tokens.
+8. Repeat for other Firebase products only when they are used.
 
-### `videoItems`
+Use a separate development key or Firebase App Check debug provider for local testing. Do not enforce App Check before the website contains the initialization code, or legitimate Firebase requests may fail. App Check complements Firestore Rules, validation, honeypots, and cooldowns; it does not replace them.
 
-```js
-{
-  provider: "youtube" | "facebook",
-  title: "Channel video title",
-  videoUrl: "https://www.youtube.com/watch?v=...",
-  thumbnail: "https://i.ytimg.com/vi/.../hqdefault.jpg",
-  sourceUrl: "https://...",
-  publishedAt: Timestamp,
-  active: true
-}
-```
+### Other deferred hardening
 
-### `podcasts`
-
-The homepage podcast card shows up to three recent, featured episodes from this collection. Publish episode documents with:
-
-```js
-{
-  title: { BN: "বাংলা শিরোনাম", EN: "English title", HI: "हिंदी शीर्षक" },
-  summary: { BN: "পর্বের পরিচিতি", EN: "Episode summary", HI: "एपिसोड परिचय" },
-  audioUrl: "https://.../episode.mp3",
-  coverImage: "https://.../cover.jpg",
-  status: "published",
-  featured: true,
-  publishedAt: Timestamp
-}
-```
-
-Only published documents marked `featured: true` (or legacy `highlighted: true`) appear publicly. Editors may create and manage episodes; public pages can read published episodes.
-
-### Other collections
-
-- `tickers`: multilingual `title`, `category`, `priority`, `active`, `publishedAt`.
-- `liveStreams`: `title`, `videoUrl`, `provider`, `isLive`, `active`, `updatedAt`.
-- `polls`: `question`, `options`, `active`, and optional vote totals.
-- `polls/{pollId}/votes/{uid}`: one vote document per authenticated identity.
-- `subscribers`: `email`, `createdAt`, `active`; public users can create but cannot read.
-- `publicStats/subscribers`: YouTube channel subscriber count only; clients can read this document, while writes remain server-only. The scheduled worker refreshes it from YouTube Data API using the private `youtubeApiKey` and configured channel handle/ID (or the first active YouTube channel ID).
-- `externalSources`: source definitions for the worker; superadmin-only browser access.
-- `users`: one document per Firebase Authentication UID with a `role` string.
-
-`reels` is reserved for future media support. The current public page focuses on articles, tickers, live streams, videos, and polls.
-
-## Security rules and operational safety
-
-- Firestore Rules are the actual authorization boundary; the hidden admin URL is not.
-- Keep service-account JSON and API tokens outside `public_html`.
-- Keep each worker credential limited to the client's project and rotate it if exposed.
-- Use separate Firebase accounts for each staff member.
-- Remove a staff user's role document and disable the Authentication user when access must be revoked.
-- Do not give ordinary editors Firebase project-owner access.
-- Add Firebase App Check and abuse controls before promoting public newsletter, poll, or chat features.
-- Do not expose Facebook Page access tokens or YouTube API keys in browser code.
-- Confirm rights to every feed, article summary, image, thumbnail, video, and embed.
-- Export/back up Firestore data before major rules or schema changes.
-- Monitor worker logs, stale feed timestamps, Firebase quotas, and broken external images.
+- Add duplicate subscriber detection and unsubscribe/deactivation support.
+- Decide whether newsletter email verification and an email delivery provider are required.
+- Add server-side validation and rate limiting for public job submissions.
+- Consider Cloudflare Turnstile or another server-verified CAPTCHA if job spam continues.
+- Add stronger audit history for moderation and role changes.
+- Review Firebase quotas, App Check/reCAPTCHA usage, and worker frequency after real traffic begins.
+- Complete real-device tests at 320px, 390px, 768px, and 1024px widths, including long Bengali headlines, mobile map interaction, carousel touch scrolling, and admin action buttons.
+- Finalize feed licenses, attribution, takedown, privacy, cookie, newsletter, and resume-retention policies.
 
 ## Troubleshooting
 
-### Homepage is blank
+### Blank homepage
 
-Check the browser Console and Network tab, then verify:
+Verify the Firebase project, published article documents, public-read rules, required indexes, and HTTP/HTTPS serving rather than `file://`.
 
-1. `firebase-config.js` has the correct project.
-2. Firestore exists and contains `articles` documents.
-3. Articles have `status: "published"`.
-4. Firestore Rules allow public reads for published articles.
-5. The required `where(status) + orderBy(publishedAt)` index exists.
-6. The page is opened over HTTP/HTTPS, not `file://`.
+### No automatic news
 
-### News is not automatically updating
+The browser does not fetch arbitrary news. Run the PHP worker, inspect diagnostics, verify active RSS sources and network access, and confirm Firestore documents are changing.
 
-The browser does not fetch and publish arbitrary news by itself. Confirm the PHP worker ran successfully. Check the cron log, run `sync.php` manually, confirm the worker config has active RSS sources, and inspect Firestore for changed `updatedAt` values.
+### Admin login or permissions fail
 
-### Worker says zero items
+Confirm Email/Password is enabled, the domain is authorized, `users/{uid}` matches the Authentication UID exactly, the role is a string, and the latest rules are deployed.
 
-Check the feed URL, network access, PHP cURL/SimpleXML extensions, source `active` values, XML validity, duplicate source keys, and worker diagnostics. A feed can be online in a browser while still being rejected by the server because of TLS, redirects, rate limits, or a malformed response.
+### Images do not load
 
-### Images are missing
+Open the stored image URL directly and inspect Network errors. External publishers may block hotlinking or remove media; the branded fallback is intentional.
 
-Check the stored `image` field, open the image URL directly, inspect browser Network errors, and remember that some publishers block hotlinking. The fallback is intentional. For permanent images, obtain rights and design a separate Firebase Storage/CDN retention workflow.
+### Facebook data is missing
 
-### Admin login fails
+Confirm the Page ID, Page token, Meta permissions, token expiry, and client ownership. Personal profiles, private groups, and arbitrary scraping are not supported.
 
-Check Email/Password is enabled, the email/password is correct, the deployed domain is in Firebase Authentication's authorized domains, and the account is not disabled. If login succeeds but access is denied, verify the exact UID-matching `users/{uid}` document and role string.
+### Worker reports zero items
 
-### Admin list cannot load
+Check feed URLs, redirects, TLS, PHP cURL/SimpleXML, source activation flags, duplicate keys, and worker error output.
 
-Check that the user has a valid role and that the latest Firestore Rules are deployed. The admin list reads staff-visible collections; it does not require Firebase Console access.
+## Operational ownership
 
-### Facebook data does not appear
-
-Facebook Page API access requires a valid Page ID, Page access token, current Graph API permissions, and a client-owned/authorized Page. Personal profiles, private groups, and arbitrary post scraping are not supported by this architecture.
-
-### YouTube live status is missing
-
-Public channel RSS can provide recent uploads. Reliable current-live discovery requires the private YouTube Data API key and a configured channel ID. The key belongs only in the worker config.
-
-## What remains a deliberate external/configuration decision
-
-- Feed licensing, attribution, takedown, and retention policy.
-- YouTube API quota and Facebook/Meta token renewal.
-- Newsletter double opt-in, unsubscribe handling, consent records, and email delivery provider.
-- High-integrity server-side poll aggregation for large audiences.
-- Realtime Database chat implementation, moderation, and abuse controls.
-- Per-article SEO pages/social cards; the migration currently provides homepage SEO metadata, sitemap, and admin noindex protection.
-- Full accessibility, device, browser, load, backup, and disaster-recovery testing.
-
-This folder is a deployable migration foundation, but production operation still needs the client's credentials, rights decisions, monitoring, and editorial process.
+The client should own the production Firebase project, domain, Hostinger account, YouTube channel, and any Meta Page. Developers should receive individual minimum-required access. Keep deployment credentials, service-account rotation, cron configuration, backup location, and rollback steps in a private password manager or operations record, never in this repository.
