@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { browserSessionPersistence, getAuth, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS } from './wb-map-data.js';
@@ -194,9 +194,10 @@ if (!firebaseConfigured) {
   $('reporter-setup').textContent = 'Firebase is not configured. Set up the Firebase client configuration before using the reporter workspace.';
   $('reporter-setup').classList.remove('hidden');
 } else {
-  const app = initializeApp(firebaseConfig);
+  const app = initializeApp(firebaseConfig, 'yugantar-reporter');
   auth = getAuth(app);
   db = getFirestore(app);
+  await setPersistence(auth, browserSessionPersistence);
   populateDistrictFields();
   $('reporter-login-form').addEventListener('submit', async event => {
     event.preventDefault();

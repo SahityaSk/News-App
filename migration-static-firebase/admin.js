@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { browserLocalPersistence, getAuth, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS } from './wb-map-data.js';
@@ -232,7 +232,7 @@ async function loadAdminData() {
     const results = await Promise.all([
       currentRole === 'reporter' ? Promise.resolve({ name: 'jobApplications', snapshot: { docs: [] } }) : readCollection('jobApplications'),
       currentRole === 'reporter' ? Promise.resolve({ name: 'sponsors', snapshot: { docs: [] } }) : readCollection('sponsors'),
-      readCollection('articles'), readCollection('tickers'), readCollection('videoItems'), readCollection('videoControls'), readCollection('podcasts')
+      readCollection('articles'), readCollection('tickers'), readCollection('videoItems'), readCollection('videoControls'), readCollection('podcasts'), readCollection('liveStreams')
     ]);
     const byName = name => results.find(result => result.name === name) || { name, snapshot: { docs: [] } };
     const applicationsSnapshot = byName('jobApplications').snapshot;
@@ -242,6 +242,8 @@ async function loadAdminData() {
     const videosSnapshot = byName('videoItems').snapshot;
     const controlsSnapshot = byName('videoControls').snapshot;
     const podcastsSnapshot = byName('podcasts').snapshot;
+    const liveStreamsSnapshot = byName('liveStreams').snapshot;
+    const primaryLiveStream = liveStreamsSnapshot.docs.find(item => item.id === 'primary');
     jobApplicationCache = applicationsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     sponsorCache = sponsorsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     articleCache = articlesSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(article => !isDemoArticle(article)).sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
@@ -252,8 +254,10 @@ async function loadAdminData() {
     const tickers = tickerCache = tickersSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.active !== false);
     tickerCache.sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     podcastCache = podcastsSnapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.updatedAt?.toMillis?.() || b.publishedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || a.publishedAt?.toMillis?.() || 0));
+    hydrateLiveStream(primaryLiveStream ? { id: primaryLiveStream.id, ...primaryLiveStream.data() } : null);
     $('stat-articles').textContent = articleCache.filter(item => item.status === 'published').length;
     $('stat-drafts').textContent = articleCache.filter(item => item.status === 'draft').length;
+    $('stat-review').textContent = articleCache.filter(item => ['submitted', 'under_review'].includes(item.status)).length;
     $('stat-videos').textContent = videoCache.length;
     $('stat-tickers').textContent = tickerCache.length;
     $('stat-applications').textContent = jobApplicationCache.length;
@@ -401,6 +405,24 @@ function resetTickerForm() {
   $('ticker-form').reset(); delete $('ticker-form').dataset.editingId; $('ticker-category').value = 'BREAKING'; $('ticker-priority').value = '1'; $('ticker-district').value = ''; $('ticker-submit').textContent = 'Publish ticker'; $('ticker-reset').classList.add('hidden');
 }
 
+function hydrateLiveStream(stream) {
+  const form = $('stream-form');
+  const deleteButton = $('stream-delete');
+  if (!form || !deleteButton) return;
+  if (!stream) {
+    form.reset();
+    $('stream-provider').value = 'youtube';
+    $('stream-live').checked = true;
+    deleteButton.classList.add('hidden');
+    return;
+  }
+  $('stream-title').value = stream.title || '';
+  $('stream-provider').value = stream.provider || 'youtube';
+  $('stream-url').value = stream.videoUrl || '';
+  $('stream-live').checked = stream.isLive !== false;
+  deleteButton.classList.remove('hidden');
+}
+
 function editTicker(id) {
   const item = tickerCache.find(ticker => ticker.id === id); if (!item) return;
   const title = item.title || {}; $('ticker-en').value = title.EN || ''; $('ticker-bn').value = title.BN || ''; $('ticker-hi').value = title.HI || ''; $('ticker-category').value = item.category || 'BREAKING'; $('ticker-priority').value = item.priority ?? 1; $('ticker-district').value = item.districtId || '';
@@ -458,7 +480,6 @@ function bindForms(auth) {
   $('stream-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'liveStreams', 'primary'), { title: $('stream-title').value.trim(), provider: $('stream-provider').value, videoUrl: readUrl($('stream-url').value), isLive: $('stream-live').checked, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }); status('stream-status', 'Live stream saved.'); $('stream-delete').classList.remove('hidden'); } catch (error) { status('stream-status', error.message, true); } };
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };
   $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };
-  $('source-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'externalSources', `${$('source-provider').value}-${$('source-id').value.trim()}`), { provider: $('source-provider').value, name: $('source-name').value.trim(), channelOrPageId: $('source-id').value.trim(), liveUrl: readUrl($('source-live-url').value), active: true, updatedAt: serverTimestamp() }); $('source-form').reset(); status('source-status', 'Source saved. Keep tokens in the private worker config.'); } catch (error) { status('source-status', error.message, true); } };
   $('sponsor-form').onsubmit = async event => { event.preventDefault(); try {
     const name = $('sponsor-name').value.trim();
     const logoInput = $('sponsor-logo').value.trim();
@@ -475,7 +496,8 @@ function bindForms(auth) {
 bindTheme();
 if (!firebaseConfigured) { $('admin-setup').textContent = 'Firebase is not configured. Add the client configuration in firebase-config.js before deployment.'; $('admin-setup').classList.remove('hidden'); }
 else {
-  const app = initializeApp(firebaseConfig); const auth = getAuth(app); db = getFirestore(app);
+  const app = initializeApp(firebaseConfig, 'yugantar-admin'); const auth = getAuth(app); db = getFirestore(app);
+  await setPersistence(auth, browserLocalPersistence);
   $('login-form').onsubmit = async event => { event.preventDefault(); try { status('login-status', 'Signing in…'); await signInWithEmailAndPassword(auth, $('login-email').value.trim(), $('login-password').value); } catch (error) { console.error('Firebase admin login failed:', error); const messages = { 'auth/invalid-credential': 'Email or password is incorrect.', 'auth/user-not-found': 'No Firebase Authentication user exists for this email.', 'auth/wrong-password': 'The password is incorrect.', 'auth/operation-not-allowed': 'Email/Password sign-in is not enabled in Firebase Authentication.', 'auth/unauthorized-domain': 'This website domain is not authorized in Firebase Authentication settings.' }; status('login-status', messages[error.code] || error.message || 'Firebase sign-in failed.', true); } };
   onAuthStateChanged(auth, async user => { if (!user) { $('login-panel').classList.remove('hidden'); $('desk-panel').classList.add('hidden'); return; } try { currentRole = await roleFor(user); if (!['superadmin', 'editor'].includes(currentRole)) { await signOut(auth); status('login-status', currentRole === 'reporter' ? 'Reporter accounts must use the Reporter Workspace.' : 'This account has no admin access.', true); return; } $('login-panel').classList.add('hidden'); $('desk-panel').classList.remove('hidden'); $('admin-user').textContent = `${user.email || 'Staff account'} · ${currentRole}`; bindForms(auth); resetArticleForm(); await loadAdminData(); } catch (error) { console.error('Role verification failed:', error); status('login-status', 'Could not verify editorial permissions.', true); } });
 }
