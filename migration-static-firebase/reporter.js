@@ -3,7 +3,7 @@ import { browserSessionPersistence, getAuth, onAuthStateChanged, setPersistence,
 import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS } from './wb-map-data.js';
-import { DISTRICT_SUBCATEGORIES } from './district-content.js';
+import { ARTICLE_CATEGORIES, DISTRICT_SUBCATEGORIES } from './district-content.js';
 
 const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => {
@@ -40,10 +40,12 @@ function setReporterLanguage(language) {
 }
 
 function populateDistrictFields() {
+  const category = $('reporter-category');
   const district = $('reporter-district');
   const subcategory = $('reporter-subcategory');
-  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn} · ${item.nameEn}</option>`).join('');
-  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.BN} · ${item.label.EN}</option>`).join('');
+  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district · রাজ্যব্যাপী / নির্দিষ্ট জেলা নয় · राज्यव्यापी / कोई विशिष्ट जिला नहीं</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn} · ${item.nameBn} · ${item.nameHi}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
 }
 
 function resetForm() {

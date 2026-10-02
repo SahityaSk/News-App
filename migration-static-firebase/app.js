@@ -9,6 +9,14 @@ import { WB_DISTRICTS, WB_REGIONS } from './wb-map-data.js';
 import { SPONSORS } from './sponsors-data.js';
 
 const $ = id => document.getElementById(id);
+const DATA_LOAD_TIMEOUT_MS = 10000;
+function withDataLoadTimeout(promise, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(`${label} timed out`)), DATA_LOAD_TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+}
 const savedKey = 'yugantar_saved_articles';
 // Versioned so older testing preferences such as EN do not override the Bengali production default.
 const savedLanguageKey = 'yugantar_language_v2';
@@ -43,6 +51,7 @@ const translations = {
     catSports: 'Sports',
     catTech: 'Tech',
     catEntertainment: 'Entertainment',
+    catHeritage: 'Heritage',
     tickerBreaking: 'BREAKING',
     liveTvKicker: 'LIVE TV',
     liveTvTitle: 'Live channel',
@@ -87,6 +96,7 @@ const translations = {
     footerSecBusiness: 'Business & finance',
     footerSecTech: 'Tech & AI',
     footerSecSports: 'Sports',
+    footerSecHeritage: 'Heritage',
     footerCopyright: '© 2026 Yugantar News Network. All rights reserved.',
     footerFactCheck: '✦ Fact-checked newsroom',
     emptyArticles: 'No published stories match this view.',
@@ -95,7 +105,7 @@ const translations = {
     savedArticle: '★ Saved',
     viewSource: 'View original source',
     podcastKicker: 'YUGANTAR AUDIO', podcastTitle: 'Featured podcasts', podcastLoading: 'Loading featured episodes…', podcastEmpty: 'No featured episodes yet. Check back soon.', podcastPlay: 'Listen to episode', podcastUnavailable: 'Featured podcasts are temporarily unavailable.', previousPodcast: 'Previous podcast', nextPodcast: 'Next podcast', previousSponsor: 'Previous sponsor', nextSponsor: 'Next sponsor', podcastNavigation: 'Podcast navigation', sponsorNavigation: 'Sponsor navigation',
-    sponsorKicker: 'SPONSOR PARTNERS', sponsorTitle: 'Official Sponsors', sponsorSpotlight: 'SPOTLIGHT', sponsorAll: 'All', sponsorPlatinum: 'Platinum', sponsorGold: 'Gold', sponsorTech: 'Tech', sponsorEmpty: 'No Active Sponsors', sponsorEmptyHelp: 'Sponsor partner banners will automatically display here once assigned.', sponsorJoin: '🤝 Become a Partner', mapKicker: 'WEST BENGAL MAP', mapTitle: 'All 23 Districts', mapHint: 'Click District', mapIntro: 'Select any district on the interactive map to view specific news stories for that district.', searchDistrict: '🔍 Search district (e.g. Kolkata)…', liveUnavailable: 'No live stream configured.', noTicker: 'No active breaking updates.', tickerUnavailable: 'Breaking updates are temporarily unavailable.', noPoll: 'No active poll', pollSoon: 'Check back soon for new audience polls.', pollSubmitting: 'Submitting vote…', pollRecorded: 'Vote recorded. Your selection is highlighted.', pollUnavailable: 'Voting is temporarily unavailable.', categoryLabelNational: 'National', categoryLabelWorld: 'World', categoryLabelBusiness: 'Business', categoryLabelSports: 'Sports', categoryLabelTech: 'Tech', categoryLabelEntertainment: 'Entertainment', categoryLabelScience: 'Science', categoryLabelGeneral: 'General', mapUnavailable: 'Interactive map library could not be loaded. Use the district list below.', mapDataUnavailable: 'Map data could not be loaded. Use the district list below.'
+    sponsorKicker: 'SPONSOR PARTNERS', sponsorTitle: 'Official Sponsors', sponsorSpotlight: 'SPOTLIGHT', sponsorAll: 'All', sponsorPlatinum: 'Platinum', sponsorGold: 'Gold', sponsorTech: 'Tech', sponsorEmpty: 'No Active Sponsors', sponsorEmptyHelp: 'Sponsor partner banners will automatically display here once assigned.', sponsorJoin: '🤝 Become a Partner', mapKicker: 'WEST BENGAL MAP', mapTitle: 'All 23 Districts', mapHint: 'Click District', mapIntro: 'Select any district on the interactive map to view specific news stories for that district.', searchDistrict: '🔍 Search district (e.g. Kolkata)…', liveUnavailable: 'No live stream configured.', noTicker: 'No active breaking updates.', tickerUnavailable: 'Breaking updates are temporarily unavailable.', noPoll: 'No active poll', pollSoon: 'Check back soon for new audience polls.', pollSubmitting: 'Submitting vote…', pollRecorded: 'Vote recorded. Your selection is highlighted.', pollUnavailable: 'Voting is temporarily unavailable.', categoryLabelNational: 'National', categoryLabelWorld: 'World', categoryLabelBusiness: 'Business', categoryLabelSports: 'Sports', categoryLabelTech: 'Tech', categoryLabelEntertainment: 'Entertainment', categoryLabelScience: 'Science', categoryLabelHeritage: 'Heritage', categoryLabelGeneral: 'General', mapUnavailable: 'Interactive map library could not be loaded. Use the district list below.', mapDataUnavailable: 'Map data could not be loaded. Use the district list below.'
   },
   BN: {
     podcastKicker: 'যুগান্তর অডিও', podcastTitle: 'বিশেষ পডকাস্ট', podcastLoading: 'বিশেষ পর্ব লোড হচ্ছে…', podcastEmpty: 'এখনও কোনো বিশেষ পডকাস্ট নেই। শিগগিরই আবার দেখুন।', podcastPlay: 'পর্বটি শুনুন', podcastUnavailable: 'বিশেষ পডকাস্ট এই মুহূর্তে পাওয়া যাচ্ছে না।', previousPodcast: 'আগের পডকাস্ট', nextPodcast: 'পরের পডকাস্ট', previousSponsor: 'আগের স্পনসর', nextSponsor: 'পরের স্পনসর', podcastNavigation: 'পডকাস্ট নেভিগেশন', sponsorNavigation: 'স্পনসর নেভিগেশন',
@@ -109,6 +119,7 @@ const translations = {
     catSports: 'খেলাধুলা',
     catTech: 'প্রযুক্তি',
     catEntertainment: 'বিনোদন',
+    catHeritage: 'ঐতিহ্য',
     tickerBreaking: 'ব্রেকিং নিউজ',
     liveTvKicker: 'লাইভ টিভি',
     liveTvTitle: 'লাইভ চ্যানেল',
@@ -153,13 +164,14 @@ const translations = {
     footerSecBusiness: 'ব্যবসা ও অর্থ',
     footerSecTech: 'প্রযুক্তি ও এআই',
     footerSecSports: 'খেলাধুলা',
+    footerSecHeritage: 'ঐতিহ্য',
     footerCopyright: '© ২০২৬ যুগান্তর নিউজ নেটওয়ার্ক। সর্বস্বত্ব সংরক্ষিত।',
     footerFactCheck: '✦ সত্যতা যাচাইকৃত নিউজ রুম',
     emptyArticles: 'এই বিভাগে এখনো বাংলা অনুবাদসহ কোনো খবর প্রকাশিত হয়নি।',
     emptySaved: 'আপনার সেভ করা খবরের তালিকা খালি।',
     saveArticle: '☆ সেভ করুন',
     savedArticle: '★ সেভ করা হয়েছে',
-    viewSource: 'মূল উৎস দেখুন', sponsorKicker: 'স্পনসর পার্টনার', sponsorTitle: 'অফিসিয়াল স্পনসর', sponsorSpotlight: 'বিশেষ নজরে', sponsorAll: 'সব', sponsorPlatinum: 'প্ল্যাটিনাম', sponsorGold: 'গোল্ড', sponsorTech: 'প্রযুক্তি', sponsorEmpty: 'এই মুহূর্তে কোনো স্পনসর নেই', sponsorEmptyHelp: 'স্পনসর পার্টনার যুক্ত হলে তাঁদের ব্যানার এখানে দেখা যাবে।', sponsorJoin: '🤝 পার্টনার হোন', mapKicker: 'পশ্চিমবঙ্গের মানচিত্র', mapTitle: '২৩টি জেলা', mapHint: 'জেলা নির্বাচন করুন', mapIntro: 'জেলার খবর দেখতে মানচিত্র থেকে একটি জেলা নির্বাচন করুন।', searchDistrict: '🔍 জেলা খুঁজুন (যেমন কলকাতা)…', liveUnavailable: 'কোনো লাইভ স্ট্রিম সেট করা নেই।', noTicker: 'এই মুহূর্তে কোনো ব্রেকিং আপডেট নেই।', tickerUnavailable: 'ব্রেকিং আপডেট সাময়িকভাবে পাওয়া যাচ্ছে না।', noPoll: 'এই মুহূর্তে কোনো সক্রিয় জনমত নেই', pollSoon: 'নতুন জনমত দেখার জন্য পরে আবার আসুন।', pollSubmitting: 'আপনার ভোট জমা হচ্ছে…', pollRecorded: 'আপনার ভোট নথিভুক্ত হয়েছে। আপনার পছন্দটি চিহ্নিত করা হয়েছে।', pollUnavailable: 'এই মুহূর্তে ভোট দেওয়া যাচ্ছে না।', categoryLabelNational: 'জাতীয়', categoryLabelWorld: 'বিশ্ব', categoryLabelBusiness: 'ব্যবসা', categoryLabelSports: 'খেলাধুলা', categoryLabelTech: 'প্রযুক্তি', categoryLabelEntertainment: 'বিনোদন', categoryLabelScience: 'বিজ্ঞান', categoryLabelGeneral: 'সাধারণ', mapUnavailable: 'মানচিত্র লোড করা যায়নি। নিচের জেলা তালিকা ব্যবহার করুন।', mapDataUnavailable: 'মানচিত্রের তথ্য লোড করা যায়নি। নিচের জেলা তালিকা ব্যবহার করুন।'
+    viewSource: 'মূল উৎস দেখুন', sponsorKicker: 'স্পনসর পার্টনার', sponsorTitle: 'অফিসিয়াল স্পনসর', sponsorSpotlight: 'বিশেষ নজরে', sponsorAll: 'সব', sponsorPlatinum: 'প্ল্যাটিনাম', sponsorGold: 'গোল্ড', sponsorTech: 'প্রযুক্তি', sponsorEmpty: 'এই মুহূর্তে কোনো স্পনসর নেই', sponsorEmptyHelp: 'স্পনসর পার্টনার যুক্ত হলে তাঁদের ব্যানার এখানে দেখা যাবে।', sponsorJoin: '🤝 পার্টনার হোন', mapKicker: 'পশ্চিমবঙ্গের মানচিত্র', mapTitle: '২৩টি জেলা', mapHint: 'জেলা নির্বাচন করুন', mapIntro: 'জেলার খবর দেখতে মানচিত্র থেকে একটি জেলা নির্বাচন করুন।', searchDistrict: '🔍 জেলা খুঁজুন (যেমন কলকাতা)…', liveUnavailable: 'কোনো লাইভ স্ট্রিম সেট করা নেই।', noTicker: 'এই মুহূর্তে কোনো ব্রেকিং আপডেট নেই।', tickerUnavailable: 'ব্রেকিং আপডেট সাময়িকভাবে পাওয়া যাচ্ছে না।', noPoll: 'এই মুহূর্তে কোনো সক্রিয় জনমত নেই', pollSoon: 'নতুন জনমত দেখার জন্য পরে আবার আসুন।', pollSubmitting: 'আপনার ভোট জমা হচ্ছে…', pollRecorded: 'আপনার ভোট নথিভুক্ত হয়েছে। আপনার পছন্দটি চিহ্নিত করা হয়েছে।', pollUnavailable: 'এই মুহূর্তে ভোট দেওয়া যাচ্ছে না।', categoryLabelNational: 'জাতীয়', categoryLabelWorld: 'বিশ্ব', categoryLabelBusiness: 'ব্যবসা', categoryLabelSports: 'খেলাধুলা', categoryLabelTech: 'প্রযুক্তি', categoryLabelEntertainment: 'বিনোদন', categoryLabelScience: 'বিজ্ঞান', categoryLabelHeritage: 'ঐতিহ্য', categoryLabelGeneral: 'সাধারণ', mapUnavailable: 'মানচিত্র লোড করা যায়নি। নিচের জেলা তালিকা ব্যবহার করুন।', mapDataUnavailable: 'মানচিত্রের তথ্য লোড করা যায়নি। নিচের জেলা তালিকা ব্যবহার করুন।'
   },
   HI: {
     utilityLive: 'लाइव न्यूज नेटवर्क',
@@ -172,6 +184,7 @@ const translations = {
     catSports: 'खेल',
     catTech: 'टेक',
     catEntertainment: 'मनोरंजन',
+    catHeritage: 'विरासत',
     tickerBreaking: 'ब्रेकिंग न्यूज़',
     liveTvKicker: 'लाइव टीवी',
     liveTvTitle: 'लाइव चैनल',
@@ -216,6 +229,7 @@ const translations = {
     footerSecBusiness: 'व्यापार और वित्त',
     footerSecTech: 'टेक और एआई',
     footerSecSports: 'खेल',
+    footerSecHeritage: 'विरासत',
     footerCopyright: '© 2026 युगांतर न्यूज़ नेटवर्क। सर्वाधिकार सुरक्षित।',
     footerFactCheck: '✦ फ़ैक्ट-चेक्ड न्यूज़रूम',
     emptyArticles: 'इस श्रेणी में कोई समाचार उपलब्ध नहीं है।',
@@ -223,7 +237,7 @@ const translations = {
     saveArticle: '☆ सेव करें',
     savedArticle: '★ सेव किया गया',
     viewSource: 'मूल स्रोत देखें', podcastKicker: 'युगांतर ऑडियो', podcastTitle: 'चुनिंदा पॉडकास्ट', podcastLoading: 'चुनिंदा एपिसोड लोड हो रहे हैं…', podcastEmpty: 'अभी कोई चुनिंदा पॉडकास्ट नहीं है। जल्द फिर देखें।', podcastPlay: 'एपिसोड सुनें', podcastUnavailable: 'चुनिंदा पॉडकास्ट अभी उपलब्ध नहीं हैं।', previousPodcast: 'पिछला पॉडकास्ट', nextPodcast: 'अगला पॉडकास्ट', previousSponsor: 'पिछला प्रायोजक', nextSponsor: 'अगला प्रायोजक', podcastNavigation: 'पॉडकास्ट नेविगेशन', sponsorNavigation: 'प्रायोजक नेविगेशन',
-    sponsorKicker: 'प्रायोजक भागीदार', sponsorTitle: 'आधिकारिक प्रायोजक', sponsorAll: 'सभी', sponsorPlatinum: 'प्लैटिनम', sponsorGold: 'गोल्ड', sponsorTech: 'टेक', sponsorEmpty: 'कोई सक्रिय प्रायोजक नहीं', sponsorEmptyHelp: 'प्रायोजक साझेदार जुड़ने पर उनके बैनर यहां दिखेंगे।', sponsorJoin: '🤝 भागीदार बनें', mapKicker: 'पश्चिम बंगाल का नक्शा', mapTitle: 'सभी 23 जिले', mapHint: 'जिला चुनें', mapIntro: 'जिले की खबरें देखने के लिए नक्शे पर एक जिला चुनें।', searchDistrict: '🔍 जिला खोजें…', liveUnavailable: 'कोई लाइव स्ट्रीम सेट नहीं है।', noTicker: 'अभी कोई ब्रेकिंग अपडेट नहीं है।', tickerUnavailable: 'ब्रेकिंग अपडेट अस्थायी रूप से उपलब्ध नहीं हैं।', noPoll: 'कोई सक्रिय पोल नहीं', pollSoon: 'नए पोल के लिए बाद में फिर देखें।', pollSubmitting: 'आपका वोट जमा हो रहा है…', pollRecorded: 'वोट दर्ज हो गया। आपका चयन हाइलाइट किया गया है।', pollUnavailable: 'अभी वोट करना संभव नहीं है।', categoryLabelNational: 'राष्ट्रीय', categoryLabelWorld: 'दुनिया', categoryLabelBusiness: 'व्यापार', categoryLabelSports: 'खेल', categoryLabelTech: 'टेक', categoryLabelEntertainment: 'मनोरंजन', categoryLabelScience: 'विज्ञान', categoryLabelGeneral: 'सामान्य', mapUnavailable: 'नक्शा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।', mapDataUnavailable: 'नक्शे का डेटा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।'
+    sponsorKicker: 'प्रायोजक भागीदार', sponsorTitle: 'आधिकारिक प्रायोजक', sponsorAll: 'सभी', sponsorPlatinum: 'प्लैटिनम', sponsorGold: 'गोल्ड', sponsorTech: 'टेक', sponsorEmpty: 'कोई सक्रिय प्रायोजक नहीं', sponsorEmptyHelp: 'प्रायोजक साझेदार जुड़ने पर उनके बैनर यहां दिखेंगे।', sponsorJoin: '🤝 भागीदार बनें', mapKicker: 'पश्चिम बंगाल का नक्शा', mapTitle: 'सभी 23 जिले', mapHint: 'जिला चुनें', mapIntro: 'जिले की खबरें देखने के लिए नक्शे पर एक जिला चुनें।', searchDistrict: '🔍 जिला खोजें…', liveUnavailable: 'कोई लाइव स्ट्रीम सेट नहीं है।', noTicker: 'अभी कोई ब्रेकिंग अपडेट नहीं है।', tickerUnavailable: 'ब्रेकिंग अपडेट अस्थायी रूप से उपलब्ध नहीं हैं।', noPoll: 'कोई सक्रिय पोल नहीं', pollSoon: 'नए पोल के लिए बाद में फिर देखें।', pollSubmitting: 'आपका वोट जमा हो रहा है…', pollRecorded: 'वोट दर्ज हो गया। आपका चयन हाइलाइट किया गया है।', pollUnavailable: 'अभी वोट करना संभव नहीं है।', categoryLabelNational: 'राष्ट्रीय', categoryLabelWorld: 'दुनिया', categoryLabelBusiness: 'व्यापार', categoryLabelSports: 'खेल', categoryLabelTech: 'टेक', categoryLabelEntertainment: 'मनोरंजन', categoryLabelScience: 'विज्ञान', categoryLabelHeritage: 'विरासत', categoryLabelGeneral: 'सामान्य', mapUnavailable: 'नक्शा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।', mapDataUnavailable: 'नक्शे का डेटा लोड नहीं हो सका। नीचे दी गई जिला सूची का उपयोग करें।'
   }
 };
 
@@ -343,7 +357,7 @@ const bindImageFallbacks = root => root.querySelectorAll('img[data-image-fallbac
 });
 const text = (value, language = state.language) => typeof value === 'string' ? value : (value?.[language] || value?.EN || value?.BN || value?.HI || '');
 const categoryText = category => {
-  const keys = { national: 'categoryLabelNational', world: 'categoryLabelWorld', business: 'categoryLabelBusiness', sports: 'categoryLabelSports', tech: 'categoryLabelTech', entertainment: 'categoryLabelEntertainment', science: 'categoryLabelScience', general: 'categoryLabelGeneral' };
+  const keys = { national: 'categoryLabelNational', world: 'categoryLabelWorld', business: 'categoryLabelBusiness', sports: 'categoryLabelSports', tech: 'categoryLabelTech', entertainment: 'categoryLabelEntertainment', science: 'categoryLabelScience', heritage: 'categoryLabelHeritage', general: 'categoryLabelGeneral' };
   return (translations[state.language] || translations.EN)[keys[String(category || '').toLowerCase()]] || category || 'NEWS';
 };
 const articleText = (article, field) => {
@@ -527,7 +541,7 @@ async function votePoll(optionId) {
 
 async function loadArticles() {
   try {
-    const result = await getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50)));
+    const result = await withDataLoadTimeout(getDocs(query(collection(db, 'articles'), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(50))), 'Articles');
     const docs = result.docs.map(item => ({ id: item.id, ...item.data() }));
     state.articles = docs.filter(article => !isDemoArticle(article));
   } catch (error) {
@@ -555,6 +569,11 @@ function startRealtimeListeners() {
     state.tickerState = 'ready';
     renderTicker();
   }, () => { state.tickerState = 'error'; renderTicker(); });
+  window.setTimeout(() => {
+    if (state.tickerState !== 'loading') return;
+    state.tickerState = 'error';
+    renderTicker();
+  }, DATA_LOAD_TIMEOUT_MS);
   onSnapshot(query(collection(db, 'sponsors'), where('active', '==', true)), snapshot => {
     state.sponsors = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
     renderSponsors();
@@ -600,7 +619,7 @@ function renderLiveStream(stream = state.liveStream) {
 async function loadVideosAndPoll() {
   let videoItems = [];
   try {
-    const videos = await getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(6)));
+    const videos = await withDataLoadTimeout(getDocs(query(collection(db, 'videoItems'), where('active', '==', true), orderBy('publishedAt', 'desc'), limit(6))), 'Videos');
     videoItems = videos.docs.map(item => item.data());
   } catch (err) {
     console.warn('Videos load using channel videos:', err);
@@ -608,7 +627,7 @@ async function loadVideosAndPoll() {
   renderVideos(videoItems);
 
   try {
-    const polls = await getDocs(query(collection(db, 'polls'), where('active', '==', true), limit(1)));
+    const polls = await withDataLoadTimeout(getDocs(query(collection(db, 'polls'), where('active', '==', true), limit(1))), 'Poll');
     renderPoll(polls.docs[0] ? { id: polls.docs[0].id, ...polls.docs[0].data() } : null);
   } catch (err) {
     renderPoll(null);
@@ -912,7 +931,7 @@ async function loadFeaturedPodcasts() {
     return;
   }
   try {
-    const snapshot = await getDocs(query(collection(db, 'podcasts'), where('status', '==', 'published'), limit(30)));
+    const snapshot = await withDataLoadTimeout(getDocs(query(collection(db, 'podcasts'), where('status', '==', 'published'), limit(30))), 'Podcasts');
     state.podcasts = snapshot.docs
       .map(item => ({ id: item.id, ...item.data() }))
       .filter(episode => episode.active !== false && (episode.featured === true || episode.highlighted === true))
