@@ -15,6 +15,10 @@ This directory contains the Hostinger-compatible version of YUGANTAR News. It us
 
 Hostinger Single can serve many pages from one `public_html` directory. The public homepage, admin desk, reporter workspace, district page, and video page do not require separate websites or Node.js hosting.
 
+## Local preview
+
+For local development, run `node dev-server.js` from this directory and open `http://127.0.0.1:8000/index.html`. This preview server sends `no-store` headers for every asset so edits appear after a normal browser refresh. Set the `PORT` environment variable to use a different port.
+
 ## URLs after deployment
 
 ```text

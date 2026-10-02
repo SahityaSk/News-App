@@ -1358,6 +1358,143 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   overflow-y: auto;
 }
 
+/* Responsive layouts for the public newsroom across desktop, tablet, and phone widths. */
+@media (min-width: 1881px) {
+  .main-layout-container { width: min(2040px, calc(100% - 48px)); gap: 24px; grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) minmax(300px, 360px); }
+  .shell { width: min(1480px, calc(100% - 48px)); }
+}
+
+@media (min-width: 1025px) and (max-width: 1200px) {
+  .main-layout-container {
+    width: min(100% - 32px, 1168px);
+    grid-template-areas: "main map" "left left";
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 300px);
+    gap: 16px;
+  }
+  .left-sidebar-stack { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-height: none; overflow: visible; }
+  .main-news-column .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 701px) and (max-width: 1024px) {
+  .shell { width: min(100% - 32px, 960px); }
+  .header-row { flex-wrap: wrap; gap: 12px 20px; }
+  .header-row > .brand { flex: 1 1 100%; }
+  .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .main-layout-container { width: min(100% - 32px, 960px); }
+  .main-news-column .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wb-leaflet-map { height: clamp(320px, 55vw, 430px); }
+}
+
+@media (max-width: 700px) {
+  .shell, .main-layout-container { width: calc(100% - 24px); }
+  .utility-inner { gap: 8px; font-size: .62rem; }
+  .utility-end { gap: 7px; }
+  .utility-social { gap: 5px; }
+  .utility-social a { width: 16px; }
+  .header-row { align-items: stretch; }
+  .header-row > .brand { width: 100%; }
+  .brand { gap: 10px; }
+  .header-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  .header-actions select { min-width: 0; width: 100%; }
+  .header-actions .icon-button { min-width: 0; }
+  .header-actions .header-action-btn { min-width: 0; padding-inline: 8px; white-space: normal; text-align: center; }
+  .header-action-btn .jobs-label { flex-wrap: wrap; justify-content: center; }
+  .category-nav { gap: 5px; scroll-snap-type: x proximity; }
+  .category { scroll-snap-align: start; padding: 7px 11px; }
+  .ticker-row { gap: 9px; }
+  .ticker-row strong { letter-spacing: .08em; }
+  .headline-strip-section { overflow: hidden; }
+  .headline-strip { grid-template-columns: repeat(5, minmax(132px, 1fr)); }
+  .section-heading { gap: 12px; }
+  .main-news-column .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .article-body, .video-card > div:last-child { padding: 13px; }
+  .left-sidebar-stack { gap: 12px; }
+  .wb-leaflet-map { height: clamp(280px, 88vw, 400px); }
+  .map-leaflet-container, .wb-map-box { min-width: 0; }
+}
+
+@media (max-width: 480px) {
+  .shell, .main-layout-container { width: calc(100% - 20px); }
+  .utility-live { letter-spacing: .04em; }
+  .utility-end #sync-status { display: none; }
+  .header-row { padding: 10px 0; }
+  .brand-mark { width: 50px; height: 50px; flex-basis: 50px; border-radius: 11px; }
+  .brand-copy strong { font-size: clamp(.88rem, 4.4vw, 1.05rem); letter-spacing: .04em; }
+  .brand-copy small.brand-slogan { width: min(68vw, 320px); font-size: .68rem; }
+  .header-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .header-actions .header-action-btn { min-height: 40px; }
+  .category-nav { margin-inline: 0; width: 100%; padding-inline: 10px; }
+  .main-layout-container { gap: 14px; padding-top: 14px; }
+  .main-news-column .article-grid, .main-news-column .video-grid { grid-template-columns: minmax(0, 1fr); }
+  .headline-strip-section { padding: 12px; }
+  .headline-strip { grid-template-columns: repeat(5, minmax(116px, 1fr)); }
+  .content-section { padding: 20px 0 26px; }
+  .section-heading h1 { font-size: 1.5rem; }
+  .newsletter { padding: 16px; }
+  .inline-form { gap: 8px; }
+  .inline-form input, .inline-form button { width: 100%; }
+  .wb-map-sidebar { padding: 12px; }
+  .wb-map-box { padding: 8px; }
+  .district-region-filters, .wb-map-region-filter { flex-wrap: wrap; }
+  .wb-leaflet-map { height: min(96vw, 360px); min-height: 250px; }
+}
+
+@media (max-width: 360px) {
+  .utility-social { display: none; }
+  .brand { gap: 8px; }
+  .brand-mark { width: 44px; height: 44px; flex-basis: 44px; }
+  .brand-copy strong { font-size: .82rem; }
+  .brand-copy small.brand-slogan { width: calc(100vw - 92px); font-size: .64rem; }
+  .header-actions .header-action-btn { font-size: .72rem; }
+  .main-news-column .article-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .utility-inner { padding: 3px 0; }
+  .header-row { flex-direction: row; flex-wrap: wrap; gap: 4px 8px; padding: 6px 0; }
+  .header-row > .brand { flex: 1 1 100%; }
+  .category-nav { gap: 4px; padding-bottom: 5px; }
+  .category { padding: 4px 8px; font-size: .76rem; }
+  .header-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 7px;
+    justify-content: flex-start;
+    overflow: visible;
+    padding: 2px 0;
+  }
+  .header-actions > * { flex: 0 0 auto !important; }
+  .header-actions select#language { width: 78px; min-width: 78px; min-height: 36px; padding: 6px 5px; }
+  .header-actions .icon-button { width: 36px; min-width: 36px; min-height: 36px; padding: 5px; }
+  .header-actions .header-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; min-width: 36px; min-height: 36px; padding: 5px; font-size: .7rem; white-space: nowrap; }
+  .header-actions .subscribers-btn { gap: 3px; }
+  .header-actions .sub-badge > span, .header-actions .jobs-label > span { display: none; }
+  .header-actions .sub-badge { display: inline-flex; align-items: center; }
+}
+
+@media (max-width: 700px) {
+  .district-page .header-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand back" "actions actions";
+    align-items: center;
+    gap: 6px 8px;
+  }
+  .district-page .district-brand { grid-area: brand; flex: initial; min-width: 0; }
+  .district-page .district-back-link { position: static; grid-area: back; transform: none; padding: 6px 9px; font-size: .72rem; }
+  .district-page .header-actions { grid-area: actions; width: 100%; margin-left: 0; }
+}
+
+@media (max-width: 480px) {
+  .header-row { padding: 5px 0; }
+  .brand-mark { width: 40px; height: 40px; flex-basis: 40px; border-radius: 9px; }
+  .brand { gap: 8px; }
+  .brand-copy strong { font-size: .9rem; }
+  .brand-copy small.brand-slogan { margin-top: 3px; font-size: .58rem; }
+  .utility-social { display: none; }
+  .district-page .district-back-link { padding: 5px 8px; }
+}
+
 /* Floating Edge Drawer Buttons for Mobile */
 .mobile-edge-bar {
   display: none;
