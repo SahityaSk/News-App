@@ -510,6 +510,16 @@ function bindUi() {
   setTheme(storedTheme || (hour >= 6 && hour < 18 ? 'light' : 'dark'));
 
   $('theme-toggle')?.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+  // Keep the careers action available on district pages just as it is on home.
+  $('jobs-btn')?.addEventListener('click', () => $('jobs-dialog')?.showModal());
+  $('close-jobs-dialog')?.addEventListener('click', () => $('jobs-dialog')?.close());
+  document.querySelectorAll('.apply-btn-trigger').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const position = $('job-position');
+      if (position && btn.dataset.jobTitle) position.value = btn.dataset.jobTitle;
+      $('job-application-form')?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
   $('saved-toggle')?.addEventListener('click', () => $('saved-dialog').showModal());
   $('close-saved')?.addEventListener('click', () => $('saved-dialog').close());
   $('close-dialog')?.addEventListener('click', () => $('article-dialog').close());

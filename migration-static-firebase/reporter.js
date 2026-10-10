@@ -3,7 +3,7 @@ import { browserSessionPersistence, getAuth, onAuthStateChanged, setPersistence,
 import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS } from './wb-map-data.js';
-import { DISTRICT_SUBCATEGORIES } from './district-content.js';
+import { ARTICLE_CATEGORIES, DISTRICT_SUBCATEGORIES } from './district-content.js';
 
 const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => {
@@ -25,15 +25,32 @@ let auth;
 let currentUser;
 let drafts = [];
 
+function setReporterLanguage(language) {
+  document.querySelectorAll('[data-reporter-language]').forEach(tab => {
+    const active = tab.dataset.reporterLanguage === language;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('[data-reporter-language-panel]').forEach(panel => {
+    panel.classList.toggle('active', panel.dataset.reporterLanguagePanel === language);
+  });
+  document.querySelectorAll('[data-required-english]').forEach(field => {
+    field.required = language === 'en';
+  });
+}
+
 function populateDistrictFields() {
+  const category = $('reporter-category');
   const district = $('reporter-district');
   const subcategory = $('reporter-subcategory');
-  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn} · ${item.nameEn}</option>`).join('');
-  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.BN} · ${item.label.EN}</option>`).join('');
+  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district · রাজ্যব্যাপী / নির্দিষ্ট জেলা নয় · राज्यव्यापी / कोई विशिष्ट जिला नहीं</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn} · ${item.nameBn} · ${item.nameHi}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
 }
 
 function resetForm() {
   $('reporter-story-form').reset();
+  setReporterLanguage('en');
   $('reporter-draft-id').value = '';
   $('reporter-form-title').textContent = 'Story details';
   $('reporter-save').textContent = 'Save draft';
@@ -42,6 +59,7 @@ function resetForm() {
 }
 
 function loadDraft(draft) {
+  setReporterLanguage('en');
   $('reporter-draft-id').value = draft.id;
   $('reporter-title-en').value = draft.title?.EN || '';
   $('reporter-title-bn').value = draft.title?.BN || '';
@@ -127,10 +145,21 @@ function articlePayload(nextStatus = 'draft') {
 }
 
 function bindWorkspace() {
+  setReporterLanguage('en');
+  document.querySelectorAll('[data-reporter-language]').forEach(tab => {
+    tab.addEventListener('click', () => setReporterLanguage(tab.dataset.reporterLanguage));
+  });
   $('reporter-story-form').addEventListener('submit', async event => {
     event.preventDefault();
     const button = event.submitter || $('reporter-save');
     const nextStatus = button.dataset.action === 'submit' ? 'submitted' : 'draft';
+    const missingEnglishField = [...document.querySelectorAll('[data-required-english]')].find(field => !field.value.trim());
+    if (missingEnglishField) {
+      setReporterLanguage('en');
+      status('reporter-form-status', 'Add the English headline, summary, and full story before saving or submitting.', true);
+      missingEnglishField.focus();
+      return;
+    }
     button.disabled = true;
     try {
       const payload = articlePayload(nextStatus);

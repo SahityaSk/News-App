@@ -3,7 +3,7 @@ import { browserLocalPersistence, getAuth, onAuthStateChanged, setPersistence, s
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig, firebaseConfigured } from './firebase-config.js';
 import { WB_DISTRICTS } from './wb-map-data.js';
-import { DISTRICT_SUBCATEGORIES } from './district-content.js';
+import { ARTICLE_CATEGORIES, DISTRICT_SUBCATEGORIES } from './district-content.js';
 
 const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message; node.className = `status${error ? ' error' : ''}`; } };
@@ -80,12 +80,14 @@ function resetArticleForm() {
 }
 
 function populateDistrictFields() {
+  const category = $('article-category');
   const district = $('article-district');
   const subcategory = $('article-subcategory');
-  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn || item.nameEn || item.id}</option>`).join('');
-  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.BN} · ${item.label.EN}</option>`).join('');
+  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district · রাজ্যব্যাপী / নির্দিষ্ট জেলা নয় · राज्यव्यापी / कोई विशिष्ट जिला नहीं</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn || item.id} · ${item.nameBn || item.nameEn || item.id} · ${item.nameHi || item.nameEn || item.id}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
   const tickerDistrict = $('ticker-district');
-  if (tickerDistrict && !tickerDistrict.options.length) tickerDistrict.innerHTML = '<option value="">Global ticker</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameBn || item.nameEn || item.id}</option>`).join('');
+  if (tickerDistrict && !tickerDistrict.options.length) tickerDistrict.innerHTML = '<option value="">Global ticker · সার্বজনীন টিকার · वैश्विक टिकर</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn || item.id} · ${item.nameBn || item.nameEn || item.id} · ${item.nameHi || item.nameEn || item.id}</option>`).join('');
 }
 
 function updateImagePreview() {

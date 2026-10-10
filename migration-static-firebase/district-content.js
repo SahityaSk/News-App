@@ -1,3 +1,14 @@
+export const ARTICLE_CATEGORIES = [
+  { id: 'national', label: { EN: 'National', BN: 'জাতীয়', HI: 'राष्ट्रीय' } },
+  { id: 'world', label: { EN: 'World', BN: 'বিশ্ব', HI: 'विश्व' } },
+  { id: 'business', label: { EN: 'Business', BN: 'ব্যবসা', HI: 'व्यवसाय' } },
+  { id: 'sports', label: { EN: 'Sports', BN: 'খেলাধুলা', HI: 'खेल' } },
+  { id: 'tech', label: { EN: 'Technology', BN: 'প্রযুক্তি', HI: 'प्रौद्योगिकी' } },
+  { id: 'entertainment', label: { EN: 'Entertainment', BN: 'বিনোদন', HI: 'मनोरंजन' } },
+  { id: 'science', label: { EN: 'Science', BN: 'বিজ্ঞান', HI: 'विज्ञान' } },
+  { id: 'heritage', label: { EN: 'Heritage', BN: 'ঐতিহ্য', HI: 'विरासत' } }
+];
+
 export const DISTRICT_SUBCATEGORIES = [
   { id: 'politics', label: { BN: 'রাজনীতি', EN: 'Politics', HI: 'राजनीति' } },
   { id: 'crime', label: { BN: 'অপরাধ', EN: 'Crime', HI: 'अपराध' } },
