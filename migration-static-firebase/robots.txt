@@ -1,4 +1,5 @@
 User-agent: *
 Disallow: /admin.html
+Disallow: /reporter.html
 
 Sitemap: https://yugantar.news/sitemap.xml
