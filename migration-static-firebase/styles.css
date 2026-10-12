@@ -1782,3 +1782,7 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 }
 
 
+
+.edge-whatsapp { display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: #fff; text-decoration: none; background: #128c4a; border-color: #25d366; }
+.edge-whatsapp svg { width: 21px; height: 21px; fill: currentColor; }
+.edge-whatsapp:hover { background: #075e36; }

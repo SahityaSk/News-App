@@ -722,9 +722,6 @@ function bindUi() {
   });
 
   // Mobile edge bar toggles
-  $('mobile-podcasts-toggle')?.addEventListener('click', () => {
-    $('podcasts-sidebar')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
   $('mobile-wbmap-toggle')?.addEventListener('click', () => {
     $('wb-map-sidebar')?.scrollIntoView({ behavior: 'smooth' });
   });
