@@ -1513,6 +1513,10 @@ small, .muted { color: var(--muted); font-size: .8rem; }
   }
   .edge-btn {
     pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
     padding: 10px 16px;
     border-radius: 999px;
     font-size: 0.82rem;
@@ -1784,5 +1788,5 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 
 
 .edge-whatsapp { display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: #fff; text-decoration: none; background: #128c4a; border-color: #25d366; }
-.edge-whatsapp svg { width: 21px; height: 21px; fill: currentColor; }
+.edge-whatsapp svg { display: block; flex: 0 0 21px; width: 21px; height: 21px; fill: #fff; color: #fff; overflow: visible; }
 .edge-whatsapp:hover { background: #075e36; }

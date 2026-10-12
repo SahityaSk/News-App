@@ -1,6 +1,13 @@
 Options -Indexes
 RewriteEngine On
 
+# Clean staff-panel URLs. Keep the underlying static files and the existing
+# /admin.html and /reporter.html URLs working as before.
+RewriteRule ^admin/$ /admin [R=301,L]
+RewriteRule ^reporter/$ /reporter [R=301,L]
+RewriteRule ^admin$ admin.html [L]
+RewriteRule ^reporter$ reporter.html [L]
+
 # Serve existing assets normally. Route future client-side paths to the SPA shell.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
