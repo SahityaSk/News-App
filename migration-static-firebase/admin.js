@@ -283,8 +283,9 @@ function renderJobApplications() {
     : jobApplicationCache;
   if (!filtered.length) { target.innerHTML = '<div class="empty-state">No job applications found.</div>'; return; }
   const statuses = ['received', 'shortlisted', 'interview', 'selected', 'rejected', 'withdrawn'];
-  target.innerHTML = filtered.map(item => `<div class="admin-list-item"><div><strong>${escapeHtml(item.name || 'Unnamed candidate')}</strong><small>${escapeHtml(item.position || 'Open application')} · ${escapeHtml(item.district || 'Location not provided')} · ${escapeHtml(dateText(item.createdAt))}</small><p class="muted" style="margin:6px 0 0;">${escapeHtml(item.email || '')} · ${escapeHtml(item.phone || '')}</p>${item.pitch ? `<p class="muted" style="margin:4px 0 0;">${escapeHtml(item.pitch)}</p>` : ''}${readUrl(item.portfolioUrl) ? `<a href="${escapeHtml(readUrl(item.portfolioUrl))}" target="_blank" rel="noreferrer">View portfolio / resume link</a>` : ''}</div><div class="item-actions"><select data-application-status="${escapeHtml(item.id)}" aria-label="Application status for ${escapeHtml(item.name || 'candidate')}">${statuses.map(value => `<option value="${value}" ${item.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select></div></div>`).join('');
+  target.innerHTML = filtered.map(item => `<div class="admin-list-item"><div><strong>${escapeHtml(item.name || 'Unnamed candidate')}</strong><small>${escapeHtml(item.position || 'Open application')} · ${escapeHtml(item.district || 'Location not provided')} · ${escapeHtml(dateText(item.createdAt))}</small><p class="muted" style="margin:6px 0 0;">${escapeHtml(item.email || '')} · ${escapeHtml(item.phone || '')}</p>${item.pitch ? `<p class="muted" style="margin:4px 0 0;">${escapeHtml(item.pitch)}</p>` : ''}${readUrl(item.portfolioUrl) ? `<a href="${escapeHtml(readUrl(item.portfolioUrl))}" target="_blank" rel="noreferrer">View portfolio / resume link</a>` : ''}</div><div class="item-actions"><select data-application-status="${escapeHtml(item.id)}" aria-label="Application status for ${escapeHtml(item.name || 'candidate')}">${statuses.map(value => `<option value="${value}" ${item.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select><button class="text-button danger" type="button" data-delete-application="${escapeHtml(item.id)}" aria-label="Delete application for ${escapeHtml(item.name || 'candidate')}" ${item.status === 'received' ? 'disabled title="Review this application by changing its status before deleting."' : ''}>Delete</button></div></div>`).join('');
   target.querySelectorAll('[data-application-status]').forEach(select => select.addEventListener('change', () => updateApplicationStatus(select.dataset.applicationStatus, select.value)));
+  target.querySelectorAll('[data-delete-application]').forEach(button => button.addEventListener('click', () => deleteJobApplication(button.dataset.deleteApplication)));
 }
 
 async function updateApplicationStatus(id, nextStatus) {
@@ -293,7 +294,25 @@ async function updateApplicationStatus(id, nextStatus) {
     await updateDoc(doc(db, 'jobApplications', id), { status: nextStatus, updatedAt: serverTimestamp(), updatedBy: activeAuth.currentUser.uid });
     const item = jobApplicationCache.find(application => application.id === id);
     if (item) item.status = nextStatus;
+    renderJobApplications();
     status('admin-data-status', 'Application status updated.');
+  } catch (error) {
+    status('admin-data-status', error.message, true);
+    await loadAdminData();
+  }
+}
+
+async function deleteJobApplication(id) {
+  const item = jobApplicationCache.find(application => application.id === id);
+  if (!item || item.status === 'received') return;
+  const name = item.name || 'this candidate';
+  if (!window.confirm(`Delete the reviewed application for “${name}”? This cannot be undone.`)) return;
+  try {
+    await deleteDoc(doc(db, 'jobApplications', id));
+    jobApplicationCache = jobApplicationCache.filter(application => application.id !== id);
+    $('stat-applications').textContent = jobApplicationCache.length;
+    renderJobApplications();
+    status('admin-data-status', `Application for ${name} deleted.`);
   } catch (error) {
     status('admin-data-status', error.message, true);
     await loadAdminData();
