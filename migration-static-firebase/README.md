@@ -52,6 +52,8 @@ database.rules.json         Optional Realtime Database rules
 firebase.json               Firebase CLI configuration
 hostinger-worker/            Private PHP worker and worker notes
 assets/                     Local map data and public assets
+api/upload-image.php        Authenticated Hostinger article-image upload endpoint
+media/articles/             Public optimized article images uploaded through the admin desk
 ```
 
 Never upload `.git`, service-account JSON, private worker configuration, local secrets, or private resumes to `public_html`.
@@ -84,7 +86,13 @@ The podcast section is currently manually managed by an admin. The admin enters 
 
 ### Images and storage
 
-YouTube and manually entered media normally remain at their external URLs. The frontend shows a branded fallback when an image is broken or blocked. This avoids filling Firebase Storage, but external images are not permanent. Re-hosting media requires rights approval, storage limits, cleanup, and a CDN/storage decision.
+Article cover images can be uploaded from the admin article editor. The upload endpoint stores them on Hostinger under `public_html/media/articles/` and the article document stores the returned public URL in its existing `image` field. Older articles with external image URLs continue to work.
+
+The upload endpoint requires a Firebase ID token and verifies its RS256 signature using Google’s public Firebase signing certificates. It checks the Firebase project audience, issuer, UID, and expiration, then verifies that the matching Firestore `users/{UID}` document has an `editor`, `superadmin`, or `reporter` role for uploads. It accepts JPG, PNG, and WebP files up to 2 MB, generates random filenames, and converts/resizes images to WebP when the Hostinger PHP GD extension is available. It never accepts a client-provided path or filename.
+
+When an editor deletes an article, the admin desk sends a second authenticated cleanup request for images created under `/media/articles/`. The endpoint refuses to delete external URLs or arbitrary paths. Therefore, old external images remain untouched, while Hostinger-managed article images are removed with the article when cleanup succeeds.
+
+YouTube thumbnails, manually entered social/podcast media, and legacy external URLs remain external. The frontend shows a branded fallback when an image is broken or blocked. Hostinger image storage is suitable for article covers, but keep files compressed and periodically remove unused images; private resumes must never be stored in this public directory.
 
 ## Admin, reporter, and public workflows
 
@@ -146,11 +154,20 @@ Create individual staff accounts rather than sharing the Firebase project owner 
 
 Do not double-click `index.html` as a `file://` URL. Use HTTP/HTTPS so modules and Firebase requests work correctly.
 
-From the migration directory:
+From the migration directory, use PHP when testing the upload endpoint. The Node preview server is useful for frontend-only work but cannot execute PHP.
 
 ```powershell
 php -S 127.0.0.1:5500 -t D:\Work\News-App\migration-static-firebase
 ```
+
+For local article-image upload testing, point the endpoint to the private worker configuration before starting PHP:
+
+```powershell
+$env:YUGANTAR_WORKER_CONFIG="D:\Work\News-App\local-secrets\yugantar-worker\worker-config.php"
+php -S 127.0.0.1:5500 -t D:\Work\News-App\migration-static-firebase
+```
+
+Use a Firebase web app/domain that permits `127.0.0.1`, sign in as an editor or superadmin, choose an image in the article form, and save a draft first. Confirm that the new file appears under `media/articles/` and that the Firestore article `image` field contains its URL.
 
 Open:
 
@@ -200,6 +217,15 @@ In Hostinger hPanel → File Manager:
 4. Exclude `.git`, service accounts, private configuration, archives, and private files.
 5. Enable HTTPS and test the domain.
 
+The upload feature requires these paths to be uploaded exactly as follows:
+
+```text
+public_html/api/upload-image.php
+public_html/media/articles/.htaccess
+```
+
+The `media/articles/` directory must be writable by PHP. If the File Manager shows a permissions option, use a normal web-writable directory setting such as `755`; do not use `777` unless Hostinger support specifically requires it. Do not upload the service-account JSON or `worker-config.php` into either public directory.
+
 ### Configure the private PHP worker
 
 Place the worker and service-account JSON outside `public_html` if the account permits it. Configure the client project ID, service-account path, YouTube channel ID, and private API credentials.
@@ -211,6 +237,17 @@ Create a Hostinger cron command similar to:
 ```
 
 The PHP binary path varies by account. Use the path shown by Hostinger, run it manually once if possible, and inspect cron logs.
+
+The upload endpoint automatically looks for the private worker configuration at the domain-based path used by Hostinger, for example:
+
+```text
+/home/u895800952/domains/yugantar.news/private/worker-config.php
+/home/u895800952/domains/yugantar.news/private/firebase-service-account.json
+```
+
+Your actual username and domain may differ. The `serviceAccountPath` inside `worker-config.php` must exactly match the uploaded JSON path. If the endpoint reports that private configuration is missing, check the path first; do not move the service account into `public_html`.
+
+When creating an article, choose **Upload cover image** or paste an existing URL. Uploading happens only when the article is saved. A successful upload returns a URL such as `/media/articles/8f...webp`, which is then saved to Firestore. If the upload fails, read the message in the admin form and inspect the browser Network tab and Hostinger PHP error log.
 
 ### Post-deployment smoke test
 

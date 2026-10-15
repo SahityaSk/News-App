@@ -20,6 +20,35 @@ const displayDate = value => {
   return date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : 'Not saved yet';
 };
 
+function updateReporterImagePreview() {
+  const file = $('reporter-image-file')?.files?.[0];
+  const url = safeUrl($('reporter-image-url')?.value);
+  const preview = $('reporter-image-preview');
+  if (!preview) return;
+  if (file) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      status('reporter-form-status', 'Choose a JPG, PNG or WebP image smaller than 2 MB.', true);
+      $('reporter-image-file').value = '';
+      updateReporterImagePreview();
+      return;
+    }
+    preview.innerHTML = `<img src="${escapeHtml(URL.createObjectURL(file))}" alt="Selected cover preview">`;
+  } else {
+    preview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Cover preview" onerror="this.parentElement.textContent='This image URL could not be loaded.'">` : 'Cover preview appears here';
+  }
+}
+
+async function uploadReporterImage() {
+  const file = $('reporter-image-file')?.files?.[0];
+  if (!file) return '';
+  const token = await currentUser.getIdToken(true);
+  const body = new FormData(); body.append('image', file, file.name);
+  const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
+  let payload = {}; try { payload = await response.json(); } catch {}
+  if (!response.ok || !payload.url) throw new Error(payload.error || 'The image could not be uploaded.');
+  return new URL(payload.url, window.location.href).href;
+}
+
 let db;
 let auth;
 let currentUser;
@@ -54,6 +83,7 @@ function resetForm() {
   $('reporter-draft-id').value = '';
   $('reporter-form-title').textContent = 'Story details';
   $('reporter-save').textContent = 'Save draft';
+  updateReporterImagePreview();
   status('reporter-form-status', '');
   $('reporter-title-en').focus();
 }
@@ -76,6 +106,7 @@ function loadDraft(draft) {
   $('reporter-content-hi').value = draft.content?.HI || '';
   $('reporter-source-url').value = draft.sourceUrl || '';
   $('reporter-image-url').value = draft.image || '';
+  updateReporterImagePreview();
   $('reporter-form-title').textContent = 'Edit your draft';
   $('reporter-save').textContent = 'Save changes';
   $('reporter-submit').textContent = draft.status === 'rejected' ? 'Resubmit for review' : 'Submit for review';
@@ -162,6 +193,8 @@ function bindWorkspace() {
     }
     button.disabled = true;
     try {
+      const uploadedUrl = await uploadReporterImage();
+      if (uploadedUrl) $('reporter-image-url').value = uploadedUrl;
       const payload = articlePayload(nextStatus);
       const draftId = $('reporter-draft-id').value;
       if (draftId) {
@@ -188,6 +221,8 @@ function bindWorkspace() {
   });
   $('reporter-new-draft').addEventListener('click', resetForm);
   $('reporter-refresh').addEventListener('click', refreshDrafts);
+  $('reporter-image-file')?.addEventListener('change', updateReporterImagePreview);
+  $('reporter-image-url')?.addEventListener('input', updateReporterImagePreview);
   $('reporter-signout').addEventListener('click', () => signOut(auth));
   $('reporter-submit').dataset.action = 'submit';
 }

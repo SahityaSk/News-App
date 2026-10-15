@@ -90,6 +90,7 @@
             <div class="reporter-field"><label for="reporter-source-url">Source link</label><input id="reporter-source-url" type="url" maxlength="1000" placeholder="https://..."></div>
             <div class="reporter-field"><label for="reporter-image-url">Image link</label><input id="reporter-image-url" type="url" maxlength="1000" placeholder="https://..."></div>
           </div>
+          <div class="form-row"><label class="reporter-field">Upload cover image <input id="reporter-image-file" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG or WebP · maximum 2 MB</small></label><div id="reporter-image-preview" class="image-preview" aria-live="polite">Cover preview appears here</div></div>
           <div class="reporter-form-footer"><p class="muted">Save privately, or submit to the editor. Nothing becomes public automatically.</p><div class="form-actions"><button id="reporter-save" class="button" data-action="save" type="submit">Save draft</button><button id="reporter-submit" class="button button-outline" data-action="submit" type="submit">Submit for review</button></div></div>
           <p id="reporter-form-status" class="status" aria-live="polite"></p>
         </form>
@@ -102,6 +103,6 @@
     </section>
   </main>
 
-  <script type="module" src="./reporter.js?v=20261001-language-tabs"></script>
+  <script type="module" src="./reporter.js?v=20261016-image-upload"></script>
 </body>
 </html>

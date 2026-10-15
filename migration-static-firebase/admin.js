@@ -95,6 +95,46 @@ function updateImagePreview() {
   preview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Cover preview" onerror="this.parentElement.textContent='This image URL could not be loaded.'">` : 'Cover preview appears here';
 }
 
+function previewSelectedImage() {
+  const file = $('article-image-file')?.files?.[0];
+  if (!file) { updateImagePreview(); return; }
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    status('article-status', 'Choose a JPG, PNG or WebP image smaller than 2 MB.', true);
+    $('article-image-file').value = '';
+    updateImagePreview();
+    return;
+  }
+  const preview = $('article-image-preview');
+  const objectUrl = URL.createObjectURL(file);
+  preview.innerHTML = `<img src="${escapeHtml(objectUrl)}" alt="Selected cover preview">`;
+}
+
+async function uploadArticleImage(auth) {
+  const file = $('article-image-file')?.files?.[0];
+  if (!file) return '';
+  const token = await auth.currentUser.getIdToken(true);
+  const body = new FormData(); body.append('image', file, file.name);
+  const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
+  let payload = {};
+  try { payload = await response.json(); } catch {}
+  if (!response.ok || !payload.url) throw new Error(payload.error || 'The image could not be uploaded.');
+  return new URL(payload.url, window.location.href).href;
+}
+
+async function deleteManagedArticleImage(auth, imageUrl) {
+  let parsed;
+  try { parsed = new URL(String(imageUrl || ''), window.location.href); } catch { return; }
+  const currentHost = window.location.hostname.replace(/^www\./i, '');
+  const imageHost = parsed.hostname.replace(/^www\./i, '');
+  if (parsed.protocol !== window.location.protocol || imageHost !== currentHost || !/^\/media\/articles\/[A-Za-z0-9_-]+\.(jpg|png|webp)$/.test(parsed.pathname)) return false;
+  const token = await auth.currentUser.getIdToken(true);
+  const body = new FormData(); body.append('action', 'delete'); body.append('path', parsed.pathname);
+  const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
+  let payload = {}; try { payload = await response.json(); } catch {}
+  if (!response.ok) throw new Error(payload.error || 'The managed article image could not be deleted.');
+  return true;
+}
+
 function updateArticleEditorPreview() {
   const active = document.querySelector('.article-language-tab.active')?.dataset.articleLanguage || 'EN';
   const title = $('article-title-' + active.toLowerCase())?.value.trim() || 'Untitled article';
@@ -375,7 +415,7 @@ function editArticle(id) {
 
 async function deleteArticle(id) {
   const article = articleCache.find(item => item.id === id); if (!article || !window.confirm(`Delete “${displayText(article.title)}”?`)) return;
-  try { await deleteDoc(doc(db, 'articles', id)); status('admin-data-status', 'Article deleted.'); await loadAdminData(); } catch (error) { status('admin-data-status', error.message, true); }
+  try { const imageManaged = await deleteManagedArticleImage(activeAuth, article.image); await deleteDoc(doc(db, 'articles', id)); status('admin-data-status', imageManaged ? 'Article and managed cover image deleted.' : 'Article deleted.'); await loadAdminData(); } catch (error) { status('admin-data-status', error.message, true); await loadAdminData(); }
 }
 
 function resetVideoForm() {
@@ -488,13 +528,13 @@ function bindForms(auth) {
   populateDistrictFields();
   activeAuth = auth;
   bindArticleEditor();
-  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm; $('podcast-reset').onclick = resetPodcastForm;
+  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-image-file')?.addEventListener('change', previewSelectedImage); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm; $('podcast-reset').onclick = resetPodcastForm;
   $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
   $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
   $('search-hidden-videos')?.addEventListener('input', (e) => { hiddenVideoSearchQuery = e.target.value.trim().toLowerCase(); renderHiddenVideos(); });
   $('search-applications')?.addEventListener('input', (e) => { applicationSearchQuery = e.target.value.trim().toLowerCase(); renderJobApplications(); });
   document.querySelectorAll('[data-admin-tab]').forEach(button => button.addEventListener('click', () => { const name = button.dataset.adminTab; document.querySelectorAll('[data-admin-tab]').forEach(item => item.classList.toggle('active', item === button)); document.querySelectorAll('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === name)); }));
-  $('article-form').onsubmit = async event => { event.preventDefault(); try { const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } };
+  $('article-form').onsubmit = async event => { event.preventDefault(); try { $('article-submit').disabled = true; const uploadedUrl = await uploadArticleImage(auth); if (uploadedUrl) $('article-image').value = uploadedUrl; const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } finally { $('article-submit').disabled = false; } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };
   $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const data = { title: languageObject($('ticker-en')?.value || '', $('ticker-bn')?.value || '', $('ticker-hi')?.value || ''), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', districtId: $('ticker-district')?.value || '', scope: $('ticker-district')?.value ? 'district' : 'global', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
   $('podcast-form').onsubmit = async event => { event.preventDefault(); try { const title = $('podcast-title').value.trim(); const description = $('podcast-description').value.trim(); const thumbnail = readUrl($('podcast-thumbnail').value); const facebookUrl = readUrl($('podcast-facebook-url').value); if (!title || !facebookUrl) throw new Error('Podcast title and Facebook link are required.'); if ($('podcast-thumbnail').value.trim() && !thumbnail) throw new Error('Enter a valid thumbnail URL beginning with http:// or https://.'); const data = { title, description, thumbnail, facebookUrl, sourceUrl: facebookUrl, status: $('podcast-status-select').value, active: $('podcast-active').checked, featured: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingPodcastId) { await updateDoc(doc(db, 'podcasts', editingPodcastId), data); status('podcast-status', 'Podcast changes saved.'); } else { await addDoc(collection(db, 'podcasts'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('podcast-status', 'Podcast published.'); } resetPodcastForm(); await loadAdminData(); } catch (error) { status('podcast-status', error.message, true); } };

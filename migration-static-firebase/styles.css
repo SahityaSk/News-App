@@ -490,6 +490,9 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 .status-chip.draft { color: #7c2d12; background: #fed7aa; }
 .image-preview { display: grid; place-items: center; min-height: 100px; overflow: hidden; color: var(--muted); background: var(--surface-soft); border: 1px dashed var(--line-strong); border-radius: var(--radius-sm); text-align: center; }
 .image-preview img { width: 100%; height: 150px; object-fit: cover; }
+.file-field { display: grid; gap: 6px; min-width: 0; color: var(--text); }
+.file-field input[type="file"] { width: 100%; padding: 10px; color: var(--text); background: var(--surface-soft); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
+.file-field small { color: var(--muted); font-size: .82rem; }
 .form-options { align-items: center; }
 .form-options label { display: flex; align-items: center; gap: 7px; color: var(--muted-dark); font-size: .9rem; }
 .admin-header-actions .button { white-space: nowrap; }
