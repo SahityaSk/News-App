@@ -20,11 +20,15 @@ function render(items) {
   const filtered = term ? items.filter(item => `${item.title || ''} ${item.description || ''}`.toLowerCase().includes(term)) : items;
 
   $('all-videos').innerHTML = filtered.length ? filtered.map(item => {
-    const id = youtubeId(item.videoUrl || item.embedUrl);
+    const provider = String(item.provider || 'youtube').toLowerCase();
+    const id = provider === 'youtube' ? youtubeId(item.videoUrl || item.embedUrl) : '';
     const url = safeUrl(item.videoUrl || item.sourceUrl);
     const thumb = safeUrl(item.thumbnail || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : ''));
     const media = id ? `<div class="social-embed"><iframe title="${escapeHtml(item.title || 'YouTube video')}" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : (thumb ? `<div class="media-frame"><img src="${escapeHtml(thumb)}" alt="${escapeHtml(item.title)}"></div>` : '<div class="media-frame media-fallback"><span class="media-fallback-label">YUGANTAR</span></div>');
-    return `<article class="video-card social-card">${media}<div><span class="tag">YOUTUBE · VIDEO</span><h2>${escapeHtml(item.title || 'Untitled video')}</h2><p class="social-description">${escapeHtml(item.description || 'Official video from the YUGANTAR channel.')}</p><small>${escapeHtml(dateText(item.publishedAt))}</small><div class="social-actions">${url ? `<a class="button button-outline" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">View on YouTube</a>` : ''}</div></div></article>`;
+    const providerLabel = provider === 'facebook' ? 'FACEBOOK' : 'YOUTUBE';
+    const mediaLabel = item.mediaType === 'post' ? 'POST' : 'VIDEO';
+    const actionLabel = provider === 'facebook' ? 'View on Facebook' : 'View on YouTube';
+    return `<article class="video-card social-card">${media}<div><span class="tag">${providerLabel} · ${mediaLabel}</span><h2>${escapeHtml(item.title || 'Untitled social item')}</h2><p class="social-description">${escapeHtml(item.description || `Official ${providerLabel.toLowerCase()} item from the YUGANTAR channel.`)}</p><small>${escapeHtml(dateText(item.publishedAt))}</small><div class="social-actions">${url ? `<a class="button button-outline" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${actionLabel}</a>` : ''}</div></div></article>`;
   }).join('') : `<div class="empty-state">${term ? `No videos match "${escapeHtml(term)}".` : 'No official videos are available yet.'}</div>`;
 
   if (term) {

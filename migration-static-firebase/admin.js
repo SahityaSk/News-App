@@ -112,13 +112,28 @@ function previewSelectedImage() {
 async function uploadArticleImage(auth) {
   const file = $('article-image-file')?.files?.[0];
   if (!file) return '';
+  return uploadImageFile(auth, file);
+}
+
+async function uploadImageFile(auth, file) {
+  if (!file) return '';
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) throw new Error('Choose a JPG, PNG or WebP image smaller than 2 MB.');
   const token = await auth.currentUser.getIdToken(true);
   const body = new FormData(); body.append('image', file, file.name);
   const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
-  let payload = {};
-  try { payload = await response.json(); } catch {}
+  let payload = {}; try { payload = await response.json(); } catch {}
   if (!response.ok || !payload.url) throw new Error(payload.error || 'The image could not be uploaded.');
   return new URL(payload.url, window.location.href).href;
+}
+
+function updateOptionalImagePreview(fileId, urlId, previewId, statusId) {
+  const file = $(fileId)?.files?.[0]; const preview = $(previewId); if (!preview) return;
+  if (file) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) { status(statusId, 'Choose a JPG, PNG or WebP image smaller than 2 MB.', true); $(fileId).value = ''; updateOptionalImagePreview(fileId, urlId, previewId, statusId); return; }
+    preview.innerHTML = `<img src="${escapeHtml(URL.createObjectURL(file))}" alt="Selected image preview">`;
+    return;
+  }
+  const url = readUrl($(urlId)?.value); preview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Image preview" onerror="this.parentElement.textContent='This image URL could not be loaded.'">` : 'Image preview appears here';
 }
 
 async function deleteManagedArticleImage(auth, imageUrl) {
@@ -240,6 +255,7 @@ function resetPodcastForm() {
   $('podcast-active').checked = true;
   $('podcast-submit').textContent = 'Publish podcast';
   $('podcast-reset').classList.add('hidden');
+  updateOptionalImagePreview('podcast-thumbnail-file', 'podcast-thumbnail', 'podcast-thumbnail-preview', 'podcast-status');
 }
 
 function editPodcast(id) {
@@ -252,6 +268,7 @@ function editPodcast(id) {
   $('podcast-facebook-url').value = item.facebookUrl || item.sourceUrl || '';
   $('podcast-status-select').value = item.status || 'published';
   $('podcast-active').checked = item.active !== false;
+  updateOptionalImagePreview('podcast-thumbnail-file', 'podcast-thumbnail', 'podcast-thumbnail-preview', 'podcast-status');
   $('podcast-submit').textContent = 'Save podcast changes';
   $('podcast-reset').classList.remove('hidden');
   document.querySelector('[data-admin-tab="podcasts"]')?.click();
@@ -366,6 +383,7 @@ function resetSponsorForm() {
   $('sponsor-priority').value = '1';
   $('sponsor-submit').textContent = 'Save sponsor';
   $('sponsor-reset').classList.add('hidden');
+  updateOptionalImagePreview('sponsor-logo-file', 'sponsor-logo', 'sponsor-logo-preview', 'sponsor-status');
 }
 
 function renderSponsors() {
@@ -390,6 +408,7 @@ function editSponsor(id) {
   $('sponsor-priority').value = sponsor.priority ?? 1;
   $('sponsor-banner').value = sponsor.bannerBg || '';
   $('sponsor-active').checked = sponsor.active !== false;
+  updateOptionalImagePreview('sponsor-logo-file', 'sponsor-logo', 'sponsor-logo-preview', 'sponsor-status');
   $('sponsor-submit').textContent = 'Save sponsor changes';
   $('sponsor-reset').classList.remove('hidden');
   document.querySelector('[data-admin-tab="sponsors"]')?.click();
@@ -419,13 +438,13 @@ async function deleteArticle(id) {
 }
 
 function resetVideoForm() {
-  $('video-form').reset(); delete $('video-form').dataset.editingId; $('video-submit').textContent = 'Publish social item'; $('video-reset').classList.add('hidden'); $('video-provider').value = 'youtube';
+  $('video-form').reset(); delete $('video-form').dataset.editingId; $('video-submit').textContent = 'Publish social item'; $('video-reset').classList.add('hidden'); $('video-provider').value = 'youtube'; updateOptionalImagePreview('video-thumbnail-file', 'video-thumbnail', 'video-thumbnail-preview', 'video-status');
 }
 
 function editVideo(id) {
   const item = videoCache.find(video => video.id === id); if (!item) return;
   $('video-title').value = item.title || ''; $('video-provider').value = item.provider || 'youtube'; $('video-url').value = item.videoUrl || item.sourceUrl || ''; $('video-description').value = item.description || ''; $('video-thumbnail').value = item.thumbnail || '';
-  $('video-form').dataset.editingId = id; $('video-submit').textContent = 'Save video changes'; $('video-reset').classList.remove('hidden'); document.querySelector('[data-admin-tab="live"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('video-form').dataset.editingId = id; $('video-submit').textContent = 'Save video changes'; $('video-reset').classList.remove('hidden'); updateOptionalImagePreview('video-thumbnail-file', 'video-thumbnail', 'video-thumbnail-preview', 'video-status'); document.querySelector('[data-admin-tab="live"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderHiddenVideos() {
@@ -528,7 +547,7 @@ function bindForms(auth) {
   populateDistrictFields();
   activeAuth = auth;
   bindArticleEditor();
-  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-image-file')?.addEventListener('change', previewSelectedImage); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm; $('podcast-reset').onclick = resetPodcastForm;
+  $('logout').onclick = () => signOut(auth); $('refresh-admin').onclick = loadAdminData; $('article-image').addEventListener('input', updateImagePreview); $('article-image-file')?.addEventListener('change', previewSelectedImage); $('sponsor-logo-file')?.addEventListener('change', () => updateOptionalImagePreview('sponsor-logo-file', 'sponsor-logo', 'sponsor-logo-preview', 'sponsor-status')); $('sponsor-logo')?.addEventListener('input', () => updateOptionalImagePreview('sponsor-logo-file', 'sponsor-logo', 'sponsor-logo-preview', 'sponsor-status')); $('podcast-thumbnail-file')?.addEventListener('change', () => updateOptionalImagePreview('podcast-thumbnail-file', 'podcast-thumbnail', 'podcast-thumbnail-preview', 'podcast-status')); $('podcast-thumbnail')?.addEventListener('input', () => updateOptionalImagePreview('podcast-thumbnail-file', 'podcast-thumbnail', 'podcast-thumbnail-preview', 'podcast-status')); $('video-thumbnail-file')?.addEventListener('change', () => updateOptionalImagePreview('video-thumbnail-file', 'video-thumbnail', 'video-thumbnail-preview', 'video-status')); $('video-thumbnail')?.addEventListener('input', () => updateOptionalImagePreview('video-thumbnail-file', 'video-thumbnail', 'video-thumbnail-preview', 'video-status')); $('article-reset').onclick = resetArticleForm; $('video-reset').onclick = resetVideoForm; $('ticker-reset').onclick = resetTickerForm; $('poll-reset').onclick = resetPollForm; $('sponsor-reset').onclick = resetSponsorForm; $('podcast-reset').onclick = resetPodcastForm;
   $('search-articles')?.addEventListener('input', (e) => { articleSearchQuery = e.target.value.trim().toLowerCase(); renderArticleList(); });
   $('search-videos')?.addEventListener('input', (e) => { videoSearchQuery = e.target.value.trim().toLowerCase(); renderSimpleList('video-list', videoCache, 'video'); });
   $('search-hidden-videos')?.addEventListener('input', (e) => { hiddenVideoSearchQuery = e.target.value.trim().toLowerCase(); renderHiddenVideos(); });
@@ -537,16 +556,18 @@ function bindForms(auth) {
   $('article-form').onsubmit = async event => { event.preventDefault(); try { $('article-submit').disabled = true; const uploadedUrl = await uploadArticleImage(auth); if (uploadedUrl) $('article-image').value = uploadedUrl; const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } finally { $('article-submit').disabled = false; } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };
   $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const data = { title: languageObject($('ticker-en')?.value || '', $('ticker-bn')?.value || '', $('ticker-hi')?.value || ''), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', districtId: $('ticker-district')?.value || '', scope: $('ticker-district')?.value ? 'district' : 'global', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
-  $('podcast-form').onsubmit = async event => { event.preventDefault(); try { const title = $('podcast-title').value.trim(); const description = $('podcast-description').value.trim(); const thumbnail = readUrl($('podcast-thumbnail').value); const facebookUrl = readUrl($('podcast-facebook-url').value); if (!title || !facebookUrl) throw new Error('Podcast title and Facebook link are required.'); if ($('podcast-thumbnail').value.trim() && !thumbnail) throw new Error('Enter a valid thumbnail URL beginning with http:// or https://.'); const data = { title, description, thumbnail, facebookUrl, sourceUrl: facebookUrl, status: $('podcast-status-select').value, active: $('podcast-active').checked, featured: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingPodcastId) { await updateDoc(doc(db, 'podcasts', editingPodcastId), data); status('podcast-status', 'Podcast changes saved.'); } else { await addDoc(collection(db, 'podcasts'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('podcast-status', 'Podcast published.'); } resetPodcastForm(); await loadAdminData(); } catch (error) { status('podcast-status', error.message, true); } };
+  $('podcast-form').onsubmit = async event => { event.preventDefault(); try { const title = $('podcast-title').value.trim(); const description = $('podcast-description').value.trim(); const uploadedThumbnail = await uploadImageFile(auth, $('podcast-thumbnail-file')?.files?.[0]); if (uploadedThumbnail) $('podcast-thumbnail').value = uploadedThumbnail; const thumbnail = readUrl($('podcast-thumbnail').value); const facebookUrl = readUrl($('podcast-facebook-url').value); if (!title || !facebookUrl) throw new Error('Podcast title and Facebook link are required.'); if ($('podcast-thumbnail').value.trim() && !thumbnail) throw new Error('Enter a valid thumbnail URL beginning with http:// or https://.'); const data = { title, description, thumbnail, facebookUrl, sourceUrl: facebookUrl, status: $('podcast-status-select').value, active: $('podcast-active').checked, featured: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingPodcastId) { await updateDoc(doc(db, 'podcasts', editingPodcastId), data); status('podcast-status', 'Podcast changes saved.'); } else { await addDoc(collection(db, 'podcasts'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('podcast-status', 'Podcast published.'); } resetPodcastForm(); await loadAdminData(); } catch (error) { status('podcast-status', error.message, true); } };
   $('stream-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'liveStreams', 'primary'), { title: $('stream-title').value.trim(), provider: $('stream-provider').value, videoUrl: readUrl($('stream-url').value), isLive: $('stream-live').checked, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }); status('stream-status', 'Live stream saved.'); $('stream-delete').classList.remove('hidden'); } catch (error) { status('stream-status', error.message, true); } };
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };
-  $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };
+  $('video-form').onsubmit = async event => { event.preventDefault(); try { const id = $('video-form').dataset.editingId; const url = readUrl($('video-url').value); const provider = $('video-provider').value; const match = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^?&/]+)/i); const uploadedThumbnail = await uploadImageFile(auth, $('video-thumbnail-file')?.files?.[0]); if (uploadedThumbnail) $('video-thumbnail').value = uploadedThumbnail; const data = { title: $('video-title').value.trim(), description: $('video-description').value.trim(), provider, mediaType: provider === 'youtube' ? 'video' : 'post', videoUrl: url, embedUrl: provider === 'youtube' && match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : url, thumbnail: readUrl($('video-thumbnail').value), sourceUrl: url, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'videoItems', id), data); status('video-status', 'Video changes saved.'); } else { await addDoc(collection(db, 'videoItems'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('video-status', 'Social item published.'); } resetVideoForm(); await loadAdminData(); } catch (error) { status('video-status', error.message, true); } };
   $('sponsor-form').onsubmit = async event => { event.preventDefault(); try {
     const name = $('sponsor-name').value.trim();
+    const uploadedLogo = await uploadImageFile(auth, $('sponsor-logo-file')?.files?.[0]);
+    if (uploadedLogo) $('sponsor-logo').value = uploadedLogo;
     const logoInput = $('sponsor-logo').value.trim();
     const logo = readUrl(logoInput);
     if (!name) throw new Error('Sponsor name is required.');
-    if (!logo) throw new Error('Enter a valid image URL beginning with http:// or https://.');
+    if (!logo) throw new Error('Upload a sponsor image or enter a valid image URL.');
     const data = { name, tagline: $('sponsor-tagline').value.trim(), logo, website: readUrl($('sponsor-website').value), description: $('sponsor-description').value.trim(), category: $('sponsor-category').value, priority: Number($('sponsor-priority').value) || 1, bannerBg: $('sponsor-banner').value.trim() || 'linear-gradient(135deg, #091526, #d92535)', active: $('sponsor-active').checked, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid };
     if (editingSponsorId) { await updateDoc(doc(db, 'sponsors', editingSponsorId), data); status('sponsor-status', 'Sponsor changes saved.'); } else { await addDoc(collection(db, 'sponsors'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('sponsor-status', 'Sponsor added.'); }
     resetSponsorForm(); await loadAdminData();
