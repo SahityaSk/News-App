@@ -27,7 +27,8 @@ function updateReporterImagePreview() {
   if (!preview) return;
   if (file) {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
-      status('reporter-form-status', 'Choose a JPG, PNG or WebP image smaller than 2 MB.', true);
+      const message = 'Upload failed: choose a JPG, PNG or WebP image smaller than 2 MB.';
+      status('reporter-form-status', message, true); window.alert(message);
       $('reporter-image-file').value = '';
       updateReporterImagePreview();
       return;
@@ -45,7 +46,7 @@ async function uploadReporterImage() {
   const body = new FormData(); body.append('image', file, file.name);
   const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
   let payload = {}; try { payload = await response.json(); } catch {}
-  if (!response.ok || !payload.url) throw new Error(payload.error || 'The image could not be uploaded.');
+  if (!response.ok || !payload.url) { const message = payload.error || 'Upload failed: the image could not be uploaded.'; window.alert(message); throw new Error(message); }
   return new URL(payload.url, window.location.href).href;
 }
 
@@ -54,56 +55,41 @@ let auth;
 let currentUser;
 let drafts = [];
 
-function setReporterLanguage(language) {
-  document.querySelectorAll('[data-reporter-language]').forEach(tab => {
-    const active = tab.dataset.reporterLanguage === language;
-    tab.classList.toggle('active', active);
-    tab.setAttribute('aria-selected', String(active));
-  });
-  document.querySelectorAll('[data-reporter-language-panel]').forEach(panel => {
-    panel.classList.toggle('active', panel.dataset.reporterLanguagePanel === language);
-  });
-  document.querySelectorAll('[data-required-english]').forEach(field => {
-    field.required = language === 'en';
-  });
+function setReporterLanguage() {
+  document.querySelector('[data-reporter-language-panel="bn"]')?.classList.add('active');
+  document.querySelectorAll('[data-reporter-language-panel]:not([data-reporter-language-panel="bn"])').forEach(panel => panel.classList.remove('active'));
 }
 
 function populateDistrictFields() {
   const category = $('reporter-category');
   const district = $('reporter-district');
   const subcategory = $('reporter-subcategory');
-  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
-  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district · রাজ্যব্যাপী / নির্দিষ্ট জেলা নয় · राज्यव्यापी / कोई विशिष्ट जिला नहीं</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn} · ${item.nameBn} · ${item.nameHi}</option>`).join('');
-  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
+  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN}</option>`).join('');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN}</option>`).join('');
 }
 
 function resetForm() {
   $('reporter-story-form').reset();
-  setReporterLanguage('en');
+  setReporterLanguage();
   $('reporter-draft-id').value = '';
   $('reporter-form-title').textContent = 'Story details';
   $('reporter-save').textContent = 'Save draft';
   updateReporterImagePreview();
   status('reporter-form-status', '');
-  $('reporter-title-en').focus();
+  $('reporter-title-bn').focus();
 }
 
 function loadDraft(draft) {
-  setReporterLanguage('en');
+  setReporterLanguage();
   $('reporter-draft-id').value = draft.id;
-  $('reporter-title-en').value = draft.title?.EN || '';
   $('reporter-title-bn').value = draft.title?.BN || '';
-  $('reporter-title-hi').value = draft.title?.HI || '';
   $('reporter-category').value = draft.category || 'national';
   $('reporter-district').value = draft.districtId || draft.primaryDistrictId || '';
   $('reporter-subcategory').value = draft.subcategory || 'other';
   $('reporter-coverage-scope').value = draft.coverageScope || (draft.districtId ? 'district' : 'state');
-  $('reporter-summary-en').value = draft.summary?.EN || '';
   $('reporter-summary-bn').value = draft.summary?.BN || '';
-  $('reporter-summary-hi').value = draft.summary?.HI || '';
-  $('reporter-content-en').value = draft.content?.EN || '';
   $('reporter-content-bn').value = draft.content?.BN || '';
-  $('reporter-content-hi').value = draft.content?.HI || '';
   $('reporter-source-url').value = draft.sourceUrl || '';
   $('reporter-image-url').value = draft.image || '';
   updateReporterImagePreview();
@@ -122,7 +108,7 @@ function renderDrafts() {
   }
   target.innerHTML = drafts.map(draft => `<article class="reporter-draft-item">
     <span class="status-chip ${escapeHtml(draft.status || 'draft')}">${escapeHtml(String(draft.status || 'draft').replace('_', ' ').toUpperCase())}</span>
-    <h4>${escapeHtml(draft.title?.EN || 'Untitled draft')}</h4>
+    <h4>${escapeHtml(draft.title?.BN || 'Untitled draft')}</h4>
     <p>${escapeHtml(draft.category || 'news')}${draft.districtId ? ` · ${escapeHtml(draft.districtId)}` : ''}${draft.reviewNote ? ` · ${escapeHtml(draft.reviewNote)}` : ''}</p>
     <small>Updated ${escapeHtml(displayDate(draft.updatedAt || draft.createdAt))}</small>
     ${['draft', 'rejected'].includes(draft.status) ? `<button class="button button-muted reporter-edit-draft" type="button" data-edit-draft="${escapeHtml(draft.id)}">Continue editing</button>` : ''}
@@ -158,9 +144,9 @@ function articlePayload(nextStatus = 'draft') {
   if (sourceInput && !safeUrl(sourceInput)) throw new Error('Enter a valid source link beginning with http:// or https://.');
   if (imageInput && !safeUrl(imageInput)) throw new Error('Enter a valid image link beginning with http:// or https://.');
   return {
-    title: { EN: $('reporter-title-en').value.trim(), BN: $('reporter-title-bn').value.trim(), HI: $('reporter-title-hi').value.trim() },
-    summary: { EN: $('reporter-summary-en').value.trim(), BN: $('reporter-summary-bn').value.trim(), HI: $('reporter-summary-hi').value.trim() },
-    content: { EN: $('reporter-content-en').value.trim(), BN: $('reporter-content-bn').value.trim(), HI: $('reporter-content-hi').value.trim() },
+    title: { BN: $('reporter-title-bn').value.trim() },
+    summary: { BN: $('reporter-summary-bn').value.trim() },
+    content: { BN: $('reporter-content-bn').value.trim() },
     category: $('reporter-category').value,
     districtId: $('reporter-district').value || '',
     primaryDistrictId: $('reporter-district').value || '',
@@ -168,7 +154,7 @@ function articlePayload(nextStatus = 'draft') {
     coverageScope: $('reporter-coverage-scope').value,
     subcategory: $('reporter-subcategory').value,
     author: currentUser.displayName || currentUser.email || 'YUGANTAR Reporter',
-    sourceAgency: 'YUGANTAR', sourceLanguage: 'EN',
+    sourceAgency: 'YUGANTAR', sourceLanguage: 'BN',
     sourceUrl: safeUrl(sourceInput), image: safeUrl(imageInput),
     status: nextStatus, hero: false, trending: false,
     updatedAt: serverTimestamp(), updatedBy: currentUser.uid
@@ -176,19 +162,16 @@ function articlePayload(nextStatus = 'draft') {
 }
 
 function bindWorkspace() {
-  setReporterLanguage('en');
-  document.querySelectorAll('[data-reporter-language]').forEach(tab => {
-    tab.addEventListener('click', () => setReporterLanguage(tab.dataset.reporterLanguage));
-  });
+  setReporterLanguage();
   $('reporter-story-form').addEventListener('submit', async event => {
     event.preventDefault();
     const button = event.submitter || $('reporter-save');
     const nextStatus = button.dataset.action === 'submit' ? 'submitted' : 'draft';
-    const missingEnglishField = [...document.querySelectorAll('[data-required-english]')].find(field => !field.value.trim());
-    if (missingEnglishField) {
-      setReporterLanguage('en');
-      status('reporter-form-status', 'Add the English headline, summary, and full story before saving or submitting.', true);
-      missingEnglishField.focus();
+    const missingBengaliField = [$('reporter-title-bn'), $('reporter-summary-bn'), $('reporter-content-bn')].find(field => !field.value.trim());
+    if (missingBengaliField) {
+      setReporterLanguage();
+      status('reporter-form-status', 'Add the Bengali headline, summary, and full story before saving or submitting.', true);
+      missingBengaliField.focus();
       return;
     }
     button.disabled = true;

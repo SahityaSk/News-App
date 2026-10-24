@@ -9,10 +9,7 @@ const savedKey = 'yugantar_saved_articles';
 // Keep the district page aligned with the Bengali-first production default.
 const savedLanguageKey = 'yugantar_language_v2';
 
-const getStoredLanguage = () => {
-  try { return ['BN', 'EN', 'HI'].includes(localStorage.getItem(savedLanguageKey)) ? localStorage.getItem(savedLanguageKey) : 'BN'; }
-  catch { return 'BN'; }
-};
+const getStoredLanguage = () => 'BN';
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
 
 const state = {
@@ -167,17 +164,12 @@ function getDistrictNews(districtId, articles, maxItems = 10) {
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const safeUrl = value => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; } catch { return ''; } };
 const isSaved = id => state.saved.some(art => art.id === id);
-const text = (value, language = state.language) => typeof value === 'string' ? value : (value?.[language] || value?.EN || value?.BN || value?.HI || '');
+const text = value => typeof value === 'string' ? value : (value?.BN || '');
 const articleText = (article, field) => {
   const value = article?.[field];
-  if (state.language === 'BN' && String(article?.category || '').toLowerCase() === 'world') {
-    return typeof value === 'string' ? value : (value?.EN || value?.BN || value?.HI || '');
-  }
-  if (state.language === 'BN') return typeof value === 'string' ? (article?.sourceLanguage === 'BN' ? value : '') : (value?.BN || '');
-  return text(value);
+  return typeof value === 'string' ? (article?.sourceLanguage === 'BN' ? value : '') : (value?.BN || '');
 };
 const articleAvailableInLanguage = article => {
-  if (state.language !== 'BN' || String(article?.category || '').toLowerCase() === 'world') return true;
   const hasBengali = value => typeof value === 'string' ? article?.sourceLanguage === 'BN' && Boolean(value.trim()) : Boolean(value?.BN?.trim());
   return hasBengali(article?.title) && hasBengali(article?.summary);
 };
@@ -360,7 +352,7 @@ function renderDistrictHeader() {
 
 function localizedValue(value) {
   if (typeof value === 'string') return value;
-  return value?.[state.language] || value?.BN || value?.EN || value?.HI || '';
+  return value?.BN || '';
 }
 
 function renderDistrictTicker() {
@@ -506,8 +498,7 @@ async function loadFirestoreData() {
 function bindUi() {
   state.districtId = getUrlDistrict();
   const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme'); } catch { return null; } })();
-  const hour = new Date().getHours();
-  setTheme(storedTheme || (hour >= 6 && hour < 18 ? 'light' : 'dark'));
+  setTheme(storedTheme || 'light');
 
   $('theme-toggle')?.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   // Keep the careers action available on district pages just as it is on home.
@@ -524,33 +515,6 @@ function bindUi() {
   $('close-saved')?.addEventListener('click', () => $('saved-dialog').close());
   $('close-dialog')?.addEventListener('click', () => $('article-dialog').close());
 
-  const langSelect = $('language');
-  if (langSelect) langSelect.value = state.language;
-  langSelect?.addEventListener('change', e => {
-    state.language = e.target.value;
-    try { localStorage.setItem(savedLanguageKey, state.language); } catch {}
-    translateDistrictUi();
-    setTheme(document.documentElement.dataset.theme || 'light');
-    updateDistrictStickyOffset();
-    populateDistrictSelect();
-    renderDistrictHeader();
-    renderDistrictArticles();
-    renderSaved();
-    renderMiniWbMap();
-  });
-  window.addEventListener('storage', event => {
-    if (event.key !== savedLanguageKey || !['BN', 'EN', 'HI'].includes(event.newValue)) return;
-    state.language = event.newValue;
-    if (langSelect) langSelect.value = state.language;
-    translateDistrictUi();
-    setTheme(document.documentElement.dataset.theme || 'light');
-    updateDistrictStickyOffset();
-    populateDistrictSelect();
-    renderDistrictHeader();
-    renderDistrictArticles();
-    renderSaved();
-    renderMiniWbMap();
-  });
 
   $('district-search')?.addEventListener('input', e => {
     state.search = e.target.value;

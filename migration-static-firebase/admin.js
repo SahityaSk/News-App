@@ -8,7 +8,7 @@ import { ARTICLE_CATEGORIES, DISTRICT_SUBCATEGORIES } from './district-content.j
 const $ = id => document.getElementById(id);
 const status = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message; node.className = `status${error ? ' error' : ''}`; } };
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-const languageObject = (en, bn, hi) => ({ EN: en.trim(), BN: bn.trim(), HI: hi.trim() });
+const bengaliText = value => ({ BN: String(value || '').trim() });
 const DEMO_ARTICLE_IDS = new Set([
   ...Array.from({ length: 6 }, (_, index) => `demo-art-${index + 1}`),
   ...Array.from({ length: 10 }, (_, index) => `art-${index + 1}`),
@@ -51,9 +51,7 @@ function setTheme(theme) {
 
 function bindTheme() {
   let saved = null; try { saved = localStorage.getItem('yugantar_theme'); } catch {}
-  const hour = new Date().getHours();
-  const defaultTheme = (hour >= 6 && hour < 18) ? 'light' : 'dark';
-  setTheme(saved || defaultTheme);
+  setTheme(saved || 'light');
   $('admin-theme-toggle')?.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 }
 
@@ -69,25 +67,27 @@ function articlePayload(auth) {
     throw new Error('Add the Bengali headline, summary, and story before publishing this article.');
   }
   return {
-    title: languageObject($('article-title-en').value, $('article-title-bn').value, $('article-title-hi').value),
-    summary: languageObject($('article-summary-en').value, $('article-summary-bn').value, $('article-summary-hi').value), content: languageObject($('article-content-en').value, $('article-content-bn').value, $('article-content-hi').value),
-    category, subcategory: $('article-subcategory')?.value || 'other', districtId, primaryDistrictId: districtId, districtIds: districtId ? [districtId] : [], coverageScope, author: $('article-author').value.trim(), sourceAgency: $('article-source-agency').value.trim(), sourceUrl: readUrl($('article-source-url').value), image: readUrl($('article-image').value), sourceLanguage: 'EN', status: articleStatus, hero: $('article-hero').checked, trending: false, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid
+    title: bengaliText($('article-title-bn').value),
+    summary: bengaliText($('article-summary-bn').value), content: bengaliText($('article-content-bn').value),
+    category, subcategory: $('article-subcategory')?.value || 'other', districtId, primaryDistrictId: districtId, districtIds: districtId ? [districtId] : [], coverageScope, author: $('article-author').value.trim(), sourceAgency: $('article-source-agency').value.trim(), sourceUrl: readUrl($('article-source-url').value), image: readUrl($('article-image').value), sourceLanguage: 'BN', status: articleStatus, hero: $('article-hero').checked, trending: false, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid
   };
 }
 
 function resetArticleForm() {
-  editingArticleId = ''; $('article-form').reset(); $('article-author').value = 'YUGANTAR Editorial'; $('article-source-agency').value = 'YUGANTAR'; $('article-status-select').value = currentRole === 'reporter' ? 'draft' : 'published'; $('article-submit').textContent = 'Publish article'; $('article-reset').classList.add('hidden'); $('article-image-preview').textContent = 'Cover preview appears here'; document.querySelector('[data-article-language="EN"]')?.click(); updateArticleEditorPreview();
+  editingArticleId = ''; $('article-form').reset(); $('article-author').value = 'YUGANTAR Editorial'; $('article-source-agency').value = 'YUGANTAR'; $('article-status-select').value = currentRole === 'reporter' ? 'draft' : 'published'; $('article-submit').textContent = 'Publish article'; $('article-reset').classList.add('hidden'); $('article-image-preview').textContent = 'Cover preview appears here'; updateArticleEditorPreview();
 }
 
 function populateDistrictFields() {
   const category = $('article-category');
   const district = $('article-district');
   const subcategory = $('article-subcategory');
-  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
-  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district · রাজ্যব্যাপী / নির্দিষ্ট জেলা নয় · राज्यव्यापी / कोई विशिष्ट जिला नहीं</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn || item.id} · ${item.nameBn || item.nameEn || item.id} · ${item.nameHi || item.nameEn || item.id}</option>`).join('');
-  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN} · ${item.label.BN} · ${item.label.HI}</option>`).join('');
+  const coverageScope = $('article-coverage-scope');
+  if (category) category.innerHTML = ARTICLE_CATEGORIES.map(item => `<option value="${item.id}">${item.label.EN}</option>`).join('');
+  if (district && !district.options.length) district.innerHTML = '<option value="">State-wide / no specific district</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn || item.id}</option>`).join('');
+  if (subcategory && !subcategory.options.length) subcategory.innerHTML = DISTRICT_SUBCATEGORIES.map(item => `<option value="${item.id}">${item.label.EN}</option>`).join('');
+  if (coverageScope) coverageScope.innerHTML = '<option value="district">District coverage</option><option value="state">State-wide coverage</option>';
   const tickerDistrict = $('ticker-district');
-  if (tickerDistrict && !tickerDistrict.options.length) tickerDistrict.innerHTML = '<option value="">Global ticker · সার্বজনীন টিকার · वैश्विक टिकर</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn || item.id} · ${item.nameBn || item.nameEn || item.id} · ${item.nameHi || item.nameEn || item.id}</option>`).join('');
+  if (tickerDistrict && !tickerDistrict.options.length) tickerDistrict.innerHTML = '<option value="">Global ticker</option>' + WB_DISTRICTS.map(item => `<option value="${item.id}">${item.nameEn || item.id}</option>`).join('');
 }
 
 function updateImagePreview() {
@@ -99,7 +99,8 @@ function previewSelectedImage() {
   const file = $('article-image-file')?.files?.[0];
   if (!file) { updateImagePreview(); return; }
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
-    status('article-status', 'Choose a JPG, PNG or WebP image smaller than 2 MB.', true);
+    const message = 'Upload failed: choose a JPG, PNG or WebP image smaller than 2 MB.';
+    status('article-status', message, true); window.alert(message);
     $('article-image-file').value = '';
     updateImagePreview();
     return;
@@ -117,19 +118,19 @@ async function uploadArticleImage(auth) {
 
 async function uploadImageFile(auth, file) {
   if (!file) return '';
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) throw new Error('Choose a JPG, PNG or WebP image smaller than 2 MB.');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) { const message = 'Upload failed: choose a JPG, PNG or WebP image smaller than 2 MB.'; window.alert(message); throw new Error(message); }
   const token = await auth.currentUser.getIdToken(true);
   const body = new FormData(); body.append('image', file, file.name);
   const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
   let payload = {}; try { payload = await response.json(); } catch {}
-  if (!response.ok || !payload.url) throw new Error(payload.error || 'The image could not be uploaded.');
+  if (!response.ok || !payload.url) { const message = payload.error || 'Upload failed: the image could not be uploaded.'; window.alert(message); throw new Error(message); }
   return new URL(payload.url, window.location.href).href;
 }
 
 function updateOptionalImagePreview(fileId, urlId, previewId, statusId) {
   const file = $(fileId)?.files?.[0]; const preview = $(previewId); if (!preview) return;
   if (file) {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) { status(statusId, 'Choose a JPG, PNG or WebP image smaller than 2 MB.', true); $(fileId).value = ''; updateOptionalImagePreview(fileId, urlId, previewId, statusId); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) { const message = 'Upload failed: choose a JPG, PNG or WebP image smaller than 2 MB.'; status(statusId, message, true); window.alert(message); $(fileId).value = ''; updateOptionalImagePreview(fileId, urlId, previewId, statusId); return; }
     preview.innerHTML = `<img src="${escapeHtml(URL.createObjectURL(file))}" alt="Selected image preview">`;
     return;
   }
@@ -151,24 +152,17 @@ async function deleteManagedArticleImage(auth, imageUrl) {
 }
 
 function updateArticleEditorPreview() {
-  const active = document.querySelector('.article-language-tab.active')?.dataset.articleLanguage || 'EN';
-  const title = $('article-title-' + active.toLowerCase())?.value.trim() || 'Untitled article';
-  const summary = $('article-summary-' + active.toLowerCase())?.value.trim() || 'Add a short summary for readers.';
-  const content = $('article-content-' + active.toLowerCase())?.value.trim() || 'Your story preview will appear here.';
+  const title = $('article-title-bn')?.value.trim() || 'Untitled article';
+  const summary = $('article-summary-bn')?.value.trim() || 'Add a short summary for readers.';
+  const content = $('article-content-bn')?.value.trim() || 'Your story preview will appear here.';
   const target = $('article-live-preview');
   const count = $('article-editor-count');
   if (target) target.innerHTML = `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(summary)}</p><div>${escapeHtml(content.slice(0, 420))}${content.length > 420 ? '…' : ''}</div>`;
-  if (count) count.textContent = `${content.length} characters · ${active}`;
+  if (count) count.textContent = `${content.length} characters · Bengali`;
 }
 
 function bindArticleEditor() {
-  document.querySelectorAll('[data-article-language]').forEach(tab => tab.addEventListener('click', () => {
-    const language = tab.dataset.articleLanguage;
-    document.querySelectorAll('[data-article-language]').forEach(item => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); });
-    document.querySelectorAll('[data-article-language-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.articleLanguagePanel === language));
-    updateArticleEditorPreview();
-  }));
-  ['en', 'bn', 'hi'].forEach(language => ['title', 'summary', 'content'].forEach(field => $(`article-${field}-${language}`)?.addEventListener('input', updateArticleEditorPreview)));
+  ['title', 'summary', 'content'].forEach(field => $(`article-${field}-bn`)?.addEventListener('input', updateArticleEditorPreview));
   updateArticleEditorPreview();
 }
 
@@ -427,7 +421,7 @@ function editArticle(id) {
   const title = typeof article.title === 'string' ? { [sourceLanguage]: article.title } : (article.title || {});
   const summary = typeof article.summary === 'string' ? { [sourceLanguage]: article.summary } : (article.summary || {});
   const content = typeof article.content === 'string' ? { [sourceLanguage]: article.content } : (article.content || {});
-  editingArticleId = id; $('article-title-en').value = title.EN || ''; $('article-title-bn').value = title.BN || ''; $('article-title-hi').value = title.HI || ''; $('article-summary-en').value = summary.EN || ''; $('article-summary-bn').value = summary.BN || ''; $('article-summary-hi').value = summary.HI || ''; $('article-content-en').value = content.EN || ''; $('article-content-bn').value = content.BN || ''; $('article-content-hi').value = content.HI || '';
+  editingArticleId = id; $('article-title-bn').value = title.BN || (typeof article.title === 'string' && article.sourceLanguage === 'BN' ? article.title : ''); $('article-summary-bn').value = summary.BN || (typeof article.summary === 'string' && article.sourceLanguage === 'BN' ? article.summary : ''); $('article-content-bn').value = content.BN || (typeof article.content === 'string' && article.sourceLanguage === 'BN' ? article.content : '');
   $('article-category').value = article.category || 'national'; $('article-subcategory').value = article.subcategory || 'other'; $('article-district').value = article.districtId || article.primaryDistrictId || ''; $('article-coverage-scope').value = article.coverageScope || (article.districtId ? 'district' : 'state'); $('article-author').value = article.author || ''; $('article-source-agency').value = article.sourceAgency || 'YUGANTAR'; $('article-image').value = article.image || ''; $('article-source-url').value = article.sourceUrl || ''; $('article-hero').checked = Boolean(article.hero); $('article-status-select').value = article.status || 'draft'; $('article-submit').textContent = 'Save article changes'; $('article-reset').classList.remove('hidden'); updateImagePreview();
   document.querySelector('[data-admin-tab="publish"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -505,7 +499,7 @@ function hydrateLiveStream(stream) {
 
 function editTicker(id) {
   const item = tickerCache.find(ticker => ticker.id === id); if (!item) return;
-  const title = item.title || {}; $('ticker-en').value = title.EN || ''; $('ticker-bn').value = title.BN || ''; $('ticker-hi').value = title.HI || ''; $('ticker-category').value = item.category || 'BREAKING'; $('ticker-priority').value = item.priority ?? 1; $('ticker-district').value = item.districtId || '';
+  const title = item.title || {}; $('ticker-bn').value = title.BN || (typeof item.title === 'string' ? item.title : ''); $('ticker-category').value = item.category || 'BREAKING'; $('ticker-priority').value = item.priority ?? 1; $('ticker-district').value = item.districtId || '';
   $('ticker-form').dataset.editingId = id; $('ticker-submit').textContent = 'Save ticker changes'; $('ticker-reset').classList.remove('hidden'); document.querySelector('[data-admin-tab="live"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -517,10 +511,10 @@ async function deleteTicker(id) {
 
 function pollPayload() {
   const fieldValue = id => $(id)?.value || '';
-  const options = [1, 2, 3, 4].map(index => ({ optionId: `option-${index}`, text: languageObject(fieldValue(`poll-option-${index}-en`), fieldValue(`poll-option-${index}-bn`), fieldValue(`poll-option-${index}-hi`)) })).filter(option => option.text.EN || option.text.BN || option.text.HI);
+  const options = [1, 2, 3, 4].map(index => ({ optionId: `option-${index}`, text: bengaliText(fieldValue(`poll-option-${index}-bn`)) })).filter(option => option.text.BN);
   if (options.length < 2) throw new Error('A poll needs at least two options.');
   const voteCounts = Object.fromEntries([1, 2, 3, 4].map(index => [`option-${index}`, 0]));
-  return { question: languageObject($('poll-question-en').value, $('poll-question-bn').value, $('poll-question-hi').value), options, voteCounts, active: $('poll-active').checked, updatedAt: serverTimestamp(), updatedBy: activeAuth.currentUser.uid };
+  return { question: bengaliText($('poll-question-bn').value), options, voteCounts, active: $('poll-active').checked, updatedAt: serverTimestamp(), updatedBy: activeAuth.currentUser.uid };
 }
 
 function resetPollForm() {
@@ -529,8 +523,8 @@ function resetPollForm() {
 
 function editPoll(id) {
   const poll = pollCache.find(item => item.id === id); if (!poll) return;
-  const question = poll.question || {}; $('poll-question-en').value = question.EN || ''; $('poll-question-bn').value = question.BN || ''; $('poll-question-hi').value = question.HI || '';
-  [1, 2, 3, 4].forEach(index => { const option = poll.options?.find(item => item.optionId === `option-${index}`) || poll.options?.[index - 1] || {}; const textValue = option.text || {}; if ($(`poll-option-${index}-en`)) $(`poll-option-${index}-en`).value = textValue.EN || ''; if ($(`poll-option-${index}-bn`)) $(`poll-option-${index}-bn`).value = textValue.BN || ''; if ($(`poll-option-${index}-hi`)) $(`poll-option-${index}-hi`).value = textValue.HI || ''; });
+  const question = poll.question || {}; $('poll-question-bn').value = question.BN || (typeof poll.question === 'string' ? poll.question : '');
+  [1, 2, 3, 4].forEach(index => { const option = poll.options?.find(item => item.optionId === `option-${index}`) || poll.options?.[index - 1] || {}; const textValue = option.text || {}; if ($(`poll-option-${index}-bn`)) $(`poll-option-${index}-bn`).value = textValue.BN || (typeof option.text === 'string' ? option.text : ''); });
   $('poll-active').checked = poll.active === true; $('poll-form').dataset.editingId = id; $('poll-submit').textContent = 'Save poll changes'; $('poll-reset').classList.remove('hidden'); document.querySelector('[data-admin-tab="poll"]')?.click(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -555,7 +549,7 @@ function bindForms(auth) {
   document.querySelectorAll('[data-admin-tab]').forEach(button => button.addEventListener('click', () => { const name = button.dataset.adminTab; document.querySelectorAll('[data-admin-tab]').forEach(item => item.classList.toggle('active', item === button)); document.querySelectorAll('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === name)); }));
   $('article-form').onsubmit = async event => { event.preventDefault(); try { $('article-submit').disabled = true; const uploadedUrl = await uploadArticleImage(auth); if (uploadedUrl) $('article-image').value = uploadedUrl; const data = articlePayload(auth); if (editingArticleId) { await updateDoc(doc(db, 'articles', editingArticleId), data); status('article-status', 'Article changes saved.'); } else { await addDoc(collection(db, 'articles'), { ...data, createdBy: auth.currentUser.uid, publishedAt: serverTimestamp() }); status('article-status', data.status === 'draft' ? 'Draft saved.' : 'Article published.'); } resetArticleForm(); await loadAdminData(); } catch (error) { status('article-status', error.message, true); } finally { $('article-submit').disabled = false; } };
   $('poll-form').onsubmit = async event => { event.preventDefault(); try { const id = $('poll-form').dataset.editingId || ''; const data = pollPayload(); if (id) { const existing = pollCache.find(poll => poll.id === id); data.voteCounts = existing?.voteCounts || data.voteCounts; } if (data.active) await deactivateOtherPolls(id); if (id) { await updateDoc(doc(db, 'polls', id), data); status('poll-status', 'Poll changes saved.'); } else { await addDoc(collection(db, 'polls'), { ...data, createdAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('poll-status', 'Poll published.'); } resetPollForm(); await loadAdminData(); } catch (error) { status('poll-status', error.message, true); } };
-  $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const data = { title: languageObject($('ticker-en')?.value || '', $('ticker-bn')?.value || '', $('ticker-hi')?.value || ''), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', districtId: $('ticker-district')?.value || '', scope: $('ticker-district')?.value ? 'district' : 'global', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
+  $('ticker-form').onsubmit = async event => { event.preventDefault(); try { const id = $('ticker-form').dataset.editingId; const tickerText = $('ticker-bn')?.value.trim() || ''; if (!tickerText) throw new Error('Enter the Bengali ticker text.'); const data = { title: bengaliText(tickerText), category: $('ticker-category')?.value.trim().toUpperCase() || 'BREAKING', districtId: $('ticker-district')?.value || '', scope: $('ticker-district')?.value ? 'district' : 'global', priority: Number($('ticker-priority')?.value) || 1, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (id) { await updateDoc(doc(db, 'tickers', id), data); status('ticker-status', 'Ticker changes saved.'); } else { await addDoc(collection(db, 'tickers'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('ticker-status', 'Ticker is live.'); } resetTickerForm(); await loadAdminData(); } catch (error) { status('ticker-status', error.message, true); } };
   $('podcast-form').onsubmit = async event => { event.preventDefault(); try { const title = $('podcast-title').value.trim(); const description = $('podcast-description').value.trim(); const uploadedThumbnail = await uploadImageFile(auth, $('podcast-thumbnail-file')?.files?.[0]); if (uploadedThumbnail) $('podcast-thumbnail').value = uploadedThumbnail; const thumbnail = readUrl($('podcast-thumbnail').value); const facebookUrl = readUrl($('podcast-facebook-url').value); if (!title || !facebookUrl) throw new Error('Podcast title and Facebook link are required.'); if ($('podcast-thumbnail').value.trim() && !thumbnail) throw new Error('Enter a valid thumbnail URL beginning with http:// or https://.'); const data = { title, description, thumbnail, facebookUrl, sourceUrl: facebookUrl, status: $('podcast-status-select').value, active: $('podcast-active').checked, featured: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }; if (editingPodcastId) { await updateDoc(doc(db, 'podcasts', editingPodcastId), data); status('podcast-status', 'Podcast changes saved.'); } else { await addDoc(collection(db, 'podcasts'), { ...data, publishedAt: serverTimestamp(), createdBy: auth.currentUser.uid }); status('podcast-status', 'Podcast published.'); } resetPodcastForm(); await loadAdminData(); } catch (error) { status('podcast-status', error.message, true); } };
   $('stream-form').onsubmit = async event => { event.preventDefault(); try { await setDoc(doc(db, 'liveStreams', 'primary'), { title: $('stream-title').value.trim(), provider: $('stream-provider').value, videoUrl: readUrl($('stream-url').value), isLive: $('stream-live').checked, active: true, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.uid }); status('stream-status', 'Live stream saved.'); $('stream-delete').classList.remove('hidden'); } catch (error) { status('stream-status', error.message, true); } };
   $('stream-delete').onclick = async () => { if (!window.confirm('Delete the live stream? This cannot be undone.')) return; try { await deleteDoc(doc(db, 'liveStreams', 'primary')); $('stream-form').reset(); $('stream-delete').classList.add('hidden'); status('stream-status', 'Live stream deleted.'); } catch (error) { status('stream-status', error.message, true); } };

@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="theme-color" content="#09111f">
+  <meta name="theme-color" content="#f4f6fa">
   <title>Reporter Workspace | YUGANTAR News</title>
   <link rel="icon" type="image/jpeg" href="./yugantar-logo.jpg">
-    <link rel="stylesheet" href="./styles.css?v=20261013-mobile-whatsapp">
+  <link rel="stylesheet" href="./styles.css?v=20261024-bengali-editorial">
 </head>
 <body class="admin-body reporter-body">
   <header class="site-header">
@@ -55,36 +55,15 @@
             <div class="reporter-field"><label for="reporter-category">Section *</label><select id="reporter-category" required></select></div>
             <div class="reporter-field"><label for="reporter-district">District / location</label><select id="reporter-district"></select></div>
           </div>
-          <div class="form-row"><div class="reporter-field"><label for="reporter-subcategory">Local topic</label><select id="reporter-subcategory"></select></div><div class="reporter-field"><label for="reporter-coverage-scope">Coverage scope</label><select id="reporter-coverage-scope"><option value="district">District coverage · জেলা কভারেজ · जिला कवरेज</option><option value="state">State-wide coverage · রাজ্যব্যাপী কভারেজ · राज्यव्यापी कवरेज</option></select></div></div>
-          <div class="reporter-language-tabs" role="tablist" aria-label="Story language">
-            <button id="reporter-language-en" class="reporter-language-tab active" type="button" role="tab" aria-selected="true" aria-controls="reporter-language-panel-en" data-reporter-language="en">English <span>Required</span></button>
-            <button id="reporter-language-bn" class="reporter-language-tab" type="button" role="tab" aria-selected="false" aria-controls="reporter-language-panel-bn" data-reporter-language="bn">বাংলা</button>
-            <button id="reporter-language-hi" class="reporter-language-tab" type="button" role="tab" aria-selected="false" aria-controls="reporter-language-panel-hi" data-reporter-language="hi">हिन्दी</button>
-          </div>
-          <p class="reporter-language-help muted">Write each translation in its own language tab. Your work is saved together as one story.</p>
-          <section id="reporter-language-panel-en" class="reporter-language-panel active" role="tabpanel" aria-labelledby="reporter-language-en" data-reporter-language-panel="en">
-            <label for="reporter-title-en">Headline in English *</label>
-            <input id="reporter-title-en" required data-required-english maxlength="180" placeholder="Write a clear, factual headline">
-            <label for="reporter-summary-en">Short summary in English *</label>
-            <textarea id="reporter-summary-en" required data-required-english maxlength="600" placeholder="Summarize the verified facts in a few sentences."></textarea>
-            <label for="reporter-content-en">Full story in English *</label>
-            <textarea id="reporter-content-en" class="reporter-story-copy" required data-required-english maxlength="12000" placeholder="Write the full report. Separate confirmed facts from claims and include relevant context."></textarea>
-          </section>
-          <section id="reporter-language-panel-bn" class="reporter-language-panel" role="tabpanel" aria-labelledby="reporter-language-bn" data-reporter-language-panel="bn">
-            <label for="reporter-title-bn">Headline in Bengali</label>
-            <input id="reporter-title-bn" maxlength="180" placeholder="বাংলা শিরোনাম">
-            <label for="reporter-summary-bn">Short summary in Bengali</label>
-            <textarea id="reporter-summary-bn" maxlength="600" placeholder="সংক্ষেপে বাংলায় খবরের মূল তথ্য লিখুন।"></textarea>
-            <label for="reporter-content-bn">Full story in Bengali</label>
-            <textarea id="reporter-content-bn" class="reporter-story-copy" maxlength="12000" placeholder="সম্পূর্ণ প্রতিবেদন বাংলায় লিখুন।"></textarea>
-          </section>
-          <section id="reporter-language-panel-hi" class="reporter-language-panel" role="tabpanel" aria-labelledby="reporter-language-hi" data-reporter-language-panel="hi">
-            <label for="reporter-title-hi">Headline in Hindi</label>
-            <input id="reporter-title-hi" maxlength="180" placeholder="हिंदी शीर्षक">
-            <label for="reporter-summary-hi">Short summary in Hindi</label>
-            <textarea id="reporter-summary-hi" maxlength="600" placeholder="हिंदी में खबर का संक्षिप्त सारांश लिखें।"></textarea>
-            <label for="reporter-content-hi">Full story in Hindi</label>
-            <textarea id="reporter-content-hi" class="reporter-story-copy" maxlength="12000" placeholder="हिंदी में पूरी रिपोर्ट लिखें।"></textarea>
+          <div class="form-row"><div class="reporter-field"><label for="reporter-subcategory">Local topic</label><select id="reporter-subcategory"></select></div><div class="reporter-field"><label for="reporter-coverage-scope">Coverage scope</label><select id="reporter-coverage-scope"><option value="district">District coverage</option><option value="state">State-wide coverage</option></select></div></div>
+          <p class="reporter-language-help muted">Write the complete story in Bengali. The editor will review it before publication.</p>
+          <section id="reporter-language-panel-bn" class="reporter-language-panel active" role="tabpanel">
+            <label for="reporter-title-bn">Headline in Bengali *</label>
+            <input id="reporter-title-bn" required maxlength="180" placeholder="Write a clear Bengali headline">
+            <label for="reporter-summary-bn">Short summary in Bengali *</label>
+            <textarea id="reporter-summary-bn" required maxlength="600" placeholder="Summarize the verified facts in Bengali."></textarea>
+            <label for="reporter-content-bn">Full story in Bengali *</label>
+            <textarea id="reporter-content-bn" class="reporter-story-copy" required maxlength="12000" placeholder="Write the full Bengali report. Separate confirmed facts from claims and include relevant context."></textarea>
           </section>
           <div class="form-row">
             <div class="reporter-field"><label for="reporter-source-url">Source link</label><input id="reporter-source-url" type="url" maxlength="1000" placeholder="https://..."></div>
@@ -103,6 +82,6 @@
     </section>
   </main>
 
-  <script type="module" src="./reporter.js?v=20261016-image-upload"></script>
+  <script type="module" src="./reporter.js?v=20261024-bengali-editorial"></script>
 </body>
 </html>

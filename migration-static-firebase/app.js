@@ -26,10 +26,7 @@ const DEMO_ARTICLE_IDS = new Set([
   ...Array.from({ length: 6 }, (_, index) => `art-art-${index + 1}`)
 ]);
 const isDemoArticle = article => article?.isDemo === true || DEMO_ARTICLE_IDS.has(String(article?.id || ''));
-const getStoredLanguage = () => {
-  try { return ['BN', 'EN', 'HI'].includes(localStorage.getItem(savedLanguageKey)) ? localStorage.getItem(savedLanguageKey) : 'BN'; }
-  catch { return 'BN'; }
-};
+const getStoredLanguage = () => 'BN';
 const readSaved = () => { try { return JSON.parse(localStorage.getItem(savedKey) || '[]'); } catch { return []; } };
 const state = { language: getStoredLanguage(), category: 'all', search: '', articles: [], podcasts: [], sponsors: SPONSORS, tickers: [], tickerState: 'loading', saved: readSaved(), poll: null, subscriberCount: null, liveStream: null };
 let sponsorRotationTimer = null;
@@ -152,7 +149,7 @@ const translations = {
     savedTitle: 'সেভ করা খবর',
     footerAbout: 'বিশ্বজুড়ে ২৪x৭ নিরপেক্ষ ব্রেকিং নিউজ, রিয়েল-টাইম ভিডিও স্ট্রিমিং এবং বিস্তারিত সম্পাদকীয় পরিবেশন।',
     footerMotto: '“নিরপেক্ষ খবর, নির্ভীক সাংবাদিকতা।”',
-    footerLiveLink: '● যুগান্তর লাইভ ২৪/৭',
+    footerLiveLink: '● যুগান্তর ভিডিও আর্কাইভ',
     footerOfficialDesk: 'অফিসিয়াল ডেস্ক',
     footerNewsSections: 'সংবাদ বিভাগ',
     footerReporterWorkspace: 'রিপোর্টার ওয়ার্কস্পেস',
@@ -355,21 +352,16 @@ const bindImageFallbacks = root => root.querySelectorAll('img[data-image-fallbac
     image.closest('.media-frame')?.classList.add('media-failed');
   }, { once: true });
 });
-const text = (value, language = state.language) => typeof value === 'string' ? value : (value?.[language] || value?.EN || value?.BN || value?.HI || '');
+const text = value => typeof value === 'string' ? value : (value?.BN || '');
 const categoryText = category => {
   const keys = { national: 'categoryLabelNational', world: 'categoryLabelWorld', business: 'categoryLabelBusiness', sports: 'categoryLabelSports', tech: 'categoryLabelTech', entertainment: 'categoryLabelEntertainment', science: 'categoryLabelScience', heritage: 'categoryLabelHeritage', general: 'categoryLabelGeneral' };
   return (translations[state.language] || translations.EN)[keys[String(category || '').toLowerCase()]] || category || 'NEWS';
 };
 const articleText = (article, field) => {
   const value = article?.[field];
-  if (state.language === 'BN' && String(article?.category || '').toLowerCase() === 'world') {
-    return typeof value === 'string' ? value : (value?.EN || value?.BN || value?.HI || '');
-  }
-  if (state.language === 'BN') return typeof value === 'string' ? (article?.sourceLanguage === 'BN' ? value : '') : (value?.BN || '');
-  return text(value);
+  return typeof value === 'string' ? (article?.sourceLanguage === 'BN' ? value : '') : (value?.BN || '');
 };
 const articleAvailableInLanguage = article => {
-  if (state.language !== 'BN' || String(article?.category || '').toLowerCase() === 'world') return true;
   const hasBengali = value => typeof value === 'string' ? article?.sourceLanguage === 'BN' && Boolean(value.trim()) : Boolean(value?.BN?.trim());
   return hasBengali(article?.title) && hasBengali(article?.summary);
 };
@@ -645,42 +637,12 @@ async function subscribe(event) {
 
 function bindUi() {
   const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme'); } catch { return null; } })();
-  const hour = new Date().getHours();
-  const defaultTheme = (hour >= 6 && hour < 18) ? 'light' : 'dark';
-  setTheme(storedTheme || defaultTheme);
+  setTheme(storedTheme || 'light');
   $('theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   $('saved-toggle').addEventListener('click', () => $('saved-dialog').showModal());
   $('close-saved').addEventListener('click', () => $('saved-dialog').close());
-  const langSelect = $('language');
-  if (langSelect) langSelect.value = state.language;
-  updateStaticLanguage(state.language);
+  updateStaticLanguage('BN');
   renderSaved();
-  langSelect?.addEventListener('change', event => {
-    state.language = event.target.value;
-    try { localStorage.setItem(savedLanguageKey, state.language); } catch {}
-    updateStaticLanguage(state.language);
-    renderFeaturedPodcasts();
-    renderSponsors();
-    renderWestBengalMap(selectedRegion);
-    renderDistrictList($('wb-district-search')?.value || '', selectedRegion);
-    renderArticles();
-    renderHero();
-    renderHeadlineStrip();
-    renderSaved();
-    if (state.poll) renderPoll(state.poll);
-  });
-  window.addEventListener('storage', event => {
-    if (event.key !== savedLanguageKey || !['BN', 'EN', 'HI'].includes(event.newValue)) return;
-    state.language = event.newValue;
-    if (langSelect) langSelect.value = state.language;
-    updateStaticLanguage(state.language);
-    renderFeaturedPodcasts();
-    renderSponsors();
-    renderWestBengalMap(selectedRegion);
-    renderDistrictList($('wb-district-search')?.value || '', selectedRegion);
-    renderArticles(); renderHero(); renderHeadlineStrip(); renderSaved();
-    if (state.poll) renderPoll(state.poll);
-  });
   $('search').addEventListener('input', event => { state.search = event.target.value; renderArticles(); });
   document.querySelectorAll('[data-category]').forEach(button => button.addEventListener('click', () => { state.category = button.dataset.category; document.querySelectorAll('.category').forEach(item => item.classList.toggle('active', item === button)); renderArticles(); }));
   document.querySelectorAll('[data-footer-category]').forEach(link => link.addEventListener('click', () => {
