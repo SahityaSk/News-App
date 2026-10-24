@@ -384,7 +384,7 @@ function setTheme(theme) {
     toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     toggle.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
   }
-  try { localStorage.setItem('yugantar_theme', theme); } catch {}
+  try { localStorage.setItem('yugantar_theme_v2', theme); } catch {}
 }
 
 function toggleSaved(id) {
@@ -636,7 +636,7 @@ async function subscribe(event) {
 }
 
 function bindUi() {
-  const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme'); } catch { return null; } })();
+  const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme_v2'); } catch { return null; } })();
   setTheme(storedTheme || 'light');
   $('theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   $('saved-toggle').addEventListener('click', () => $('saved-dialog').showModal());
