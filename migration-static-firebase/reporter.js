@@ -45,7 +45,11 @@ async function uploadReporterImage() {
   const token = await currentUser.getIdToken(true);
   const body = new FormData(); body.append('image', file, file.name);
   const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
-  let payload = {}; try { payload = await response.json(); } catch {}
+  let payload = {};
+  try { payload = await response.json(); } catch {
+    if (response.status === 404) throw new Error('PHP upload endpoint is unavailable. Start the PHP server and open the site through http://127.0.0.1:5500, not VS Code Live Server.');
+    throw new Error(`Image upload endpoint returned an invalid response (HTTP ${response.status}).`);
+  }
   if (!response.ok || !payload.url) { const message = payload.error || 'Upload failed: the image could not be uploaded.'; window.alert(message); throw new Error(message); }
   return new URL(payload.url, window.location.href).href;
 }

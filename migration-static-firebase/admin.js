@@ -46,11 +46,11 @@ function setTheme(theme) {
     button.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     button.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
   }
-  try { localStorage.setItem('yugantar_theme', theme); } catch {}
+  try { localStorage.setItem('yugantar_theme_v2', theme); } catch {}
 }
 
 function bindTheme() {
-  let saved = null; try { saved = localStorage.getItem('yugantar_theme'); } catch {}
+  let saved = null; try { saved = localStorage.getItem('yugantar_theme_v2'); } catch {}
   setTheme(saved || 'light');
   $('admin-theme-toggle')?.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 }
@@ -122,7 +122,11 @@ async function uploadImageFile(auth, file) {
   const token = await auth.currentUser.getIdToken(true);
   const body = new FormData(); body.append('image', file, file.name);
   const response = await fetch('./api/upload-image.php', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
-  let payload = {}; try { payload = await response.json(); } catch {}
+  let payload = {};
+  try { payload = await response.json(); } catch {
+    if (response.status === 404) throw new Error('PHP upload endpoint is unavailable. Start the PHP server and open the site through http://127.0.0.1:5500, not VS Code Live Server.');
+    throw new Error(`Image upload endpoint returned an invalid response (HTTP ${response.status}).`);
+  }
   if (!response.ok || !payload.url) { const message = payload.error || 'Upload failed: the image could not be uploaded.'; window.alert(message); throw new Error(message); }
   return new URL(payload.url, window.location.href).href;
 }

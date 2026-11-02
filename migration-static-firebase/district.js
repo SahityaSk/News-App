@@ -183,7 +183,7 @@ function setTheme(theme) {
     toggle.title = titles[state.language] || titles.EN;
     toggle.setAttribute('aria-label', toggle.title);
   }
-  try { localStorage.setItem('yugantar_theme', theme); } catch {}
+  try { localStorage.setItem('yugantar_theme_v2', theme); } catch {}
 }
 
 function updateClock() {
@@ -497,7 +497,7 @@ async function loadFirestoreData() {
 
 function bindUi() {
   state.districtId = getUrlDistrict();
-  const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme'); } catch { return null; } })();
+  const storedTheme = (() => { try { return localStorage.getItem('yugantar_theme_v2'); } catch { return null; } })();
   setTheme(storedTheme || 'light');
 
   $('theme-toggle')?.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
