@@ -436,7 +436,7 @@ function renderArticles() {
     const searchable = `${articleText(article, 'title')} ${articleText(article, 'summary')} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
     return categoryMatch && (!term || searchable.includes(term));
   });
-  const homepageArticles = articles.slice(0, 10);
+  const homepageArticles = articles.slice(0, 9);
   if (!homepageArticles.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptyArticles)}</div>`; return; }
   target.innerHTML = homepageArticles.map(article => `<article class="article-card" data-article-id="${escapeHtml(article.id)}">
     ${imageMarkup(article.image, articleText(article, 'title'), 'YUGANTAR')}
