@@ -81,7 +81,7 @@
               <div class="section-kicker" data-i18n="newsroomKicker">NEWSROOM</div>
               <h1 data-i18n="newsroomTitle">Latest stories</h1>
               <p class="section-intro" data-i18n="newsroomIntro">Independent reporting, refreshed from the newsroom and trusted public feeds.</p>
-            </div><label class="search-box"><span class="sr-only">Search articles</span><span
+            </div><a class="button button-outline" href="./articles.html">সব খবর দেখুন</a><label class="search-box"><span class="sr-only">Search articles</span><span
                 class="search-icon">⌕</span><input id="search" type="search" placeholder="Search stories" data-i18n-placeholder="searchPlaceholder"></label>
           </div>
           <div id="articles" class="article-grid">
@@ -236,7 +236,7 @@
       <section>
         <h2 class="footer-title" data-i18n="footerConnectTitle">Connect with us</h2>
         <p data-i18n="footerConnectText">Follow official channels for verified breaking updates.</p>
-        <div class="social-links"><a href="https://instagram.com/yugantar.news" target="_blank"
+        <div class="social-links"><a href="https://www.instagram.com/yugantarnews?cplk=MW52Y3Jzbmdwa2tyYg==" target="_blank"
             rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/YugantarNewsLive" target="_blank"
             rel="noopener noreferrer">Facebook</a><a href="https://x.com/yugantar1906" target="_blank"
             rel="noopener noreferrer">X / Twitter</a><a href="https://www.youtube.com/@Yugantar_News" target="_blank"
@@ -248,7 +248,7 @@
         attribution and rights must be verified before publication.</span><span data-i18n="footerFactCheck">✦ Fact-checked newsroom</span></div>
   </footer>
   <div id="fb-root"></div>
-  <script>window.fbAsyncInit = () => window.FB?.XFBML?.parse(document.body);</script>
+  <script>document.querySelectorAll('a[aria-label="YUGANTAR News on Instagram"]').forEach(link => { link.href = 'https://www.instagram.com/yugantarnews?cplk=MW52Y3Jzbmdwa2tyYg=='; }); window.fbAsyncInit = () => window.FB?.XFBML?.parse(document.body);</script>
   <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
   <dialog id="subscribers-dialog" class="dialog custom-modal">
     <div class="dialog-card">

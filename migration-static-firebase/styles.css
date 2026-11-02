@@ -195,6 +195,12 @@ small, .muted { color: var(--muted); font-size: .8rem; }
 .social-actions { display: flex; margin-top: 12px; }
 .social-actions .button { padding: 7px 11px; font-size: .75rem; }
 .pagination-actions { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 24px; }
+.numbered-pagination { flex-wrap: wrap; }
+.page-number-list { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.page-number { min-width: 35px; height: 35px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--surface); font-weight: 800; }
+.page-number:hover, .page-number.active { color: #fff; border-color: var(--red); background: var(--red); }
+.pagination-ellipsis { padding: 0 2px; color: var(--muted); font-weight: 800; }
+.archive-card-link { display: block; height: 100%; color: inherit; text-decoration: none; }
 .panel { padding: 23px; }
 .panel > h2 { margin-top: 5px; }
 #poll-options { display: grid; gap: 8px; margin-top: 10px; }

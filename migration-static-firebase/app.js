@@ -62,7 +62,7 @@ const translations = {
     searchPlaceholder: 'Search stories',
     socialKicker: 'OFFICIAL SOCIAL',
     socialTitle: 'From YUGANTAR channels',
-    watchAllVideos: 'Watch all videos',
+    watchAllVideos: 'Watch all videos', watchAllArticles: 'All articles',
     subscribersLabel: 'Subs', careersLabel: 'Careers', hiringLabel: 'Hiring',
     subscribersTitle: 'View Subscribers & Subscribe', careersTitle: 'Careers & Job Opportunities',
     careersBadge: 'WE ARE HIRING', careersHeading: 'Join Team YUGANTAR News', careersIntro: 'Build your journalism career with West Bengal’s growing digital news network.', featuredPositions: 'Featured Open Positions',
@@ -130,7 +130,7 @@ const translations = {
     searchPlaceholder: 'খবর খুঁজুন...',
     socialKicker: 'অফিসিয়াল সোশ্যাল',
     socialTitle: 'যুগান্তর চ্যানেল থেকে',
-    watchAllVideos: 'সমস্ত ভিডিও দেখুন',
+    watchAllVideos: 'সমস্ত ভিডিও দেখুন', watchAllArticles: 'সব খবর দেখুন',
     subscribersLabel: 'সাবস্ক্রাইবার', careersLabel: 'ক্যারিয়ার', hiringLabel: 'নিয়োগ চলছে',
     subscribersTitle: 'সাবস্ক্রাইবার ও সদস্যতা', careersTitle: 'ক্যারিয়ার ও চাকরির সুযোগ',
     careersBadge: 'নিয়োগ চলছে', careersHeading: 'যুগান্তর নিউজ টিমে যোগ দিন', careersIntro: 'পশ্চিমবঙ্গের দ্রুত বিকাশমান ডিজিটাল নিউজ নেটওয়ার্কে আপনার সাংবাদিকতা ক্যারিয়ার গড়ুন।', featuredPositions: 'প্রধান চাকরির সুযোগ',
@@ -436,8 +436,9 @@ function renderArticles() {
     const searchable = `${articleText(article, 'title')} ${articleText(article, 'summary')} ${article.author || ''} ${article.sourceAgency || ''}`.toLowerCase();
     return categoryMatch && (!term || searchable.includes(term));
   });
-  if (!articles.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptyArticles)}</div>`; return; }
-  target.innerHTML = articles.map(article => `<article class="article-card" data-article-id="${escapeHtml(article.id)}">
+  const homepageArticles = articles.slice(0, 10);
+  if (!homepageArticles.length) { target.innerHTML = `<div class="empty-state">${escapeHtml(dict.emptyArticles)}</div>`; return; }
+  target.innerHTML = homepageArticles.map(article => `<article class="article-card" data-article-id="${escapeHtml(article.id)}">
     ${imageMarkup(article.image, articleText(article, 'title'), 'YUGANTAR')}
     <div class="article-body"><span class="tag">${escapeHtml(categoryText(article.category))}</span><h3>${escapeHtml(articleText(article, 'title'))}</h3><p>${escapeHtml(articleText(article, 'summary'))}</p><small>${escapeHtml(article.sourceAgency || article.author || 'YUGANTAR')} · ${escapeHtml(dateText(article.publishedAt))}</small></div>
     <button class="save-article" data-save-id="${escapeHtml(article.id)}" type="button" aria-label="${isSaved(article.id) ? 'Remove from saved articles' : 'Save article'}" title="${isSaved(article.id) ? 'Remove from saved articles' : 'Save article'}">${isSaved(article.id) ? '★' : '☆'}</button>
